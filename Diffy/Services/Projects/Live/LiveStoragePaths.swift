@@ -31,6 +31,15 @@ struct LiveStoragePaths: Sendable {
         self.root.appendingPathComponent("Accounts/github-accounts-v1.json")
     }
 
+    var aiSettingsFile: URL {
+        self.root.appendingPathComponent("AI/settings-v1.json")
+    }
+
+    /// Versioned analysis records are durable user data, never disposable Git caches.
+    var aiHistoryDirectory: URL {
+        self.root.appendingPathComponent("AI/History-v1", isDirectory: true)
+    }
+
     // MARK: - Live Data
 
     var liveDirectory: URL {

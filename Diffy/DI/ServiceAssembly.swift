@@ -13,6 +13,12 @@ final class ServiceAssembly {
     let exportService: ReviewExportServiceProtocol
     let textDiffBuilder: TextDiffBuilding
     let fileIconService: FileIconServiceProtocol
+    let aiSettingsStore: any AISettingsStoreProtocol
+    let aiCredentialStore: any AICredentialStoreProtocol
+    let aiHistoryStore: any AIHistoryStoreProtocol
+    let aiReviewService: any AIReviewServiceProtocol
+    let aiCommandAvailability: any AICommandAvailabilityServiceProtocol
+    let aiModelCatalog: any AIModelCatalogServiceProtocol
 
     init(runtime: AppRuntime = .current) {
 
@@ -38,6 +44,16 @@ final class ServiceAssembly {
             self.gitHubService = LiveGitHubService(configuration: configuration, resolver: resolver)
             self.gitHubAccountService = LiveGitHubAccountService(configuration: configuration, fileURL: paths.gitHubAccountsFile, resolver: resolver)
             notesURL = paths.annotationsFile
+            let aiCredentials = LiveAICredentialStore()
+            self.aiCredentialStore = aiCredentials
+            self.aiSettingsStore = LiveAISettingsStore(fileURL: paths.aiSettingsFile)
+            self.aiHistoryStore = LiveAIHistoryStore(rootDirectory: paths.aiHistoryDirectory)
+            self.aiReviewService = AIReviewService(
+                apiProvider: LiveAIProvider(credentialStore: aiCredentials),
+                cliProvider: InstalledCLIProvider()
+            )
+            self.aiCommandAvailability = InstalledAICommandLocator()
+            self.aiModelCatalog = LiveAIModelCatalogService(credentialStore: aiCredentials)
 
         } else {
 
@@ -46,6 +62,12 @@ final class ServiceAssembly {
             self.gitHubService = MockGitHubService()
             self.gitHubAccountService = MockGitHubAccountService()
             notesURL = nil
+            self.aiSettingsStore = MockAISettingsStore()
+            self.aiCredentialStore = MockAICredentialStore()
+            self.aiHistoryStore = MockAIHistoryStore()
+            self.aiReviewService = AIReviewService(apiProvider: MockAIProvider(), cliProvider: MockAIProvider())
+            self.aiCommandAvailability = MockAICommandAvailabilityService()
+            self.aiModelCatalog = MockAIModelCatalogService()
 
         }
         #else
@@ -54,6 +76,12 @@ final class ServiceAssembly {
         self.gitHubService = MockGitHubService()
         self.gitHubAccountService = MockGitHubAccountService()
         notesURL = isPreview ? nil : Self.annotationsURL()
+        self.aiSettingsStore = MockAISettingsStore()
+        self.aiCredentialStore = MockAICredentialStore()
+        self.aiHistoryStore = MockAIHistoryStore()
+        self.aiReviewService = AIReviewService(apiProvider: MockAIProvider(), cliProvider: MockAIProvider())
+        self.aiCommandAvailability = MockAICommandAvailabilityService()
+        self.aiModelCatalog = MockAIModelCatalogService()
         #endif
 
         self.exportService = ReviewExportService()

@@ -37,7 +37,7 @@ struct PullRequestFileDiscussion: View {
                     PullRequestConversationRow(entry: entry) {
 
                         self.viewModel.replyingTo = entry
-                        self.viewModel.showsConversation = true
+                        self.viewModel.selectedTab = .conversation
 
                     }
                 }

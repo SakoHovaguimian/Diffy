@@ -43,9 +43,6 @@ struct WorkspaceOverviewScreen: View {
 
         }
         .background(self.theme.background)
-        .sheet(item: self.$viewModel.gitHubReview, onDismiss: { self.refreshGeneration += 1 }) { review in
-            PullRequestReviewScreen(viewModel: review).diffyStyle()
-        }
         .task(id: self.refreshKey) {
             await self.viewModel.refresh(projects: self.workspace.projects, accounts: self.accounts.accounts)
         }
@@ -223,7 +220,9 @@ struct WorkspaceOverviewScreen: View {
             } else {
 
                 OverviewPullRequestList(requests: requests, sortOrder: sortOrder, hasFooter: hasMore, collapsedGroups: collapsedGroups) { request in
-                    self.viewModel.reviewPullRequest(request, accounts: self.accounts.accounts)
+                    if let review = self.viewModel.reviewPullRequest(request, accounts: self.accounts.accounts) {
+                        self.workspace.openPullRequest(review)
+                    }
                 }
 
                 if hasMore {

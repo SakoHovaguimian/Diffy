@@ -10,7 +10,6 @@ final class WorkspaceOverviewViewModel: ViewModel {
     private let gitHub: GitHubServiceProtocol
     private var refreshID = UUID()
 
-    @Published var gitHubReview: PullRequestReviewViewModel?
     @Published private(set) var activeProjects: [OverviewProjectChange] = []
     @Published private(set) var assignedPullRequests: [AssignedPullRequestSummary] = []
     @Published private(set) var reviewRequestedPullRequests: [AssignedPullRequestSummary] = []
@@ -52,10 +51,10 @@ final class WorkspaceOverviewViewModel: ViewModel {
 
     }
 
-    func reviewPullRequest(_ request: AssignedPullRequestSummary, accounts: [GitHubAccount]) {
+    func reviewPullRequest(_ request: AssignedPullRequestSummary, accounts: [GitHubAccount]) -> PullRequestReviewViewModel? {
 
         let parts = request.repositoryFullName.split(separator: "/")
-        guard parts.count == 2, let host = request.webURL.host else { return }
+        guard parts.count == 2, let host = request.webURL.host else { return nil }
         let coordinate = GitHubRepositoryCoordinate(host: host, owner: String(parts[0]), name: String(parts[1]))
         let reviewRequest = PullRequestReviewRequest(
             number: request.number,
@@ -64,7 +63,7 @@ final class WorkspaceOverviewViewModel: ViewModel {
             link: GitHubRepositoryLink(coordinate: coordinate),
             preferredAccountID: request.accountID
         )
-        self.gitHubReview = PullRequestReviewViewModel(request: reviewRequest, accounts: accounts, gitHub: self.gitHub)
+        return PullRequestReviewViewModel(request: reviewRequest, accounts: accounts, gitHub: self.gitHub)
 
     }
 

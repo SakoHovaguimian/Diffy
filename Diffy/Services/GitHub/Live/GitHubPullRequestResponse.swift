@@ -29,6 +29,7 @@ struct GitHubPullRequestResponse: Decodable, Sendable {
     let htmlUrl: URL
     let body: String?
     let changedFiles: Int?
+    let commits: Int?
     let additions: Int?
     let deletions: Int?
 

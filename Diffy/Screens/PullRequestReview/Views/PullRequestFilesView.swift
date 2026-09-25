@@ -190,7 +190,13 @@ struct PullRequestFilesView: View {
                             .foregroundStyle(self.theme.secondaryText)
                             .padding(10)
                     }
-                    PullRequestPatchRow(line: line, unified: self.viewModel.isUnified, canComment: self.viewModel.canReview, comment: self.viewModel.beginComment)
+                    PullRequestPatchRow(
+                        line: line,
+                        unified: self.viewModel.isUnified,
+                        canComment: self.viewModel.canReview,
+                        comment: self.viewModel.beginComment,
+                        note: self.viewModel.beginNote
+                    )
                     PullRequestFileDiscussion(viewModel: self.viewModel, drafts: self.viewModel.drafts(at: line), comments: self.viewModel.comments(at: line))
 
                 }

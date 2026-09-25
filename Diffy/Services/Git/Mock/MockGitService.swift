@@ -141,6 +141,10 @@ struct MockGitService: GitServiceProtocol {
         throw GitError.unsupported("Mock mode does not write repository files.")
     }
 
+    func applyReviewedAIPatch(_ request: GitAIPatchRequest, in repository: GitRepositoryReference) async throws {
+        throw GitError.unsupported("Mock mode keeps sample sources immutable. Open Diffy Live to apply a reviewed patch.")
+    }
+
     func fetchPullRequestSources(_ pullRequest: PullRequestSummary, remoteName: String, in repository: GitRepositoryReference, progress: @escaping @Sendable (GitOperationProgress) -> Void) async throws -> ComparisonSelection {
         ComparisonSelection(left: .revision(pullRequest.baseSHA), right: .revision(pullRequest.headSHA))
     }

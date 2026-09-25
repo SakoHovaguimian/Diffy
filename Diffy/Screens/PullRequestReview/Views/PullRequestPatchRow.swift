@@ -6,6 +6,7 @@ struct PullRequestPatchRow: View {
     let unified: Bool
     let canComment: Bool
     let comment: (Int, String) -> Void
+    let note: ((Int, String, String) -> Void)?
     @Environment(\.diffyTheme) private var theme
 
     var body: some View {
@@ -68,6 +69,18 @@ struct PullRequestPatchRow: View {
             .foregroundStyle(self.theme.accent)
             .disabled(!self.canComment || number == nil)
             .accessibilityLabel("Comment On \(side == "LEFT" ? "Old" : "New") Line \(number ?? 0)")
+            if let note, let number {
+
+                Button {
+                    note(number, side, text)
+                } label: {
+                    Image(systemName: "square.and.pencil").font(.system(size: 11)).frame(width: 22)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.theme.accent)
+                .accessibilityLabel("Add Review Note On \(side == "LEFT" ? "Old" : "New") Line \(number)")
+
+            }
             Text(number.map(String.init) ?? "").foregroundStyle(self.theme.secondaryText).frame(width: 42, alignment: .trailing)
             Text(number == nil ? " " : marker).foregroundStyle(self.theme.secondaryText).frame(width: 10)
             Text(text.isEmpty ? " " : text).fixedSize(horizontal: true, vertical: true)

@@ -17,7 +17,9 @@ final class WorkspaceViewModel: ViewModel {
     let textDiffViewModel: TextDiffViewModel
     private let workspaceService: WorkspaceServiceProtocol
     private let preferencesService: PreferencesServiceProtocol
+    private let makeAIWorkspace: @MainActor (PullRequestReviewViewModel) -> AIReviewWorkspaceViewModel
     private var comparisonObservation: AnyCancellable?
+    private var pullRequestReviews: [String: PullRequestReviewViewModel] = [:]
 
     @Published var buckets: [Bucket]
     @Published var selectedProjectID: String = "rune"
@@ -44,6 +46,7 @@ final class WorkspaceViewModel: ViewModel {
     @Published var pendingDiffNavigation: PendingDiffNavigation?
     @Published var notice: String?
     @Published var pendingPullProjectID: String?
+    @Published private(set) var activePullRequestReview: PullRequestReviewViewModel?
     @Published private(set) var contentSizeScale = 1.0
 
     init(
@@ -53,7 +56,8 @@ final class WorkspaceViewModel: ViewModel {
         workspaceService: WorkspaceServiceProtocol,
         preferencesService: PreferencesServiceProtocol,
         fileNavigatorViewModel: FileNavigatorViewModel,
-        textDiffBuilder: TextDiffBuilding
+        textDiffBuilder: TextDiffBuilding,
+        makeAIWorkspace: @escaping @MainActor (PullRequestReviewViewModel) -> AIReviewWorkspaceViewModel
     ) {
 
         let library = workspaceService.loadLibrary()
@@ -64,6 +68,7 @@ final class WorkspaceViewModel: ViewModel {
         self.projects = library.projects
         self.workspaceService = workspaceService
         self.preferencesService = preferencesService
+        self.makeAIWorkspace = makeAIWorkspace
         self.fileNavigatorViewModel = fileNavigatorViewModel
         self.textDiffViewModel = TextDiffViewModel(diffBuilder: textDiffBuilder)
         self.buckets = (preferencesService.load([Bucket].self, key: "buckets.demo.v1") ?? workspaceService.defaultBuckets).map { bucket in
@@ -241,6 +246,58 @@ final class WorkspaceViewModel: ViewModel {
         requestNavigation(.overview)
     }
 
+    func openPullRequest(_ review: PullRequestReviewViewModel) {
+
+        attachAvailableLocalRepository(to: review)
+        let key = pullRequestKey(for: review.request)
+        if let existing = self.pullRequestReviews[key] {
+            existing.attachLocalRepository(review.localRepository, projectID: review.projectID)
+        } else {
+
+            review.attachAIWorkspace(self.makeAIWorkspace(review))
+            self.pullRequestReviews[key] = review
+
+        }
+        requestNavigation(.pullRequest(key: key))
+
+    }
+
+    func closePullRequest() {
+        self.activePullRequestReview = nil
+    }
+
+    private func pullRequestKey(for request: PullRequestReviewRequest) -> String {
+        "\(request.link.host.lowercased())/\(request.link.fullName.lowercased())#\(request.number)"
+    }
+
+    private func attachAvailableLocalRepository(to review: PullRequestReviewViewModel) {
+
+        guard review.localRepository == nil else { return }
+        let target = review.request.link
+
+        if let project = self.projects.first(where: { project in
+            project.gitHubLink.map { link in
+                link.host.lowercased() == target.host.lowercased()
+                    && link.fullName.lowercased() == target.fullName.lowercased()
+            } ?? false
+        }), let reference = project.repositoryReference {
+
+            review.attachLocalRepository(reference, projectID: project.id)
+            return
+
+        }
+
+        if let link = self.repositoryViewModel.linkedRepository,
+           link.host.lowercased() == target.host.lowercased(),
+           link.fullName.lowercased() == target.fullName.lowercased(),
+           let reference = self.repositoryViewModel.reference {
+
+            review.attachLocalRepository(reference, projectID: self.repositoryViewModel.project?.id)
+
+        }
+
+    }
+
     func showFileHistory(_ file: DiffFile) {
 
         if self.runtime.isLive {
@@ -301,6 +358,13 @@ final class WorkspaceViewModel: ViewModel {
 
     private func isCurrentDestination(_ destination: DiffNavigationDestination) -> Bool {
 
+        if self.activePullRequestReview != nil {
+            if case let .pullRequest(key) = destination {
+                return self.activePullRequestReview.map { pullRequestKey(for: $0.request) } == key
+            }
+            return false
+        }
+
         switch destination {
 
         case .overview:
@@ -325,6 +389,9 @@ final class WorkspaceViewModel: ViewModel {
             case .workingTree: !self.showsDashboard && self.mode == .workingTree
             }
 
+        case .pullRequest:
+            return false
+
         case .annotation:
             return false
 
@@ -333,6 +400,8 @@ final class WorkspaceViewModel: ViewModel {
     }
 
     private func performNavigation(_ destination: DiffNavigationDestination) {
+
+        self.activePullRequestReview = nil
 
         switch destination {
 
@@ -352,6 +421,9 @@ final class WorkspaceViewModel: ViewModel {
 
         case let .project(projectID, tab):
             navigateToProject(projectID: projectID, tab: tab)
+
+        case let .pullRequest(key):
+            self.activePullRequestReview = self.pullRequestReviews[key]
 
         case let .annotation(annotation):
             reveal(annotation)

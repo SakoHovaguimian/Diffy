@@ -7,6 +7,9 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     let id = UUID()
     let loggerName = "PULL_REQUEST_REVIEW_VIEW_MODEL"
     let request: PullRequestReviewRequest
+    @Published private(set) var localRepository: GitRepositoryReference?
+    @Published private(set) var projectID: String?
+    var patchReview: AIReviewPatchViewModel?
     let accounts: [GitHubAccount]
     let gitHub: GitHubServiceProtocol
     let fileNavigator = FileNavigatorViewModel(preferencesService: PreferencesService(defaults: nil))
@@ -16,17 +19,20 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     @Published private(set) var navigatorWidth: CGFloat = 260
     @Published var selectedAccountID: String
     @Published private(set) var details: PullRequestReviewDetails?
+    @Published private(set) var aiWorkspace: AIReviewWorkspaceViewModel?
     @Published var conversation: [PullRequestConversationEntry] = []
     @Published var selectedFileID: String?
+    @Published private(set) var historicalFileSelection: PullRequestHistoricalFileSelection?
     @Published private(set) var splitLines: [DiffLine] = []
     @Published private(set) var unifiedLines: [DiffLine] = []
     @Published var viewedPaths: Set<String> = []
-    @Published var showsConversation = false
+    @Published var selectedTab: PullRequestReviewTab = .filesChanged
+    @Published var showsNotes = false
     @Published var showsReviewComposer = false
-    @Published var showsDiscardConfirmation = false
     @Published var showsReloadConfirmation = false
     @Published var isUnified = true
     @Published var commentEditor: PullRequestReviewCommentDraft?
+    @Published var noteDraft: PullRequestNoteDraft?
     @Published var drafts: [PullRequestReviewCommentDraft] = []
     @Published var reviewBody = ""
     @Published var reviewEvent: PullRequestReviewEvent = .comment
@@ -41,10 +47,14 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     init(
         request: PullRequestReviewRequest,
         accounts: [GitHubAccount],
-        gitHub: GitHubServiceProtocol
+        gitHub: GitHubServiceProtocol,
+        localRepository: GitRepositoryReference? = nil,
+        projectID: String? = nil
     ) {
 
         self.request = request
+        self.localRepository = localRepository
+        self.projectID = projectID
         self.accounts = accounts.filter { $0.host == request.link.host && $0.status == .connected }
         self.gitHub = gitHub
         self.selectedAccountID = self.accounts.first { $0.id == request.preferredAccountID }?.id ?? self.accounts.first?.id ?? ""
@@ -161,6 +171,7 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
             let revisionChanged = self.details?.summary.headSHA != details.summary.headSHA || self.details?.summary.baseSHA != details.summary.baseSHA
             if revisionChanged { self.viewedPaths.removeAll() }
             self.details = details
+            self.aiWorkspace?.update(details: details)
             self.conversation = details.conversation
             self.isStale = false
             selectFile(details.files.first { $0.id == self.selectedFileID } ?? details.files.first)
@@ -173,9 +184,31 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
 
     }
 
+    func loadIfNeeded() async {
+        if self.details == nil { await load() }
+    }
+
+    func attachAIWorkspace(_ aiWorkspace: AIReviewWorkspaceViewModel) {
+
+        guard self.aiWorkspace == nil else { return }
+        self.aiWorkspace = aiWorkspace
+        if let details = self.details { aiWorkspace.update(details: details) }
+
+    }
+
+    func attachLocalRepository(_ repository: GitRepositoryReference?, projectID: String?) {
+
+        guard let repository, self.localRepository != repository else { return }
+        self.localRepository = repository
+        self.projectID = projectID
+        self.patchReview?.attachRepository(repository)
+
+    }
+
     func changeAccount() async {
 
         self.details = nil
+        self.aiWorkspace?.clearCurrentDetails()
         self.conversation = []
         self.viewedPaths = []
         self.splitLines = []
@@ -190,6 +223,74 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.selectedFileID = file?.id
         self.splitLines = file?.patch.map(GitPatchParser.lines) ?? []
         self.unifiedLines = file?.patch.map(GitPatchParser.unifiedLines) ?? []
+
+    }
+
+    func openFile(path: String) {
+
+        guard let file = self.details?.files.first(where: { $0.filename == path || $0.previousFilename == path }) else {
+            self.notice = "The file is unavailable in this pull request revision."
+            return
+        }
+
+        self.fileNavigator.query = ""
+        self.fileNavigator.collapsedGroups = []
+        self.historicalFileSelection = nil
+        selectFile(file)
+        self.selectedTab = .filesChanged
+
+    }
+
+    func openAnalyzedFile(generation: AIReviewGeneration, path: String) {
+
+        if let details = self.details,
+           generation.isCurrent(baseSHA: details.summary.baseSHA, headSHA: details.summary.headSHA),
+           details.files.contains(where: { $0.filename == path || $0.previousFilename == path }) {
+            openFile(path: path)
+            return
+        }
+
+        guard let file = generation.analyzedFiles.first(where: { $0.filename == path || $0.previousFilename == path }) else {
+            self.notice = "This analysis did not capture a patch for \(path). The original explanation remains in history."
+            return
+        }
+
+        self.historicalFileSelection = PullRequestHistoricalFileSelection(
+            file: file,
+            createdAt: generation.createdAt,
+            headSHA: generation.headSHA
+        )
+        self.selectedTab = .filesChanged
+
+    }
+
+    func openNoteFixFile(entry: AIConversationEntry, path: String) {
+
+        if let details = self.details,
+           entry.baseSHA == details.summary.baseSHA,
+           entry.headSHA == details.summary.headSHA,
+           details.files.contains(where: { $0.filename == path || $0.previousFilename == path }) {
+            openFile(path: path)
+            return
+        }
+
+        guard let file = entry.analyzedFiles.first(where: { $0.filename == path || $0.previousFilename == path }) else {
+            self.notice = "This analysis did not capture a patch for \(path). The original fix remains in history."
+            return
+        }
+
+        self.historicalFileSelection = PullRequestHistoricalFileSelection(
+            file: file,
+            createdAt: entry.createdAt,
+            headSHA: entry.headSHA
+        )
+        self.selectedTab = .filesChanged
+
+    }
+
+    func closeHistoricalFile() {
+
+        self.historicalFileSelection = nil
 
     }
 

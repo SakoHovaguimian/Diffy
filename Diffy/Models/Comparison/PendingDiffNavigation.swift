@@ -11,6 +11,7 @@ enum DiffNavigationDestination {
     case file(projectID: String, fileID: String, mode: ComparisonMode)
     case mode(ComparisonMode)
     case project(projectID: String, tab: ProjectNavigationTab)
+    case pullRequest(key: String)
     case annotation(CodeAnnotation)
 }
 

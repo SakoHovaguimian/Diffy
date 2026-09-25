@@ -100,6 +100,13 @@ protocol GitServiceProtocol: Sendable {
         in repository: GitRepositoryReference
     ) async throws
 
+    /// Applies an explicitly reviewed AI patch to clean affected working-tree files.
+    /// Never stages, commits, checks out, or fetches. Rejects a different HEAD.
+    func applyReviewedAIPatch(
+        _ request: GitAIPatchRequest,
+        in repository: GitRepositoryReference
+    ) async throws
+
     /// Makes a pull request's base and head commits available locally without creating
     /// branches, then returns the comparison to show.
     func fetchPullRequestSources(

@@ -1,6 +1,6 @@
 # Diffy
 
-A native macOS comparison workspace with live Git repositories, GitHub accounts, read-only comparisons, and explicit repository actions. The separate Mock target preserves the interactive prototype and immutable fixtures. See [GitHub and Git setup](docs/GITHUB_SETUP.md).
+A native macOS comparison workspace with live Git repositories, GitHub accounts, persistent PR AI reviews, read-only comparisons, and explicit repository actions. The separate Mock target preserves the interactive prototype and immutable fixtures. See [GitHub and Git setup](docs/GITHUB_SETUP.md) and [AI review setup](docs/AI_REVIEW.md).
 
 Open **Diffy.xcodeproj**, select **Diffy Live** or **Diffy Mock**, and use **My Mac** as the destination. The project targets macOS 14 and Swift 6. There are no third-party package dependencies. Xcode builds have not been run as part of this work.
 

@@ -7,8 +7,9 @@ extension LiveGitHubService {
         let path = repositoryPath(request.link.coordinate) + "/pulls/\(request.number)"
         let before = try await get(GitHubPullRequestResponse.self, path: path, account: account)
         async let files = reviewPages(PullRequestReviewFile.self, path: path + "/files", account: account, maximumPages: 30)
+        async let commits = reviewPages(GitHubPullRequestCommitResponse.self, path: path + "/commits", account: account, maximumPages: 30)
         async let conversation = reviewConversation(for: request, account: account)
-        let (loadedFiles, loadedConversation) = try await (files, conversation)
+        let (loadedFiles, loadedCommits, loadedConversation) = try await (files, commits, conversation)
         let after = try await get(GitHubPullRequestResponse.self, path: path, account: account)
 
         guard before.head.sha == after.head.sha, before.base.sha == after.base.sha else {
@@ -19,6 +20,8 @@ extension LiveGitHubService {
             summary: after.summary,
             body: after.body ?? "",
             changedFileCount: after.changedFiles ?? loadedFiles.count,
+            commitCount: after.commits ?? loadedCommits.count,
+            commits: loadedCommits.map(\.reviewCommit),
             files: loadedFiles,
             conversation: loadedConversation
         )

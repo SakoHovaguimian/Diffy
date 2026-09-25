@@ -3,6 +3,7 @@ import SwiftUI
 struct RepositoryPullRequestsView: View {
 
     @ObservedObject var viewModel: RepositoryViewModel
+    @ObservedObject var workspace: WorkspaceViewModel
     @EnvironmentObject private var accounts: GitHubAccountsViewModel
     @Environment(\.diffyTheme) private var theme
 
@@ -26,11 +27,6 @@ struct RepositoryPullRequestsView: View {
             }
             .padding(32)
 
-        }
-        .sheet(item: self.$viewModel.gitHubReview, onDismiss: {
-            Task { await self.viewModel.loadPullRequests() }
-        }) { review in
-            PullRequestReviewScreen(viewModel: review).diffyStyle()
         }
         .onChange(of: self.accounts.accounts) { _, _ in
 
@@ -131,7 +127,9 @@ struct RepositoryPullRequestsView: View {
                                 .foregroundStyle(request.checks?.state == .failure ? self.theme.removed : self.theme.secondaryText)
                         }
                         PullRequestActions(webURL: request.webURL) {
-                            self.viewModel.reviewPullRequest(request)
+                            if let review = self.viewModel.reviewPullRequest(request) {
+                                self.workspace.openPullRequest(review)
+                            }
                         }
 
                     }

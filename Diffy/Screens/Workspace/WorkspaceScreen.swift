@@ -24,7 +24,7 @@ struct WorkspaceScreen: View {
 
             HStack(spacing: 0) {
 
-                if self.viewModel.showsSidebar {
+                if self.viewModel.showsSidebar && self.viewModel.activePullRequestReview == nil {
 
                     WorkspaceSidebarPane(viewModel: self.viewModel, isOperating: self.repository.isOperating)
                         .transition(.move(edge: .leading).combined(with: .opacity))
@@ -36,7 +36,7 @@ struct WorkspaceScreen: View {
                     .geometryGroup()
                     .compositingGroup()
 
-                if self.viewModel.showsReview {
+                if self.viewModel.showsReview && self.viewModel.activePullRequestReview == nil {
 
                     HStack(spacing: 0) {
 
@@ -187,7 +187,16 @@ struct WorkspaceScreen: View {
 
         Group {
 
-            if self.viewModel.showsOverview || self.viewModel.projects.isEmpty {
+            if let review = self.viewModel.activePullRequestReview,
+               let aiWorkspace = review.aiWorkspace,
+               let patchReview = review.patchReview {
+                PullRequestReviewScreen(
+                    viewModel: review,
+                    workspace: self.viewModel,
+                    aiWorkspace: aiWorkspace,
+                    patchReview: patchReview
+                )
+            } else if self.viewModel.showsOverview || self.viewModel.projects.isEmpty {
                 WorkspaceOverviewScreen(workspace: self.viewModel, viewModel: self.viewModel.overviewViewModel)
             } else {
 
@@ -242,12 +251,15 @@ struct WorkspaceScreen: View {
                 Image(systemName: "sidebar.left")
             }
             .help("Toggle Sidebar")
+            .disabled(self.viewModel.activePullRequestReview != nil)
 
         }
 
         ToolbarItem(placement: .principal) {
 
-            if self.viewModel.showsOverview {
+            if let request = self.viewModel.activePullRequestReview?.request {
+                navigationContextPill("#\(request.number) · \(request.link.fullName)", symbol: "arrow.triangle.pull")
+            } else if self.viewModel.showsOverview {
                 navigationContextPill("Workspace Overview", symbol: "square.grid.2x2")
             } else if self.viewModel.selectedProject != nil {
 
@@ -283,7 +295,7 @@ struct WorkspaceScreen: View {
                 Label("Review Notes", systemImage: "text.bubble")
             }
             .help("Review Notes · ⇧⌘R")
-            .disabled(self.viewModel.projects.isEmpty)
+            .disabled(self.viewModel.projects.isEmpty || self.viewModel.activePullRequestReview != nil)
 
             SettingsLink {
                 Label("Settings", systemImage: "slider.horizontal.3")

@@ -12,6 +12,9 @@ struct SettingsScreen: View {
             GitHubAccountsScreen()
                 .tabItem { Label("Accounts", systemImage: "person.crop.circle") }
 
+            AISettingsScreen(viewModel: self.viewModel.ai)
+                .tabItem { Label("AI Review", systemImage: "sparkles") }
+
             AppearanceSettingsScreen()
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
 

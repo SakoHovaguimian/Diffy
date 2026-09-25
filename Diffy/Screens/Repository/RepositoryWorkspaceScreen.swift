@@ -109,7 +109,7 @@ struct RepositoryWorkspaceScreen: View {
         case .branches: RepositoryBranchesView(viewModel: self.viewModel)
         case .commits: RepositoryCommitsView(viewModel: self.viewModel)
         case .history: RepositoryHistoryView(viewModel: self.viewModel)
-        case .pullRequests: RepositoryPullRequestsView(viewModel: self.viewModel)
+        case .pullRequests: RepositoryPullRequestsView(viewModel: self.viewModel, workspace: self.workspace)
         case .merge: RepositoryConflictsView(viewModel: self.viewModel)
         case .folders: RepositoryFoldersView(viewModel: self.viewModel)
 

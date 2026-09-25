@@ -71,7 +71,6 @@ final class RepositoryViewModel: ViewModel {
     @Published var branchCommits: [RepositoryCommit] = []
     @Published var isLoadingCommits = false
     @Published var commitsError: String?
-    @Published var gitHubReview: PullRequestReviewViewModel?
     @Published var pullRequests: [PullRequestSummary] = []
     @Published var pullRequestFilter: PullRequestFilter = .all
     @Published var pullRequestStatusFilter: PullRequestStatusFilter = .unmerged

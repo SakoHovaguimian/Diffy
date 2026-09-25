@@ -1,0 +1,44 @@
+# Persistent PR AI Review
+
+Pull requests open in the main workspace with Conversation, Commits, and Files Changed. Draft comments, Viewed state, and navigation survive closing and reopening a PR within the same workspace. AI results persist across app launches.
+
+## Setup
+
+Open **Settings → AI Review**, choose provider and connection, then use **Refresh Models**. Choose a default model and save. The PR composer also refreshes models when opened or when its provider/connection changes. API and installed-tool catalogs are stored separately: a model offered by a provider API may not work with the same provider's CLI subscription.
+
+- **Provider API:** OpenAI, Anthropic, and Gemini keys are stored only in macOS Keychain.
+- **Installed Command-Line Tool:** install and sign in to Codex CLI, Claude Code, or Gemini CLI in Terminal. Diffy detects common installation paths and absolute PATH entries, then checks required flags before generation. Detection confirms installation, not authentication or model access.
+
+The PR header’s **Ask AI** composer supports request overrides. Generate sends bounded PR context to the selected provider. Opening a PR or restoring history never generates automatically. There is no Diffy backend.
+
+Model discovery uses the saved Keychain key for provider APIs, or the installed tool's own sign-in for CLI connections. Codex reports its model catalog; Claude Code reports models during initialization; Gemini reports models when opening a temporary ACP session. Discovery sends no PR context or analysis prompt. Catalogs can contain account- or capability-dependent entries, so generation still confirms access and structured-output compatibility. A failed refresh keeps the last model list and allows manual IDs, including Claude's documented `[1m]` suffix.
+
+API catalogs follow the providers' model-list interfaces: [OpenAI](https://platform.openai.com/docs/api-reference/models/list), [Anthropic](https://platform.claude.com/docs/en/api/models/list), and [Gemini](https://ai.google.dev/api/models). CLI discovery uses [Codex's model catalog command](https://learn.chatgpt.com/docs/developer-commands), the installed Claude Code control protocol, and [Gemini ACP](https://geminicli.com/docs/cli/acp-mode/). CLI protocols can vary by installed version; unsupported versions surface an error and leave manual selection available.
+
+Diffy shows the catalog source and explains when a previously selected model is absent from the returned list. A successful composer refresh saves model choices without overwriting defaults edited in Settings. **Save AI Settings** explicitly saves default selection and manual model edits.
+
+CLI failures include a bounded, sanitized error reason and exit status. For an unsupported Codex model, refresh the **Installed Command-Line Tool** list instead of copying an API model ID. Authentication, quota, network, and schema failures remain distinct; selecting the API connection requires its own saved key.
+
+## Review & History
+
+Learning Path teaches concepts in dependency order. Architecture Map provides selectable components, relationships, and an inspector. Risk Map gives labeled attention levels, evidence, inspection guidance, and uncertainty. Generated views join PR navigation. Questions and proposed fixes also remain in local history.
+
+Records retain repository/PR identity, base/head SHA, provider/model, timestamp, prompt, structured output, transmitted context, and captured file/annotation snapshots. Changed revisions are explicitly outdated; unavailable current data is labeled unknown. Historical file links show saved patches instead of borrowing current code.
+
+History lives in `~/Library/Application Support/Diffy/AI/History-v1`, separate from Git caches. Settings use `AI/settings-v1.json`. Private records are published atomically without overwriting earlier UUIDs. Failed saves remain visible as unsaved with a retry action.
+
+`AIContextBuilder` bounds metadata, commits, patches, selected files, and notes and records omissions. Large PRs can be analyzed through successive file selections. `AIReviewPrompts` supplies shared grounding rules and mode-specific pre-prompts; descriptions, code, and comments are untrusted input. Shared schemas and validators reject malformed shapes, invalid references, and graph/step inconsistencies. Native SwiftUI renders structured data; generated UI code is never executed.
+
+API implementations follow [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [Anthropic Structured Outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs), and [Gemini Structured Output](https://ai.google.dev/gemini-api/docs/generate-content/structured-output). HTTP sessions are ephemeral, and OpenAI requests use `store: false`.
+
+CLI requests run in private temporary directories with minimal environments and bounded, cancellable output. Codex uses read-only sandboxing, ephemeral mode, disabled integrations/tools, and [schema output](https://learn.chatgpt.com/docs/non-interactive-mode). Claude uses safe mode, no tools, isolated MCP configuration, no session persistence, and [JSON schema output](https://code.claude.com/docs/en/cli-reference). Gemini disables extensions, MCP, hooks, and skills and uses a deny-all [tool policy](https://geminicli.com/docs/reference/policy-engine/). Each CLI manages its own sign-in.
+
+## Notes & Apply
+
+The PR line note action captures revision, path, side, line, code, language, and comment. Select notes and choose **Ask AI To Address Notes** to generate a saved plan, file list, uncertainty, and proposed patch.
+
+**Apply Proposed Patch** requires explicit confirmation. Apply first rechecks the current GitHub base/head. The Git service then verifies exact checkout HEAD, permitted paths, clean affected files, safe destinations, and `git apply --check`. Apply changes only the working tree; it never stages, commits, pushes, fetches, or checks out. Binary, rename, link, and mode changes require manual handling. Cancellation is not rollback; inspect the refreshed checkout after an interrupted operation.
+
+Mock and previews use in-memory AI services and immutable fixtures. Network, Keychain, process, and durable AI storage implementations are excluded from Mock via `Live/` target membership.
+
+Source checks, lint, plist checks, and membership inspection do not prove runtime/provider compatibility or visual correctness. No Xcode builds or tests are authorized by this change.

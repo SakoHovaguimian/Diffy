@@ -79,6 +79,12 @@ Coordinated motion for large view groups is isolated at the group boundary with 
 
 Use direct verbs: Stage, Unstage, Commit, Fetch, Pull, Push, Check Out, Merge, Rebase. A remote count is labeled as last-fetched knowledge, never live truth. Empty and error states include a route to recovery.
 
+PR review fills the main workspace. Its header owns repository/PR identity, author, commit count, change counts, status, and Ask AI. Conversation, Commits, and Files Changed are primary destinations; generated Learning Path, Architecture Map, and Risk Map views join the same navigation. The AI composer is a native popover. History sits beside the selected analysis with provider, model, date, and explicit revision status. Learning steps use numbers for conceptual sequence; architecture uses native graph connections and selectable components; risks use attention labels and evidence. Keep the existing theme roles and native typography.
+
+AI explanations, captured notes, and proposed patches are selectable. Saved context remains inspectable offline, with unknown or outdated revisions labeled. Patches require preview and explicit Apply. Generated visualizations are structured data rendered through app-owned SwiftUI.
+
+Provider, connection, and model choices stay together in AI settings and the composer. Model refresh exposes its source, progress, and specific errors while retaining manual entry. Show when a reported catalog changes the current choice; save default changes only through the explicit settings action.
+
 ## Do's and Don'ts
 
 - Do keep Light and Safira as the System appearance fallbacks and retain all app-owned components.

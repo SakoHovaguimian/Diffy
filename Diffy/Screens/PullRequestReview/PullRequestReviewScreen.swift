@@ -2,53 +2,80 @@ import SwiftUI
 
 struct PullRequestReviewScreen: View {
 
-    @StateObject var viewModel: PullRequestReviewViewModel
+    @ObservedObject var viewModel: PullRequestReviewViewModel
+    @ObservedObject var workspace: WorkspaceViewModel
+    @ObservedObject var aiWorkspace: AIReviewWorkspaceViewModel
+    @ObservedObject var patchReview: AIReviewPatchViewModel
+    @EnvironmentObject private var review: ReviewViewModel
     @Environment(\.diffyTheme) private var theme
-    @Environment(\.dismiss) private var dismiss
+
+    private var matchingNotes: [CodeAnnotation] {
+        self.viewModel.matchingAnnotations(in: self.review.annotations)
+    }
+
+    private var isShowingAIContent: Bool {
+        self.viewModel.selectedTab.visualization != nil
+            || self.viewModel.selectedTab == .aiNotes
+            || self.viewModel.historicalFileSelection != nil
+    }
 
     var body: some View {
 
         VStack(spacing: 0) {
 
-            header()
-            controls()
-            messages()
-
-            if self.viewModel.isLoading {
-                DiffyLoadingState(title: "Loading Pull Request & Discussions…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.viewModel.details != nil {
-
-                if self.viewModel.showsConversation {
-                    PullRequestConversationView(viewModel: self.viewModel)
-                } else {
-                    PullRequestFilesView(viewModel: self.viewModel)
-                }
-
-            } else {
-                DiffyEmptyState(symbol: "arrow.triangle.pull", title: "Review On GitHub", message: "Choose a connected account and refresh to load this pull request.")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            PullRequestReviewHeaderView(viewModel: self.viewModel, aiWorkspace: self.aiWorkspace) {
+                self.workspace.closePullRequest()
             }
+            PullRequestReviewNavigationView(
+                viewModel: self.viewModel,
+                aiWorkspace: self.aiWorkspace,
+                notesCount: self.matchingNotes.count
+            )
+            messages()
+            if self.viewModel.showsNotes {
+                PullRequestReviewNotesView(
+                    viewModel: self.viewModel,
+                    aiWorkspace: self.aiWorkspace,
+                    notes: self.matchingNotes
+                )
+            }
+            content()
 
         }
-        .frame(minWidth: 720, idealWidth: 1440, maxWidth: .infinity, minHeight: 480, idealHeight: 900, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(self.theme.background)
-        .background(ComparisonModalSizingView())
-        .interactiveDismissDisabled(self.viewModel.hasDrafts || self.viewModel.isSubmitting)
-        .task { await self.viewModel.load() }
+        .task { await self.viewModel.loadIfNeeded() }
+        .task { await self.aiWorkspace.loadHistory() }
+        .task { syncAnnotations() }
+        .onChange(of: self.review.annotations) { _, _ in syncAnnotations() }
+        .onChange(of: self.viewModel.noteSource) { _, _ in syncAnnotations() }
+        .onChange(of: self.aiWorkspace.requestedVisualization) { _, requested in
+
+            guard let requested else { return }
+            self.viewModel.selectedTab = tab(for: requested)
+            self.aiWorkspace.consumeRequestedVisualization()
+
+        }
+        .onChange(of: self.aiWorkspace.proposedFixEntry?.id) { _, proposedID in
+            if proposedID != nil && self.aiWorkspace.isAddressingNotes { self.viewModel.selectedTab = .aiNotes }
+        }
+        .onChange(of: self.patchReview.notice) { _, notice in
+            if notice != nil { Task { await self.workspace.repositoryViewModel.refresh() } }
+        }
         .sheet(isPresented: self.$viewModel.showsReviewComposer) {
             PullRequestSubmitReviewView(viewModel: self.viewModel).diffyStyle()
         }
         .sheet(item: self.$viewModel.commentEditor) { draft in
             PullRequestCommentEditor(draft: draft, save: self.viewModel.saveComment).diffyStyle()
         }
-        .confirmationDialog("Discard Unpublished Comments & Close?", isPresented: self.$viewModel.showsDiscardConfirmation, titleVisibility: .visible) {
+        .sheet(item: self.$viewModel.noteDraft) { draft in
 
-            Button("Discard & Close", role: .destructive) { self.dismiss() }
-            Button("Keep Reviewing", role: .cancel) {}
+            PullRequestNoteEditor(draft: draft) { comment in
+                self.review.add(self.viewModel.annotation(from: draft, comment: comment))
+                self.viewModel.noteDraft = nil
+            }
+            .diffyStyle()
 
-        } message: {
-            Text("Draft comments are kept in this review page until you submit them. Closing will discard them.")
         }
         .confirmationDialog("Discard Drafts & Refresh?", isPresented: self.$viewModel.showsReloadConfirmation, titleVisibility: .visible) {
 
@@ -66,100 +93,14 @@ struct PullRequestReviewScreen: View {
 
     }
 
-    private func header() -> some View {
-
-        HStack(alignment: .center, spacing: 20) {
-
-            VStack(alignment: .leading, spacing: 7) {
-
-                Text("\(self.viewModel.request.link.fullName) · #\(self.viewModel.request.number)")
-                    .font(.system(size: 12)).foregroundStyle(self.theme.secondaryText)
-                Text(self.viewModel.details?.summary.title ?? self.viewModel.request.title)
-                    .font(.system(size: 22, weight: .semibold)).lineLimit(2).textSelection(.enabled)
-                if let summary = self.viewModel.details?.summary {
-
-                    HStack(spacing: 10) {
-
-                        DiffyBadge(title: summary.statusTitle, color: self.theme.accent)
-                        GitHubAvatar(user: summary.author, size: 18)
-                        Text("\(summary.author.login) · \(summary.headRef) → \(summary.baseRef)")
-                            .font(.system(size: 11)).foregroundStyle(self.theme.secondaryText).lineLimit(1)
-
-                    }
-                    PullRequestPeopleSummary(
-                        assignees: summary.assignees,
-                        requestedReviewers: summary.requestedReviewers,
-                        avatarSize: 18
-                    )
-
-                }
-
-            }
-            Spacer(minLength: 8)
-            Link(destination: self.viewModel.request.webURL) { Label("Open In GitHub", systemImage: "arrow.up.right") }
-            Button("Close") {
-
-                if self.viewModel.hasDrafts { self.viewModel.showsDiscardConfirmation = true }
-                else { self.dismiss() }
-
-            }
-            .keyboardShortcut(.cancelAction)
-            .disabled(self.viewModel.isSubmitting)
-
-        }
-        .padding(24)
-        .background(self.theme.surface)
-
-    }
-
-    private func controls() -> some View {
-
-        HStack(spacing: 16) {
-
-            Picker("Review Tab", selection: self.$viewModel.showsConversation) {
-
-                Text("Files Changed (\(self.viewModel.details?.changedFileCount ?? 0))").tag(false)
-                Text("Conversation").tag(true)
-
-            }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 340)
-            Spacer(minLength: 0)
-            Picker("Review As", selection: self.$viewModel.selectedAccountID) {
-                ForEach(self.viewModel.accounts) { Text($0.handle).tag($0.id) }
-            }
-            .frame(maxWidth: 230)
-            .disabled(self.viewModel.isBusy || self.viewModel.hasDrafts)
-            .onChange(of: self.viewModel.selectedAccountID) { _, _ in
-                Task { await self.viewModel.changeAccount() }
-            }
-            Button {
-
-                if self.viewModel.hasDrafts { self.viewModel.showsReloadConfirmation = true }
-                else { Task { await self.viewModel.load() } }
-
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .help("Refresh Pull Request")
-            .disabled(self.viewModel.isBusy)
-            Button("Review Changes\(self.viewModel.drafts.isEmpty ? "" : " (\(self.viewModel.drafts.count))")") {
-                self.viewModel.showsReviewComposer = true
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!self.viewModel.canReview)
-
-        }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 14)
-        .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
-
-    }
-
     private func messages() -> some View {
 
         VStack(spacing: 8) {
 
+            if self.aiWorkspace.isBusy {
+                DiffyLoadingState(title: self.aiWorkspace.requestProgress ?? "Preparing AI Request…")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             if let error = self.viewModel.errorMessage {
                 DiffyStatusBanner(message: error, isError: true)
             }
@@ -172,10 +113,97 @@ struct PullRequestReviewScreen: View {
             if let details = self.viewModel.details, !details.hasAllFiles {
                 DiffyStatusBanner(message: "GitHub returned \(details.files.count) of \(details.changedFileCount) files. Open GitHub to inspect the remaining files.")
             }
+            if let details = self.viewModel.details, !details.hasAllCommits {
+                DiffyStatusBanner(message: "GitHub returned \(details.commits.count) of \(details.commitCount) commits. Open GitHub to inspect the remaining commits.")
+            }
 
         }
         .padding(.horizontal, 24)
 
     }
 
+    private func syncAnnotations() {
+        self.aiWorkspace.updateAnnotations(self.matchingNotes)
+    }
+
+    @ViewBuilder
+    private func content() -> some View {
+
+        if self.viewModel.isLoading && self.viewModel.details == nil && !self.isShowingAIContent {
+            DiffyLoadingState(title: "Loading Pull Request & Discussions…")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if self.viewModel.details == nil
+                    && !self.isShowingAIContent
+                    && (self.aiWorkspace.hasAnyGeneration || !self.aiWorkspace.noteFixes.isEmpty) {
+            DiffyEmptyState(
+                symbol: "wifi.slash",
+                title: "Current Pull Request Unavailable",
+                message: "Saved AI analyses remain available in the navigation bar. Refresh to load the current files and discussion."
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if self.viewModel.details != nil || self.aiWorkspace.hasAnyGeneration || !self.aiWorkspace.noteFixes.isEmpty {
+
+            switch self.viewModel.selectedTab {
+
+            case .conversation:
+                PullRequestConversationView(viewModel: self.viewModel)
+
+            case .commits:
+                PullRequestCommitsView(viewModel: self.viewModel)
+
+            case .filesChanged:
+                if let selection = self.viewModel.historicalFileSelection {
+                    PullRequestHistoricalFileView(selection: selection, close: self.viewModel.closeHistoricalFile)
+                } else {
+                    PullRequestFilesView(viewModel: self.viewModel)
+                }
+
+            case .learningPath, .architectureMap, .riskMap:
+                if let visualization = self.viewModel.selectedTab.visualization {
+                    AIReviewWorkspaceView(
+                        viewModel: self.aiWorkspace,
+                        visualization: visualization,
+                        onOpenFile: self.viewModel.openAnalyzedFile
+                    )
+                }
+
+            case .aiNotes:
+                aiNotesContent()
+
+            }
+
+        } else {
+            DiffyEmptyState(symbol: "arrow.triangle.pull", title: "Review On GitHub", message: "Choose a connected account and refresh to load this pull request.")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+
+    }
+
+    private func tab(for visualization: AIVisualization) -> PullRequestReviewTab {
+
+        switch visualization {
+        case .learningPath: .learningPath
+        case .architectureMap: .architectureMap
+        case .riskMap: .riskMap
+        }
+
+    }
+
+    private func aiNotesContent() -> some View {
+
+        AINoteFixView(
+            viewModel: self.aiWorkspace,
+            canApply: self.aiWorkspace.proposedFixEntry.map {
+                self.patchReview.canApply(entry: $0, current: self.viewModel.details)
+            } ?? false,
+            isApplying: self.patchReview.isApplying,
+            applyError: self.patchReview.errorMessage,
+            applyNotice: self.patchReview.notice,
+            onApply: { entry in
+                Task { await self.patchReview.apply(entry: entry, current: self.viewModel.details) }
+            },
+            onOpenFile: self.viewModel.openNoteFixFile
+        )
+
+    }
 }
