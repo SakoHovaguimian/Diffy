@@ -1,6 +1,7 @@
 import Foundation
 
 enum SourceSide: String, Codable, CaseIterable, Identifiable {
+
     case left = "Left"
     case right = "Right"
     case base = "Base"
@@ -9,4 +10,5 @@ enum SourceSide: String, Codable, CaseIterable, Identifiable {
     case result = "Result"
 
     var id: String { self.rawValue }
+
 }

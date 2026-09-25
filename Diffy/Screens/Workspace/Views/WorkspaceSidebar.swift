@@ -191,8 +191,10 @@ struct WorkspaceSidebar: View {
             .background {
 
                 if self.bucketDropTargetID == bucket.id {
+
                     RoundedRectangle(cornerRadius: 7)
                         .fill(self.theme.accent.opacity(0.14))
+
                 }
 
             }
@@ -205,11 +207,13 @@ struct WorkspaceSidebar: View {
                 }
 
                 withAnimation(.easeInOut(duration: 0.2)) {
+
                     _ = self.viewModel.reorderBucket(
                         draggedID,
                         relativeTo: bucket.id,
                         placeAfter: location.y >= self.bucketHeaderHeight / 2
                     )
+
                 }
 
                 self.bucketDropTargetID = nil
@@ -228,8 +232,10 @@ struct WorkspaceSidebar: View {
             if bucket.isExpanded {
 
                 ForEach(projects) { project in
+
                     projectRow(project)
                         .transition(.opacity.combined(with: .move(edge: .top)))
+
                 }
 
                 addProjectButton(in: bucket, color: color)
@@ -465,12 +471,14 @@ struct WorkspaceSidebar: View {
             Button {
                 self.viewModel.addBucket()
             } label: {
+
                 Label("New Bucket", systemImage: "plus")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 13)
                     .padding(.vertical, 9)
                     .background(self.theme.accent, in: RoundedRectangle(cornerRadius: 8))
+
             }
             .buttonStyle(.plain)
             .help("Create a new Bucket")

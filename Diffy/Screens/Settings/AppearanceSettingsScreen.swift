@@ -53,6 +53,7 @@ struct AppearanceSettingsScreen: View {
 
                             Circle().fill(Color(hex: hex)).frame(width: 25, height: 25)
                                 .overlay {
+
                                     if self.viewModel.appearance.accentHex == hex {
 
                                         Image(systemName: "checkmark")
@@ -61,6 +62,7 @@ struct AppearanceSettingsScreen: View {
                                             .transition(.scale.animation(.bouncy))
 
                                     }
+
                                 }
 
                         }

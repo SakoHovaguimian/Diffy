@@ -1,6 +1,7 @@
 import Foundation
 
 struct LocalProjectRecord: Codable, Identifiable {
+
     let id: String
     let directoryPath: String
     let bucketID: String
@@ -24,4 +25,5 @@ struct LocalProjectRecord: Codable, Identifiable {
         )
 
     }
+
 }

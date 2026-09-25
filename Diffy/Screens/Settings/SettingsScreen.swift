@@ -37,7 +37,7 @@ struct SettingsScreen: View {
             Section("Typography") {
 
                 Picker("Font family", selection: self.$viewModel.editor.fontName) {
-                    ForEach(["SF Mono", "Menlo", "Monaco", "Courier"], id: \.self) { Text($0).tag($0) }
+                    ForEach(["SF Mono", "Geist Mono", "Menlo", "Monaco", "Courier"], id: \.self) { Text($0).tag($0) }
                 }
 
                 Slider(value: self.$viewModel.editor.fontSize, in: 9...20, step: 1) {

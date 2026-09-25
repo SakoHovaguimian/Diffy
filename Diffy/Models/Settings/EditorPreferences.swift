@@ -1,6 +1,7 @@
 import Foundation
 
 struct EditorPreferences: Codable, Equatable {
+
     var fontName: String = "SF Mono"
     var fontSize: Double = 12
     var lineHeight: Double = 25
@@ -15,4 +16,5 @@ struct EditorPreferences: Codable, Equatable {
     var ignoreComments: Bool = false
     var highlightLevel: String = "Word"
     var contextLines: Int = 3
+
 }

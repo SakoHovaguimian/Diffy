@@ -103,8 +103,10 @@ final class WorkspaceViewModel: ViewModel {
     func selectMode(_ mode: ComparisonMode) {
 
         guard self.project.directoryPath == nil else {
+
             self.showsDashboard = true
             return
+
         }
 
         self.mode = mode

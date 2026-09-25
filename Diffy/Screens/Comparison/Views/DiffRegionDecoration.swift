@@ -35,13 +35,17 @@ struct DiffRegionDecoration: View {
             if self.framesCurrentRegion {
 
                 if self.region.status != .added {
+
                     regionFrame(width: leftWidth, height: size.height, innerEdge: .trailing)
                         .position(x: leftWidth / 2, y: size.height / 2)
+
                 }
 
                 if self.region.status != .removed {
+
                     regionFrame(width: rightWidth, height: size.height, innerEdge: .leading)
                         .position(x: rightOrigin + rightWidth / 2, y: size.height / 2)
+
                 }
 
             }

@@ -165,8 +165,10 @@ struct MergeScreen: View {
             .font(.system(size: 10))
 
             ViewThatFits(in: .horizontal) {
+
                 decisions(horizontal: true)
                 decisions(horizontal: false)
+
             }
 
             TextEditor(text: Binding(get: { self.viewModel.result }, set: { self.viewModel.editResult($0) }))

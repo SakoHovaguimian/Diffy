@@ -1,14 +1,18 @@
 import SwiftUI
 
 struct WorkspaceFocusedKey: FocusedValueKey {
+
     typealias Value = WorkspaceViewModel
+
 }
 
 extension FocusedValues {
 
     var workspace: WorkspaceViewModel? {
+
         get { self[WorkspaceFocusedKey.self] }
         set { self[WorkspaceFocusedKey.self] = newValue }
+
     }
 
 }

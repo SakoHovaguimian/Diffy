@@ -1,6 +1,7 @@
 import Foundation
 
 struct DiffRegion: Identifiable {
+
     let id: Int
     let lines: [DiffLine]
     let isChanged: Bool
@@ -16,4 +17,5 @@ struct DiffRegion: Identifiable {
     var updatedCount: Int {
         self.lines.filter { $0.right != nil }.count
     }
+
 }

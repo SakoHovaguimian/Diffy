@@ -158,11 +158,13 @@ struct WorkspaceScreen: View {
             } else if self.viewModel.mode == .workingTree {
                 ComparisonScreen(workspace: self.viewModel)
             } else {
+
                 RoundedRectangle(cornerRadius: 12)
                     .fill(self.theme.added.opacity(0.28))
                     .padding(24)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(self.theme.background)
+
             }
 
         }
@@ -175,9 +177,11 @@ struct WorkspaceScreen: View {
         ToolbarItem(placement: .navigation) {
 
             Button {
+
                 withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.26)) {
                     self.viewModel.showsSidebar.toggle()
                 }
+
             } label: {
                 Image(systemName: "sidebar.left")
             }
@@ -209,9 +213,11 @@ struct WorkspaceScreen: View {
             .help("Command palette · ⌘K")
 
             Button {
+
                 withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.26)) {
                     self.viewModel.showsReview.toggle()
                 }
+
             } label: {
                 Label("Review notes", systemImage: "text.bubble")
             }

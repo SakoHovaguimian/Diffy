@@ -1,6 +1,7 @@
 import Foundation
 
 enum ImageComparisonMode: String, CaseIterable, Identifiable {
+
     case sideBySide = "Side by side"
     case overlay = "Overlay"
     case slider = "Slider"
@@ -8,4 +9,5 @@ enum ImageComparisonMode: String, CaseIterable, Identifiable {
     case blink = "Blink"
 
     var id: String { self.rawValue }
+
 }

@@ -1,7 +1,9 @@
 import OSLog
 
 protocol Loggable {
+
     var loggerName: String { get }
+
 }
 
 extension Loggable {

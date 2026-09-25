@@ -1,6 +1,7 @@
 import Foundation
 
 struct RepositoryProject: Identifiable, Hashable {
+
     let id: String
     let name: String
     let subtitle: String
@@ -16,4 +17,5 @@ struct RepositoryProject: Identifiable, Hashable {
     var changeCount: Int {
         self.files.filter { $0.status != .identical }.count
     }
+
 }

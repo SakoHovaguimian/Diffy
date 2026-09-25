@@ -15,8 +15,10 @@ struct DiffToolbar: View {
     var body: some View {
 
         ViewThatFits(in: .horizontal) {
+
             controls(compact: false)
             controls(compact: true)
+
         }
         .padding(.horizontal, 10)
         .frame(height: 42)

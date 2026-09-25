@@ -75,6 +75,7 @@ struct WorkspaceHeader: View {
                         }
 
                     }
+                    // Both underline positions must share the same animation transaction.
                     .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.3), value: self.selectedTabID)
 
                 }
@@ -104,11 +105,15 @@ struct WorkspaceHeader: View {
                 .foregroundStyle(selected ? self.theme.accent : self.theme.secondaryText.opacity(available ? 1 : 0.65))
                 .padding(.bottom, 13)
                 .overlay(alignment: .bottom) {
+
                     if selected {
+
                         self.theme.accent
                             .frame(height: 2)
                             .matchedGeometryEffect(id: "selected-tab", in: self.tabSelection)
+
                     }
+
                 }
 
         }

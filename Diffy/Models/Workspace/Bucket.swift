@@ -1,6 +1,7 @@
 import Foundation
 
 struct Bucket: Identifiable, Codable, Hashable {
+
     let id: String
     var title: String
     var subtitle: String
@@ -21,4 +22,5 @@ struct Bucket: Identifiable, Codable, Hashable {
         self.cornerRadius = 10
 
     }
+
 }

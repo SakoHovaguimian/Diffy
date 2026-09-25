@@ -1,6 +1,7 @@
 import Foundation
 
 struct DiffLine: Identifiable, Hashable {
+
     let id: Int
     let oldNumber: Int?
     let newNumber: Int?
@@ -12,4 +13,5 @@ struct DiffLine: Identifiable, Hashable {
     var isChanged: Bool {
         self.status != .identical
     }
+
 }

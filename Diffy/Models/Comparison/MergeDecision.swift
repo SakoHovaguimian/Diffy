@@ -1,6 +1,7 @@
 import Foundation
 
 enum MergeDecision: String, CaseIterable, Identifiable {
+
     case unresolved = "Unresolved"
     case yours = "Yours"
     case theirs = "Theirs"
@@ -9,4 +10,5 @@ enum MergeDecision: String, CaseIterable, Identifiable {
     case edited = "Edited manually"
 
     var id: String { self.rawValue }
+
 }

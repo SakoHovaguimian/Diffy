@@ -1,6 +1,7 @@
 import Foundation
 
 struct AnnotationDraft: Identifiable {
+
     let id = UUID()
     let file: DiffFile
     let side: SourceSide
@@ -8,4 +9,5 @@ struct AnnotationDraft: Identifiable {
     let endLine: Int
     let snippet: String
     let source: String
+
 }

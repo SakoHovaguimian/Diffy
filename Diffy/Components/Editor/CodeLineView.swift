@@ -90,8 +90,10 @@ struct CodeLineView: View {
         .contextMenu {
 
             if self.number != nil {
+
                 Button("Annotate this line", action: self.annotate)
                 Button("Copy line") { ExportController.copy(self.source ?? "") }
+
             }
 
         }
@@ -106,13 +108,17 @@ struct CodeLineView: View {
         HStack(spacing: 4) {
 
             if self.annotated {
+
                 Image(systemName: "text.bubble.fill")
                     .foregroundStyle(self.theme.accent)
                     .font(.system(size: 8))
+
             } else {
+
                 Text(self.changeMarker)
                     .foregroundStyle(self.changeColor)
                     .font(.system(size: 10, design: .monospaced))
+
             }
 
             if self.settings.editor.showLineNumbers {

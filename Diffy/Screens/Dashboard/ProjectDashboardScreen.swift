@@ -8,9 +8,7 @@ struct ProjectDashboardScreen: View {
     var body: some View {
 
         if let directoryPath = self.workspace.project.directoryPath {
-
             localProjectOverview(directoryPath: directoryPath)
-
         } else {
 
             ScrollView {

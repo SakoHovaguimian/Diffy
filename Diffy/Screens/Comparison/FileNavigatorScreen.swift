@@ -197,9 +197,11 @@ struct FileNavigatorScreen: View {
                 .overlay(alignment: .leading) {
 
                     if self.workspace.selectedFileID == file.id {
+
                         RoundedRectangle(cornerRadius: 2)
                             .fill(self.theme.accent)
                             .frame(width: 3)
+
                     }
 
                 }

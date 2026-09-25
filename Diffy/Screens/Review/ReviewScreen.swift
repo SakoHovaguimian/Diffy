@@ -71,9 +71,7 @@ struct ReviewScreen: View {
                     LazyVStack(alignment: .leading, spacing: 12) {
 
                         ForEach(self.visibleProjectIDs, id: \.self) { projectID in
-
                             projectSection(projectID)
-
                         }
 
                     }
@@ -290,8 +288,10 @@ struct ReviewScreen: View {
         VStack(spacing: 10) {
 
             if self.review.canUndoDelete {
+
                 Button("Undo deleted note") { self.review.undoDelete() }
                     .font(.system(size: 10))
+
             }
 
             Button {

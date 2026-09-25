@@ -1,6 +1,7 @@
 import Foundation
 
 struct CodeAnnotation: Identifiable, Codable, Hashable {
+
     let id: UUID
     let projectID: String
     let projectName: String
@@ -16,4 +17,5 @@ struct CodeAnnotation: Identifiable, Codable, Hashable {
     var comment: String
     var isResolved: Bool
     var comparisonMode: String? = nil
+
 }

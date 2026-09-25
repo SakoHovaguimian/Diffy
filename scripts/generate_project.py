@@ -21,6 +21,7 @@ def quote(value):
 def generate():
     objects = []
     source_builds = []
+    resource_builds = []
 
     def add(key, body):
         objects.append(f'\t\t{identifier(key)} = {{ {body} }};')
@@ -32,7 +33,11 @@ def generate():
         for path in sorted(directory.iterdir(), key=lambda item: (item.is_file(), item.name)):
             relative = str(path.relative_to(ROOT))
 
-            if path.is_dir():
+            if path == APP / 'Resources' / 'Fonts':
+                reference = add(relative, f'isa = PBXFileReference; lastKnownFileType = folder; path = {quote(path.name)}; sourceTree = "<group>";')
+                children.append(reference)
+                resource_builds.append(add('build:' + relative, f'isa = PBXBuildFile; fileRef = {reference};'))
+            elif path.is_dir():
                 children.append(group(path))
             elif path.suffix in ('.swift', '.entitlements'):
                 kind = 'sourcecode.swift' if path.suffix == '.swift' else 'text.plist.entitlements'
@@ -49,7 +54,7 @@ def generate():
     products = add('products', f'isa = PBXGroup; children = ({product}); name = Products; sourceTree = "<group>";')
     main = add('main', f'isa = PBXGroup; children = ({app_group}, {products}); sourceTree = "<group>";')
     sources = add('sources', f'isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ({", ".join(source_builds)}); runOnlyForDeploymentPostprocessing = 0;')
-    resources = add('resources', 'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;')
+    resources = add('resources', f'isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ({", ".join(resource_builds)}); runOnlyForDeploymentPostprocessing = 0;')
     frameworks = add('frameworks', 'isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;')
 
     project_configs = []
@@ -69,6 +74,7 @@ def generate():
             'PRODUCT_BUNDLE_IDENTIFIER': 'com.diffy.app',
             'GENERATE_INFOPLIST_FILE': 'YES',
             'INFOPLIST_KEY_CFBundleDisplayName': 'Diffy',
+            'INFOPLIST_KEY_ATSApplicationFontsPath': 'Fonts/',
             'INFOPLIST_KEY_LSApplicationCategoryType': 'public.app-category.developer-tools',
             'CODE_SIGN_STYLE': 'Automatic',
             'CODE_SIGN_IDENTITY': '-',
