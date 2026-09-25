@@ -82,4 +82,23 @@ struct GitRepositorySnapshot: Codable, Hashable, Sendable {
         )
 
     }
+
+    func replacingBranches(_ branches: [RepositoryBranch]) -> GitRepositorySnapshot {
+
+        GitRepositorySnapshot(
+            location: self.location,
+            head: self.head,
+            upstream: self.upstream,
+            operation: self.operation,
+            changes: self.changes,
+            remotes: self.remotes,
+            branches: branches,
+            tags: self.tags,
+            recentCommits: self.recentCommits,
+            capturedAt: self.capturedAt,
+            referencesCapturedAt: Date(),
+            lastFetchAt: self.lastFetchAt
+        )
+
+    }
 }

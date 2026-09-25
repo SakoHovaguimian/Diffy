@@ -39,6 +39,9 @@ final class TextDiffViewModel: ViewModel {
 
         if !allowsEditing {
 
+            if self.preparedFileID != file.id || self.appliedLines != file.lines {
+                clearSelection()
+            }
             self.preparedFileID = file.id
             self.appliedText = file.updatedSource
             self.appliedLines = file.lines
@@ -275,7 +278,7 @@ final class TextDiffViewModel: ViewModel {
 
     }
 
-    func visibleLines(_ file: DiffFile, preferences: EditorPreferences) -> [DiffLine] {
+    func visibleLines(_ file: DiffFile, preferences: EditorPreferences, retaining retainedIDs: Set<Int> = []) -> [DiffLine] {
 
         let changedIDs = file.lines.filter(\.isChanged).map(\.id)
         let context = max(0, preferences.contextLines)
@@ -283,6 +286,7 @@ final class TextDiffViewModel: ViewModel {
 
         return file.lines.filter { line in
 
+            if retainedIDs.contains(line.id) { return true }
             if preferences.ignoreComments && (line.left ?? line.right ?? "").trimmingCharacters(in: .whitespaces).hasPrefix("//") {
                 return false
             }
@@ -299,16 +303,23 @@ final class TextDiffViewModel: ViewModel {
 
     }
 
-    func visibleRegions(_ file: DiffFile, preferences: EditorPreferences, limit: Int? = nil) -> [DiffRegion] {
+    func visibleRegions(
+        _ file: DiffFile,
+        preferences: EditorPreferences,
+        limit: Int? = nil,
+        retaining retainedIDs: Set<Int> = [],
+        splittingAtLineGaps: Bool = false
+    ) -> [DiffRegion] {
 
-        let visible = visibleLines(file, preferences: preferences)
+        let visible = visibleLines(file, preferences: preferences, retaining: retainedIDs)
         let lines = Array(visible.prefix(limit ?? visible.count))
         var regions: [DiffRegion] = []
         var currentLines: [DiffLine] = []
 
         for line in lines {
 
-            if let first = currentLines.first, first.status != line.status {
+            if let first = currentLines.first,
+               first.status != line.status || (splittingAtLineGaps && hasLineGap(after: currentLines.last, before: line)) {
 
                 regions.append(DiffRegion(id: first.id, lines: currentLines, isChanged: first.isChanged))
                 currentLines = []
@@ -324,6 +335,15 @@ final class TextDiffViewModel: ViewModel {
         }
 
         return regions
+
+    }
+
+    private func hasLineGap(after previous: DiffLine?, before current: DiffLine) -> Bool {
+
+        guard let previous else { return false }
+        if let old = current.oldNumber, let last = previous.oldNumber, old > last + 1 { return true }
+        if let new = current.newNumber, let last = previous.newNumber, new > last + 1 { return true }
+        return false
 
     }
 

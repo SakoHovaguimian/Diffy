@@ -5,6 +5,7 @@ struct TextDiffScreen: View {
 
     let file: DiffFile
     let presentation: TextDiffPresentation?
+    let reviewContext: TextDiffReviewContext?
     private let annotate: ((AnnotationDraft) -> Void)?
     private let navigateToLine: ((String) -> Void)?
     @ObservedObject var workspace: WorkspaceViewModel
@@ -20,16 +21,20 @@ struct TextDiffScreen: View {
     }
 
     private var usesSingleSourceLayout: Bool {
-        self.settings.editor.unified || self.comparisonFile.hasNoOriginalSource
+        self.isUnified || self.comparisonFile.hasNoOriginalSource
+    }
+
+    private var isUnified: Bool {
+        self.reviewContext?.layout.wrappedValue ?? self.settings.editor.unified
     }
 
     private var allowsEditing: Bool {
-        !self.workspace.runtime.isLive && self.presentation == nil
+        !self.workspace.runtime.isLive && self.presentation == nil && self.reviewContext == nil
     }
 
     private var pendingScrollLine: Int? {
 
-        guard self.presentation == nil else { return nil }
+        guard self.presentation == nil, self.reviewContext == nil else { return nil }
         return self.workspace.runtime.isLive ? self.workspace.repositoryViewModel.comparison.scrollTarget : self.workspace.pendingScrollLine
 
     }
@@ -43,6 +48,7 @@ struct TextDiffScreen: View {
         workspace: WorkspaceViewModel,
         viewModel: TextDiffViewModel,
         presentation: TextDiffPresentation? = nil,
+        reviewContext: TextDiffReviewContext? = nil,
         annotate: ((AnnotationDraft) -> Void)? = nil,
         navigateToLine: ((String) -> Void)? = nil
     ) {
@@ -51,6 +57,7 @@ struct TextDiffScreen: View {
         self.workspace = workspace
         self.viewModel = viewModel
         self.presentation = presentation
+        self.reviewContext = reviewContext
         self.annotate = annotate
         self.navigateToLine = navigateToLine
 
@@ -60,11 +67,11 @@ struct TextDiffScreen: View {
 
         VStack(spacing: 0) {
 
-            if self.presentation == nil {
+            if self.presentation == nil && self.reviewContext == nil {
                 fileHeader()
             }
 
-            DiffToolbar(viewModel: self.viewModel, file: self.file) {
+            DiffToolbar(viewModel: self.viewModel, file: self.file, reviewLayout: self.reviewContext?.layout) {
                 createAnnotation()
             }
 
@@ -76,7 +83,7 @@ struct TextDiffScreen: View {
 
             if self.settings.editor.collapseUnchanged, !self.viewModel.isEditing {
 
-                Button("Showing Changed Regions · Show Whole File") {
+                Button(self.reviewContext == nil ? "Showing Changed Regions · Show Whole File" : "Showing Changed Regions · Show All Patch Lines") {
                     self.settings.editor.collapseUnchanged = false
                 }
                 .font(self.contentSize.font(size: 10))
@@ -150,11 +157,11 @@ struct TextDiffScreen: View {
                     sourceLabel(
                         leftSourceTitle(),
                         detail: leftSourceDetail(),
-                        dot: self.viewModel.isEditing && self.settings.editor.unified ? self.theme.added : self.theme.removed
+                        dot: self.viewModel.isEditing && self.isUnified ? self.theme.added : self.theme.removed
                     )
-                        .frame(width: self.settings.editor.unified ? geometry.size.width : contentWidth * self.viewModel.paneRatio)
+                        .frame(width: self.isUnified ? geometry.size.width : contentWidth * self.viewModel.paneRatio)
 
-                    if !self.settings.editor.unified {
+                    if !self.isUnified {
 
                         self.theme.background.frame(width: self.gutterWidth)
                         sourceLabel(self.viewModel.isEditing ? "Editing Updated Source" : "Updated", detail: rightLabel(), dot: self.theme.added)
@@ -191,6 +198,7 @@ struct TextDiffScreen: View {
 
     private func leftLabel() -> String {
 
+        if let reviewContext { return reviewContext.leftLabel }
         if let presentation { return presentation.selection.left.displayLabel }
 
         if self.workspace.runtime.isLive {
@@ -207,7 +215,7 @@ struct TextDiffScreen: View {
 
     private func leftSourceTitle() -> String {
 
-        if self.settings.editor.unified {
+        if self.isUnified {
             return self.viewModel.isEditing ? "Editing Updated Source" : "Unified Comparison"
         }
 
@@ -216,11 +224,18 @@ struct TextDiffScreen: View {
     }
 
     private func leftSourceDetail() -> String {
-        self.viewModel.isEditing && self.settings.editor.unified ? rightLabel() : leftLabel()
+
+        if self.reviewContext != nil && self.isUnified {
+            return "\(leftLabel()) → \(rightLabel())"
+        }
+
+        return self.viewModel.isEditing && self.isUnified ? rightLabel() : leftLabel()
+
     }
 
     private func rightLabel() -> String {
 
+        if let reviewContext { return reviewContext.rightLabel }
         if let presentation { return presentation.selection.right.displayLabel }
 
         if self.workspace.runtime.isLive {
@@ -358,15 +373,27 @@ struct TextDiffScreen: View {
     @ViewBuilder
     private func codeCanvas() -> some View {
 
-        let regions = self.viewModel.visibleRegions(self.comparisonFile, preferences: self.settings.editor)
+        let regions = self.viewModel.visibleRegions(
+            self.comparisonFile,
+            preferences: self.settings.editor,
+            retaining: self.reviewContext?.visibleDiscussionLineIDs ?? [],
+            splittingAtLineGaps: self.reviewContext != nil
+        )
 
         if regions.isEmpty {
 
-            DiffyEmptyState(
-                symbol: "checkmark.circle",
-                title: "No Visible Differences",
-                message: "No lines match the current display options. Choose File to show the entire source."
-            )
+            VStack(spacing: 0) {
+
+                DiffyEmptyState(
+                    symbol: "checkmark.circle",
+                    title: "No Visible Differences",
+                    message: self.reviewContext == nil
+                        ? "No lines match the current display options. Choose File to show the entire source."
+                        : "No lines match the current display options. Choose Patch to show all lines GitHub provided."
+                )
+                self.reviewContext?.fileDiscussion()
+
+            }
 
         } else {
 
@@ -381,8 +408,15 @@ struct TextDiffScreen: View {
                         LazyVStack(spacing: 0) {
 
                             ForEach(regions) { region in
+                                if showsPatchGap(before: region) {
+                                    Text("⋯ Unchanged Lines Omitted ⋯")
+                                        .font(self.contentSize.font(size: 11, design: .monospaced))
+                                        .foregroundStyle(self.theme.secondaryText)
+                                        .padding(self.contentSize.scaled(10))
+                                }
                                 diffRegion(region, width: width)
                             }
+                            self.reviewContext?.fileDiscussion()
 
                         }
                         .frame(width: width, alignment: .topLeading)
@@ -535,12 +569,16 @@ struct TextDiffScreen: View {
             ForEach(region.lines) { line in
                 codeRow(line, width: width)
                     .id(self.presentation.map { AnyHashable($0.lineAnchor(fileID: self.file.id, lineID: line.id)) } ?? AnyHashable(line.id))
+                if self.reviewContext?.visibleDiscussionLineIDs.contains(line.id) == true {
+                    self.reviewContext?.lineDiscussion(line)
+                }
             }
 
         }
         .overlay {
 
-            if region.isChanged && !self.usesSingleSourceLayout {
+            if region.isChanged && !self.usesSingleSourceLayout
+                && region.lines.allSatisfy({ !(self.reviewContext?.visibleDiscussionLineIDs.contains($0.id) ?? false) }) {
 
                 DiffRegionDecoration(
                     region: region,
@@ -554,6 +592,20 @@ struct TextDiffScreen: View {
             }
 
         }
+
+    }
+
+    private func showsPatchGap(before region: DiffRegion) -> Bool {
+
+        guard self.reviewContext != nil,
+              let current = region.lines.first,
+              current.id > 0,
+              self.comparisonFile.lines.indices.contains(current.id - 1) else { return false }
+
+        let previous = self.comparisonFile.lines[current.id - 1]
+        if let old = current.oldNumber, let last = previous.oldNumber, old > last + 1 { return true }
+        if let new = current.newNumber, let last = previous.newNumber, new > last + 1 { return true }
+        return false
 
     }
 
@@ -641,10 +693,28 @@ struct TextDiffScreen: View {
             annotate: {
 
                 self.viewModel.select(line, side: side, extends: false)
-                createAnnotation()
+                if let reviewContext = self.reviewContext {
+                    reviewContext.note(line, side)
+                } else {
+                    createAnnotation()
+                }
 
+            },
+            comment: commentAction(for: line, side: side),
+            reviewNote: self.reviewContext == nil || (side == .left ? line.oldNumber : line.newNumber) == nil ? nil : {
+                self.reviewContext?.note(line, side)
             }
         )
+
+    }
+
+    private func commentAction(for line: DiffLine, side: SourceSide) -> (() -> Void)? {
+
+        guard let reviewContext = self.reviewContext,
+              reviewContext.canComment,
+              (side == .left ? line.oldNumber : line.newNumber) != nil else { return nil }
+
+        return { reviewContext.comment(line, side) }
 
     }
 
@@ -669,7 +739,8 @@ struct TextDiffScreen: View {
         }
 
         let maximum = self.comparisonFile.lines.map { max($0.left?.count ?? 0, $0.right?.count ?? 0) }.max() ?? 60
-        let sourceWidth = CGFloat(maximum) * self.contentSize.scaled(self.settings.editor.fontSize) * 0.61 + self.contentSize.scaled(86)
+        let reviewGutter: CGFloat = self.reviewContext == nil ? 0 : 44
+        let sourceWidth = CGFloat(maximum) * self.contentSize.scaled(self.settings.editor.fontSize) * 0.61 + self.contentSize.scaled(86 + reviewGutter)
 
         return max(available, sourceWidth * (self.usesSingleSourceLayout ? 1 : 2) + (self.usesSingleSourceLayout ? 0 : self.gutterWidth))
 
@@ -677,6 +748,7 @@ struct TextDiffScreen: View {
 
     private func hasAnnotation(_ line: DiffLine, side: SourceSide) -> Bool {
 
+        if let reviewContext { return reviewContext.hasAnnotation(line, side) }
         guard let number = side == .left ? line.oldNumber : line.newNumber else {
             return false
         }
@@ -688,6 +760,14 @@ struct TextDiffScreen: View {
     }
 
     private func createAnnotation() {
+
+        if let reviewContext,
+           let selectedID = self.viewModel.selectionEnd,
+           let line = self.comparisonFile.lines.first(where: { $0.id == selectedID }) {
+            reviewContext.note(line, self.viewModel.selectedSide)
+            return
+        }
+
         let comparison = self.presentation?.selection.title ?? self.workspace.comparisonTitle
         guard var draft = self.viewModel.draft(
             file: self.comparisonFile,
@@ -751,7 +831,7 @@ struct TextDiffScreen: View {
             return "New File"
         }
 
-        return self.settings.editor.unified ? "Unified" : "Synchronized Scrolling"
+        return self.isUnified ? "Unified" : "Synchronized Scrolling"
 
     }
 

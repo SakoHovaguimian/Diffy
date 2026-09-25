@@ -32,8 +32,8 @@ struct MockGitHubService: GitHubServiceProtocol {
         AssignedPullRequestListing(requests: [], hasMore: false)
     }
 
-    func unmergedPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, validators: GitHubResourceValidators) async throws -> GitHubFetchResult<[PullRequestSummary]> {
-        GitHubFetchResult(value: [], validators: .none)
+    func unmergedPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, page: Int) async throws -> PullRequestPage {
+        PullRequestPage(pullRequests: [], hasMore: false)
     }
 
     func pullRequest(number: Int, link: GitHubRepositoryLink, account: GitHubAccount) async throws -> PullRequestSummary {
@@ -46,6 +46,16 @@ struct MockGitHubService: GitHubServiceProtocol {
 
     func reviewDetails(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> PullRequestReviewDetails {
         throw GitHubError.reviewUnavailable("GitHub reviews are available in Diffy Live.")
+    }
+
+    func completeReviewFiles(
+        for request: PullRequestReviewRequest,
+        account: GitHubAccount,
+        files: [PullRequestReviewFile],
+        baseSHA: String,
+        headSHA: String
+    ) async throws -> [AIFileSnapshot] {
+        throw GitHubError.reviewUnavailable("Complete pull request diffs are available in Diffy Live.")
     }
 
     func reviewConversation(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> [PullRequestConversationEntry] {

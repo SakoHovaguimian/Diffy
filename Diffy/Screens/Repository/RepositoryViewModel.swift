@@ -24,6 +24,7 @@ final class RepositoryViewModel: ViewModel {
     @Published private(set) var snapshot: GitRepositorySnapshot?
     @Published private(set) var unstagedLineCounts: DiffLineCounts?
     @Published private(set) var isRefreshing = false
+    @Published private(set) var isLoadingMoreBranches = false
     @Published private(set) var isOperating = false
     @Published private(set) var operationTitle = ""
     @Published var errorMessage: String?
@@ -77,6 +78,7 @@ final class RepositoryViewModel: ViewModel {
     @Published var pullRequestCheckFilter: PullRequestCheckFilter = .any
     @Published var selectedAccountID = ""
     @Published var isLoadingPullRequests = false
+    @Published var isLoadingMorePullRequests = false
     @Published var isLoadingPullRequestMetadata = false
     @Published var pullRequestError: String?
     @Published var leftFolder: URL?
@@ -184,6 +186,8 @@ final class RepositoryViewModel: ViewModel {
         self.isLoadingHistoryFiles = false
         self.isLoadingCommits = false
         self.isLoadingPullRequests = false
+        self.isLoadingMorePullRequests = false
+        self.isLoadingMoreBranches = false
         self.isLoadingPullRequestMetadata = false
         self.isLoadingPatch = false
         self.isLoadingBranchReview = false
@@ -218,10 +222,11 @@ final class RepositoryViewModel: ViewModel {
 
         do {
 
-            let snapshot = try await self.git.snapshot(of: reference, scope: .full, previous: self.snapshot)
+            let snapshot = try await self.git.snapshot(of: reference, scope: .initial, previous: self.snapshot)
             try Task.checkCancellation()
             guard self.refreshID == request else { return }
             self.snapshot = snapshot
+            self.isLoadingMoreBranches = self.runtime.isLive
             self.unstagedLineCounts = snapshot.unstagedChanges.isEmpty ? DiffLineCounts(additions: 0, deletions: 0) : nil
             if !snapshot.unstagedChanges.isEmpty, snapshot.unstagedChanges.filter(\.isUntracked).count <= 100 {
                 Task { [git] in
@@ -231,12 +236,8 @@ final class RepositoryViewModel: ViewModel {
                 }
             }
             self.selectedRemote = snapshot.remotes.contains { $0.name == self.selectedRemote } ? self.selectedRemote : snapshot.remotes.first?.name ?? ""
-            self.branchBase = snapshot.localBranches.contains { $0.name == self.branchBase } ? self.branchBase : snapshot.localBranches.first(where: { !$0.isCurrent })?.name ?? snapshot.head.branchName ?? ""
-            self.branchTarget = snapshot.head.branchName ?? "HEAD"
+            self.updateBranchSelections(using: snapshot, preservesUnloaded: self.isLoadingMoreBranches)
             let defaultBranch = snapshot.head.branchName ?? (snapshot.head.commitID == nil ? "" : "HEAD")
-            let branchNames = Set(snapshot.branches.map(\.name))
-            self.historyBranch = branchNames.contains(self.historyBranch) ? self.historyBranch : defaultBranch
-            self.commitsBranch = branchNames.contains(self.commitsBranch) ? self.commitsBranch : defaultBranch
             if self.commitsBranch == defaultBranch {
                 self.branchCommits = snapshot.recentCommits
             }
@@ -246,6 +247,10 @@ final class RepositoryViewModel: ViewModel {
                 inspectChanges(path: nil)
             }
 
+            if self.isLoadingMoreBranches {
+                Task { await self.loadRemainingBranches(in: reference, requestID: request) }
+            }
+
         } catch is CancellationError {
             return
         } catch {
@@ -253,6 +258,48 @@ final class RepositoryViewModel: ViewModel {
             guard self.refreshID == request else { return }
             self.errorMessage = error.localizedDescription
 
+        }
+
+    }
+
+    private func loadRemainingBranches(in reference: GitRepositoryReference, requestID: UUID) async {
+
+        do {
+
+            let branches = try await self.git.branches(in: reference)
+            guard self.reference == reference, self.refreshID == requestID else { return }
+            if let snapshot = self.snapshot {
+                let updated = snapshot.replacingBranches(branches)
+                self.snapshot = updated
+                self.updateBranchSelections(using: updated, preservesUnloaded: false)
+            }
+            self.isLoadingMoreBranches = false
+
+        } catch {
+
+            guard self.reference == reference, self.refreshID == requestID else { return }
+            self.isLoadingMoreBranches = false
+            self.errorMessage = "Could not load the remaining branches: \(error.localizedDescription)"
+
+        }
+
+    }
+
+    private func updateBranchSelections(using snapshot: GitRepositorySnapshot, preservesUnloaded: Bool) {
+
+        let branchNames = Set(snapshot.branches.map(\.name))
+        let defaultBranch = snapshot.head.branchName ?? (snapshot.head.commitID == nil ? "" : "HEAD")
+        if !preservesUnloaded || self.branchBase.isEmpty {
+            self.branchBase = snapshot.localBranches.contains { $0.name == self.branchBase }
+                ? self.branchBase
+                : snapshot.localBranches.first(where: { !$0.isCurrent })?.name ?? snapshot.head.branchName ?? ""
+        }
+        self.branchTarget = snapshot.head.branchName ?? "HEAD"
+        if !preservesUnloaded || self.historyBranch.isEmpty {
+            self.historyBranch = branchNames.contains(self.historyBranch) ? self.historyBranch : defaultBranch
+        }
+        if !preservesUnloaded || self.commitsBranch.isEmpty {
+            self.commitsBranch = branchNames.contains(self.commitsBranch) ? self.commitsBranch : defaultBranch
         }
 
     }

@@ -155,7 +155,7 @@ struct PullRequestReviewScreen: View {
                 if let selection = self.viewModel.historicalFileSelection {
                     PullRequestHistoricalFileView(selection: selection, close: self.viewModel.closeHistoricalFile)
                 } else {
-                    PullRequestFilesView(viewModel: self.viewModel)
+                    PullRequestFilesView(viewModel: self.viewModel, workspace: self.workspace)
                 }
 
             case .learningPath, .architectureMap, .riskMap:

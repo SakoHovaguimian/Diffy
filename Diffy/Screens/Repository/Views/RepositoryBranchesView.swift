@@ -12,6 +12,9 @@ struct RepositoryBranchesView: View {
             VStack(alignment: .leading, spacing: 26) {
 
                 DiffyPageHeading(eyebrow: "Branches & Tags", title: "See Where The Work Goes.", detail: "Compare without checking out. Switch branches when you're ready to move your working tree.")
+                if self.viewModel.isLoadingMoreBranches {
+                    DiffyLoadingState(title: "Loading More Branches…")
+                }
                 comparisonPicker()
                 HStack {
 

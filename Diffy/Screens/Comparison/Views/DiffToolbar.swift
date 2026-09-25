@@ -4,13 +4,14 @@ struct DiffToolbar: View {
 
     @ObservedObject var viewModel: TextDiffViewModel
     let file: DiffFile
+    var reviewLayout: Binding<Bool>? = nil
     let annotate: () -> Void
     @EnvironmentObject private var settings: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.diffyContentSize) private var contentSize
 
     private var layoutSelection: Binding<Bool> {
-        self.file.hasNoOriginalSource ? .constant(true) : self.$settings.editor.unified
+        self.file.hasNoOriginalSource ? .constant(true) : (self.reviewLayout ?? self.$settings.editor.unified)
     }
 
     private var contentSelection: Binding<Bool> {
@@ -43,7 +44,7 @@ struct DiffToolbar: View {
             Picker("Visible Content", selection: self.contentSelection) {
 
                 Text("Changes").tag(true)
-                Text("File").tag(false)
+                Text(self.reviewLayout == nil ? "File" : "Patch").tag(false)
 
             }
             .labelsHidden()
@@ -51,7 +52,9 @@ struct DiffToolbar: View {
             .frame(width: self.contentSize.scaled(compact ? 108 : 132))
             .controlSize(.small)
             .disabled(self.viewModel.isEditing)
-            .help(self.viewModel.isEditing ? "Apply Or Discard The Current Draft To Change Visible Content" : "Show Changed Regions Or The Whole File")
+            .help(self.viewModel.isEditing
+                ? "Apply Or Discard The Current Draft To Change Visible Content"
+                : (self.reviewLayout == nil ? "Show Changed Regions Or The Whole File" : "Show Changed Regions Or All Lines In The GitHub Patch"))
 
             actionControls(compact: compact)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -123,7 +126,7 @@ struct DiffToolbar: View {
                     Divider()
                     Button("Previous Change") { self.viewModel.navigate(-1, file: self.comparisonFile) }
                     Button("Next Change") { self.viewModel.navigate(1, file: self.comparisonFile) }
-                    Button("Annotate Selected Lines", action: self.annotate)
+                    Button(self.reviewLayout == nil ? "Annotate Selected Lines" : "Add Review Note On Selected Line", action: self.annotate)
                         .disabled(self.viewModel.selectionStart == nil || self.viewModel.isEditing)
 
                 }
@@ -145,7 +148,7 @@ struct DiffToolbar: View {
             if !compact, !self.viewModel.isEditing {
 
                 Button(action: self.annotate) {
-                    Label("Annotate", systemImage: "text.bubble")
+                    Label(self.reviewLayout == nil ? "Annotate" : "Add Review Note", systemImage: "text.bubble")
                 }
                 .font(self.contentSize.font(size: 10, weight: .medium))
                 .controlSize(.small)

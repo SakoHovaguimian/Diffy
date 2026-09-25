@@ -98,22 +98,18 @@ struct LiveGitHubService: GitHubServiceProtocol {
 
     }
 
-    func unmergedPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, validators: GitHubResourceValidators) async throws -> GitHubFetchResult<[PullRequestSummary]> {
+    func unmergedPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, page: Int) async throws -> PullRequestPage {
 
-        var result: [PullRequestSummary] = []
-        var page = 1
+        let response = try await get(
+            [GitHubPullRequestResponse].self,
+            path: repositoryPath(link.coordinate) + "/pulls?state=all&sort=updated&direction=desc&per_page=30&page=\(max(1, page))",
+            account: account
+        )
 
-        while true {
-
-            let response = try await get([GitHubPullRequestResponse].self, path: repositoryPath(link.coordinate) + "/pulls?state=all&sort=updated&direction=desc&per_page=100&page=\(page)", account: account)
-            result += response.map(\.summary).filter { $0.lifecycle != .merged }
-
-            if response.count < 100 { break }
-            page += 1
-
-        }
-
-        return GitHubFetchResult(value: result, validators: .none)
+        return PullRequestPage(
+            pullRequests: response.map(\.summary).filter { $0.lifecycle != .merged },
+            hasMore: response.count == 30
+        )
 
     }
 

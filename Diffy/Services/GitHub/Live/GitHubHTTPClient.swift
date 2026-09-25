@@ -91,6 +91,47 @@ final class GitHubHTTPClient: NSObject, URLSessionTaskDelegate, Sendable {
 
     }
 
+    func text(path: String, token: String, accept: String) async throws -> String {
+
+        guard let base = self.configuration.apiBaseURL,
+              let url = URL(string: base.absoluteString + path),
+              url.scheme == "https" else {
+            throw GitHubError.notConfigured
+        }
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 120
+        request.setValue(accept, forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        request.setValue("Diffy-macOS", forHTTPHeaderField: "User-Agent")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
+        defer { session.finishTasksAndInvalidate() }
+        let data: Data
+        let response: URLResponse
+
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
+        } catch {
+            throw GitHubError.offline
+        }
+
+        guard let response = response as? HTTPURLResponse else {
+            throw GitHubError.invalidResponse("GitHub did not return a pull request diff.")
+        }
+
+        try validate(response)
+        guard let diff = String(data: data, encoding: .utf8), diff.hasPrefix("diff --git ") else {
+            throw GitHubError.reviewUnavailable("GitHub did not return a complete text diff for this pull request.")
+        }
+
+        return diff
+
+    }
+
     private func validate(_ response: HTTPURLResponse) throws {
 
         switch response.statusCode {

@@ -19,6 +19,12 @@ struct CodeLineView: View {
     let action: () -> Void
     var edit: (() -> Void)? = nil
     let annotate: () -> Void
+    var comment: (() -> Void)? = nil
+    var reviewNote: (() -> Void)? = nil
+
+    private var reviewActionWidth: CGFloat {
+        self.comment != nil || self.reviewNote != nil ? self.contentSize.scaled(44) : 0
+    }
 
     private var changeColor: Color {
 
@@ -97,7 +103,10 @@ struct CodeLineView: View {
 
             if self.number != nil {
 
-                Button("Annotate This Line", action: self.annotate)
+                if let comment {
+                    Button("Comment On This Line", action: comment)
+                }
+                Button(self.reviewNote == nil ? "Annotate This Line" : "Add Review Note On This Line", action: self.annotate)
                 Button("Copy Line") { ExportController.copy(self.source ?? "") }
 
             }
@@ -137,9 +146,30 @@ struct CodeLineView: View {
 
             }
 
+            if self.number != nil {
+
+                if let comment {
+                    Button(action: comment) {
+                        Image(systemName: "plus.bubble")
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Comment On \(self.side.rawValue) Line \(self.number ?? 0)")
+                    .help("Comment On This Line")
+                }
+                if let reviewNote {
+                    Button(action: reviewNote) {
+                        Image(systemName: "square.and.pencil")
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add Review Note On \(self.side.rawValue) Line \(self.number ?? 0)")
+                    .help("Add Review Note On This Line")
+                }
+
+            }
+
         }
         .frame(
-            width: self.contentSize.scaled(self.settings.editor.showLineNumbers ? 54 : 20),
+            width: self.contentSize.scaled(self.settings.editor.showLineNumbers ? 54 : 20) + self.reviewActionWidth,
             height: self.contentSize.scaled(self.settings.editor.lineHeight)
         )
         .padding(.trailing, self.contentSize.scaled(8))
@@ -189,7 +219,7 @@ struct CodeLineView: View {
         let styledSource = NSMutableAttributedString(attributedString: NSAttributedString(highlighted))
         let font = wrappingFont()
         let spaceWidth = (" " as NSString).size(withAttributes: [.font: font]).width
-        let availableWidth = self.paneWidth - self.contentSize.scaled(self.settings.editor.showLineNumbers ? 74 : 40)
+        let availableWidth = self.paneWidth - self.contentSize.scaled(self.settings.editor.showLineNumbers ? 74 : 40) - self.reviewActionWidth
         let lineColumns = max(8, Int((availableWidth / spaceWidth).rounded(.down)) - 2)
         let continuationColumns = continuationIndent(for: source, lineColumns: lineColumns)
         let breaks = wrapBreaks(

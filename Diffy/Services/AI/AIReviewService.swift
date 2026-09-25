@@ -21,8 +21,25 @@ final class AIReviewService: AIReviewServiceProtocol {
         provider: AIProviderKind,
         model: String,
         route: AIExecutionRoute,
-        userPrompt: String
+        userPrompt: String,
+        progress: @escaping @MainActor @Sendable (String) async -> Void
     ) async throws -> AIReviewOutput {
+
+        if visualization == .riskMap {
+
+            let response = try await self.generateRiskMap(
+                context: context,
+                provider: self.provider(for: route),
+                providerKind: provider,
+                model: model,
+                userPrompt: userPrompt,
+                progress: progress
+            )
+            let output = AIReviewOutput.riskMap(response)
+            try AIOutputValidator.validate(output, context: context)
+            return output
+
+        }
 
         let schema = self.schema(for: visualization)
         let request = try self.request(
@@ -33,27 +50,89 @@ final class AIReviewService: AIReviewServiceProtocol {
             userPrompt: userPrompt
         )
         let selectedProvider = self.provider(for: route)
-        let output: AIReviewOutput
+        let output = try await self.generateOutput(
+            visualization: visualization,
+            request: request,
+            provider: selectedProvider
+        )
+        try Task.checkCancellation()
+
+        let unavailablePaths = self.unavailablePatchPaths(in: output, context: context)
+        if !unavailablePaths.isEmpty {
+
+            let retryPrompt = request.userPrompt + """
+
+            Regenerate the complete response. These paths in the previous draft had no supplied patch:
+            \(unavailablePaths.joined(separator: "\n"))
+            Use only the listed patch paths in changedFiles or risk files.
+            """
+            let retryRequest = AIRequest(
+                provider: request.provider,
+                model: request.model,
+                context: request.context,
+                systemPrompt: request.systemPrompt,
+                userPrompt: retryPrompt,
+                schema: request.schema,
+                maxOutputTokens: request.maxOutputTokens
+            )
+            let retryOutput = try await self.generateOutput(
+                visualization: visualization,
+                request: retryRequest,
+                provider: selectedProvider
+            )
+            try Task.checkCancellation()
+            try AIOutputValidator.validate(retryOutput, context: context)
+            return retryOutput
+
+        }
+
+        try AIOutputValidator.validate(output, context: context)
+        return output
+
+    }
+
+    private func generateOutput(
+        visualization: AIVisualization,
+        request: AIRequest,
+        provider: any AIProvider
+    ) async throws -> AIReviewOutput {
 
         switch visualization {
 
         case .learningPath:
-            let response = try await selectedProvider.generate(request: request, responseType: LearningPathResponse.self)
-            output = .learningPath(response)
+            let response = try await provider.generate(request: request, responseType: LearningPathResponse.self)
+            return .learningPath(response)
 
         case .architectureMap:
-            let response = try await selectedProvider.generate(request: request, responseType: ArchitectureMapResponse.self)
-            output = .architectureMap(response)
+            let response = try await provider.generate(request: request, responseType: ArchitectureMapResponse.self)
+            return .architectureMap(response)
 
         case .riskMap:
-            let response = try await selectedProvider.generate(request: request, responseType: RiskMapResponse.self)
-            output = .riskMap(response)
+            let response = try await provider.generate(request: request, responseType: RiskMapResponse.self)
+            return .riskMap(response)
 
         }
 
-        try Task.checkCancellation()
-        try AIOutputValidator.validate(output, context: context)
-        return output
+    }
+
+    private func unavailablePatchPaths(in output: AIReviewOutput, context: AIReviewContext) -> [String] {
+
+        let citedPaths: [String]
+
+        switch output {
+
+        case .learningPath:
+            return []
+
+        case .architectureMap(let response):
+            citedPaths = response.nodes.flatMap(\.changedFiles)
+
+        case .riskMap(let response):
+            citedPaths = response.risks.flatMap(\.files)
+
+        }
+
+        return Set(citedPaths).subtracting(context.patchPaths).sorted()
 
     }
 
@@ -137,6 +216,7 @@ final class AIReviewService: AIReviewServiceProtocol {
 
         PR context as JSON data for revision base=\(context.baseSHA), head=\(context.headSHA):
         \(try context.promptText())
+        \(self.patchPathInstruction(schema: schema, context: context))
         """
 
         return AIRequest(
@@ -148,6 +228,15 @@ final class AIReviewService: AIReviewServiceProtocol {
             schema: schema,
             maxOutputTokens: 8_000
         )
+
+    }
+
+    private func patchPathInstruction(schema: AIResponseSchema, context: AIReviewContext) -> String {
+
+        guard schema == .architectureMap || schema == .riskMap else { return "" }
+        let paths = context.patchPaths.sorted()
+        let list = paths.isEmpty ? "None. Use empty changedFiles arrays or an empty risks array." : paths.joined(separator: "\n")
+        return "Paths with supplied patches that may be cited as changed files or risks:\n\(list)"
 
     }
 }

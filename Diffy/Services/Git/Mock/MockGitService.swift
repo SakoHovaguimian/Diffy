@@ -37,6 +37,11 @@ struct MockGitService: GitServiceProtocol {
 
     }
 
+    func branches(in repository: GitRepositoryReference) async throws -> [RepositoryBranch] {
+        let snapshot = try await snapshot(of: repository, scope: .full, previous: nil)
+        return snapshot.branches
+    }
+
     func comparisonFiles(in repository: GitRepositoryReference, selection: ComparisonSelection) async throws -> [DiffFile] {
         MockWorkspaceFixtures.files(for: repository.projectID)
     }

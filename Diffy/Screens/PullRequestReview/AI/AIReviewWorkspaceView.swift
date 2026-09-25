@@ -96,8 +96,12 @@ struct AIReviewWorkspaceView: View {
                 response: response,
                 generation: generation,
                 onOpenFile: self.onOpenFile,
-                selectedStepID: self.$viewModel.selectedLearningStepID
+                expandedStepIDs: Binding(
+                    get: { self.viewModel.expandedLearningSteps(for: generation) },
+                    set: { self.viewModel.setExpandedLearningSteps($0, for: generation) }
+                )
             )
+            .id(generation.id)
 
         case .architectureMap(let response):
             AIArchitectureMapView(
@@ -112,7 +116,9 @@ struct AIReviewWorkspaceView: View {
                 response: response,
                 generation: generation,
                 onOpenFile: self.onOpenFile,
-                selectedRiskID: self.$viewModel.selectedRiskID
+                selectedRiskID: self.$viewModel.selectedRiskID,
+                selectedFilePath: self.$viewModel.selectedRiskFilePath,
+                fileFilter: self.$viewModel.riskFileFilter
             )
 
         }
@@ -168,7 +174,7 @@ extension AIVisualization {
 
         case .learningPath: "Understand this pull request in a useful order."
         case .architectureMap: "See how changed components fit together."
-        case .riskMap: "Find the changes that deserve the closest review."
+        case .riskMap: "Assess every changed file and the cross-file blast radius."
 
         }
 

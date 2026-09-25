@@ -39,10 +39,18 @@ struct AIReviewGenerationHeader: View {
                     .foregroundStyle(self.theme.secondaryText)
 
             }
-            if !self.generation.context.omissions.isEmpty {
+            if self.generation.visualizationType != .riskMap {
 
-                DisclosureGroup("Context Limits") {
+                Text("Patch text sent: \(self.patchPaths.count) of \(self.generation.context.fileInventory.count) listed files · \(self.shortenedPatchPaths.count) shortened")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(self.hasCompletePatchCoverage ? self.theme.secondaryText : self.theme.modified)
 
+            }
+            if !self.generation.context.omissions.isEmpty || self.generation.visualizationType != .riskMap {
+
+                DisclosureGroup("Context Used For This Saved Review") {
+
+                    contextCoverage()
                     ForEach(self.generation.context.omissions, id: \.self) { omission in
                         Text(omission)
                             .font(.system(size: 11))
@@ -79,6 +87,81 @@ struct AIReviewGenerationHeader: View {
         .padding(.vertical, 16)
         .background(self.theme.surface)
         .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
+
+    }
+
+    private var patchPaths: Set<String> {
+        self.generation.context.patchPaths
+    }
+
+    private var hasCompletePatchCoverage: Bool {
+        self.generation.context.fileInventory.count == self.generation.analyzedFiles.count
+            && self.patchPaths.count == self.generation.context.fileInventory.count
+            && self.shortenedPatchPaths.isEmpty
+    }
+
+    private var pathsWithoutFileDetails: [String] {
+
+        let detailedPaths = Set(self.generation.context.files.map(\.filename))
+        return self.generation.context.fileInventory.filter { !detailedPaths.contains($0) }
+
+    }
+
+    private var filesWithoutPatchText: [String] {
+        self.generation.context.files.filter { $0.patch?.isEmpty ?? true }.map(\.filename)
+    }
+
+    private var shortenedPatchPaths: [String] {
+
+        let originalPatches = Dictionary(uniqueKeysWithValues: self.generation.analyzedFiles.compactMap { file in
+            file.patch.map { (file.filename, $0) }
+        })
+
+        return self.generation.context.files.compactMap { file in
+            guard let original = originalPatches[file.filename],
+                  let sent = file.patch,
+                  sent.count < original.count else { return nil }
+            return file.filename
+        }
+
+    }
+
+    @ViewBuilder
+    private func contextCoverage() -> some View {
+
+        if self.generation.visualizationType != .riskMap {
+
+            let listedCount = self.generation.context.fileInventory.count
+            let changedCount = self.generation.analyzedFiles.count
+            Text("File paths listed: \(listedCount) of \(changedCount) loaded changed files.")
+            Text("Patch text sent: \(self.patchPaths.count) of \(listedCount) listed files.")
+            Text("Paths and change counts alone do not give the AI the file's code changes.")
+
+            if !self.pathsWithoutFileDetails.isEmpty {
+                DisclosureGroup("Path only (\(self.pathsWithoutFileDetails.count))") {
+                    ForEach(self.pathsWithoutFileDetails, id: \.self) { path in
+                        Text(path)
+                    }
+                }
+            }
+
+            if !self.filesWithoutPatchText.isEmpty {
+                DisclosureGroup("File metadata, no patch text (\(self.filesWithoutPatchText.count))") {
+                    ForEach(self.filesWithoutPatchText, id: \.self) { path in
+                        Text(path)
+                    }
+                }
+            }
+
+            if !self.shortenedPatchPaths.isEmpty {
+                DisclosureGroup("Patch text shortened by Diffy (\(self.shortenedPatchPaths.count))") {
+                    ForEach(self.shortenedPatchPaths, id: \.self) { path in
+                        Text(path)
+                    }
+                }
+            }
+
+        }
 
     }
 

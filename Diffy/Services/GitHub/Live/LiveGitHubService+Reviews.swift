@@ -28,6 +28,36 @@ extension LiveGitHubService {
 
     }
 
+    func completeReviewFiles(
+        for request: PullRequestReviewRequest,
+        account: GitHubAccount,
+        files: [PullRequestReviewFile],
+        baseSHA: String,
+        headSHA: String
+    ) async throws -> [AIFileSnapshot] {
+
+        guard account.host == self.configuration.host else { throw GitHubError.accountNotFound }
+        let path = repositoryPath(request.link.coordinate) + "/pulls/\(request.number)"
+        let before = try await get(GitHubPullRequestResponse.self, path: path, account: account)
+        guard before.base.sha == baseSHA, before.head.sha == headSHA else {
+            throw GitHubError.reviewUnavailable("The pull request changed. Refresh before generating a Risk Map.")
+        }
+
+        let credential = try await self.resolver.credential(for: account.id)
+        let diff = try await GitHubHTTPClient(configuration: self.configuration).text(
+            path: path,
+            token: credential.accessToken,
+            accept: "application/vnd.github.diff"
+        )
+        let after = try await get(GitHubPullRequestResponse.self, path: path, account: account)
+        guard after.base.sha == baseSHA, after.head.sha == headSHA else {
+            throw GitHubError.reviewUnavailable("The pull request changed while loading its diff. Refresh and retry.")
+        }
+
+        return try PullRequestRawDiffParser.snapshots(diff: diff, files: files)
+
+    }
+
     func reviewConversation(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> [PullRequestConversationEntry] {
 
         let repository = repositoryPath(request.link.coordinate)

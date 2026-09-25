@@ -1,6 +1,7 @@
 import Foundation
 
 struct PullRequestReviewDetails: Sendable {
+
     let summary: PullRequestSummary
     let body: String
     let changedFileCount: Int
@@ -11,4 +12,19 @@ struct PullRequestReviewDetails: Sendable {
 
     var hasAllFiles: Bool { self.files.count == self.changedFileCount }
     var hasAllCommits: Bool { self.commits.count == self.commitCount }
+
+    func replacingConversation(_ conversation: [PullRequestConversationEntry]) -> PullRequestReviewDetails {
+
+        PullRequestReviewDetails(
+            summary: self.summary,
+            body: self.body,
+            changedFileCount: self.changedFileCount,
+            commitCount: self.commitCount,
+            commits: self.commits,
+            files: self.files,
+            conversation: conversation
+        )
+
+    }
+
 }

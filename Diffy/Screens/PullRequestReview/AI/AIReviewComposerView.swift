@@ -233,7 +233,7 @@ struct AIReviewComposerView: View {
                 Text("Selected Files (\(self.viewModel.selectedPaths.count))")
                     .font(.system(size: 11, weight: .medium))
             }
-            Text("No selection analyzes a bounded set of PR changes. Selecting files limits the analysis to those files.")
+            Text("File selection limits questions and other AI views. Risk Map always analyzes every changed file in the pull request diff.")
                 .font(.system(size: 10))
                 .foregroundStyle(self.theme.secondaryText)
 

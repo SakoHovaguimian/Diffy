@@ -31,8 +31,8 @@ protocol GitHubServiceProtocol: Sendable {
     func unmergedPullRequests(
         for link: GitHubRepositoryLink,
         account: GitHubAccount,
-        validators: GitHubResourceValidators
-    ) async throws -> GitHubFetchResult<[PullRequestSummary]>
+        page: Int
+    ) async throws -> PullRequestPage
 
     func pullRequest(
         number: Int,
@@ -48,6 +48,13 @@ protocol GitHubServiceProtocol: Sendable {
     ) async -> PullRequestChecksSummary
 
     func reviewDetails(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> PullRequestReviewDetails
+    func completeReviewFiles(
+        for request: PullRequestReviewRequest,
+        account: GitHubAccount,
+        files: [PullRequestReviewFile],
+        baseSHA: String,
+        headSHA: String
+    ) async throws -> [AIFileSnapshot]
     func reviewConversation(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> [PullRequestConversationEntry]
     func submitReview(_ submission: PullRequestReviewSubmission, for request: PullRequestReviewRequest, account: GitHubAccount) async throws
     func postPullRequestComment(_ body: String, replyingTo commentID: Int?, for request: PullRequestReviewRequest, account: GitHubAccount) async throws

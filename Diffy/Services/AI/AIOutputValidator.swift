@@ -6,7 +6,7 @@ enum AIOutputValidator {
 
         switch output {
 
-        case .learningPath(let response): try self.validateLearningPath(response, context: context)
+        case .learningPath(let response): try LearningPathOutputValidator.validate(response, context: context)
         case .architectureMap(let response): try self.validateArchitectureMap(response, context: context)
         case .riskMap(let response): try self.validateRiskMap(response, context: context)
 
@@ -43,33 +43,6 @@ enum AIOutputValidator {
 
     }
 
-    private static func validateLearningPath(_ response: LearningPathResponse, context: AIReviewContext) throws {
-
-        guard !response.steps.isEmpty else {
-            throw AIReviewError.invalidResponse("The learning path had no steps.")
-        }
-
-        var priorIDs = Set<String>()
-
-        for step in response.steps {
-
-            guard !step.id.isEmpty, !step.title.isEmpty,
-                  !step.explanation.isEmpty, !step.whyItMatters.isEmpty,
-                  !step.relevantFiles.isEmpty, !priorIDs.contains(step.id) else {
-                throw AIReviewError.invalidResponse("The learning path contained a duplicate or empty step.")
-            }
-
-            guard Set(step.dependsOn).isSubset(of: priorIDs) else {
-                throw AIReviewError.invalidResponse("A learning step depends on an unknown or later step.")
-            }
-
-            try self.validatePaths(step.relevantFiles + step.suggestedFiles, context: context)
-            priorIDs.insert(step.id)
-
-        }
-
-    }
-
     private static func validateArchitectureMap(_ response: ArchitectureMapResponse, context: AIReviewContext) throws {
 
         guard !response.nodes.isEmpty else {
@@ -95,8 +68,8 @@ enum AIOutputValidator {
 
             try self.validatePaths(node.changedFiles, context: context)
 
-            guard node.changedFiles.allSatisfy(context.patchPaths.contains) else {
-                throw AIReviewError.invalidResponse("A changed component referenced a patch that was not supplied.")
+            if let path = node.changedFiles.first(where: { !context.patchPaths.contains($0) }) {
+                throw AIReviewError.invalidResponse("No text patch was supplied for \(path). Review that file directly or choose files with available patches.")
             }
         }
 
@@ -113,6 +86,21 @@ enum AIOutputValidator {
     private static func validateRiskMap(_ response: RiskMapResponse, context: AIReviewContext) throws {
 
         let IDs = response.risks.map(\.id)
+
+        if let assessments = response.fileAssessments {
+
+            let paths = assessments.map(\.path)
+            guard paths.count == context.fileInventory.count,
+                  Set(paths) == context.analyzedPaths,
+                  assessments.allSatisfy({ !$0.summary.isEmpty && !$0.evidence.isEmpty }) else {
+                throw AIReviewError.invalidResponse("The Risk Map did not assess every changed file.")
+            }
+
+        }
+
+        if let blastRadius = response.blastRadius, blastRadius.isEmpty {
+            throw AIReviewError.invalidResponse("The Risk Map did not explain its blast radius.")
+        }
 
         guard !response.overview.isEmpty else {
             throw AIReviewError.invalidResponse("The risk map lacked a review summary.")
@@ -131,8 +119,8 @@ enum AIOutputValidator {
 
             try self.validatePaths(risk.files, context: context)
 
-            guard risk.files.allSatisfy(context.patchPaths.contains) else {
-                throw AIReviewError.invalidResponse("A risk cited a patch that was not supplied.")
+            if let path = risk.files.first(where: { !context.patchPaths.contains($0) }) {
+                throw AIReviewError.invalidResponse("No text patch was supplied for \(path). Review that file directly or choose files with available patches.")
             }
 
         }

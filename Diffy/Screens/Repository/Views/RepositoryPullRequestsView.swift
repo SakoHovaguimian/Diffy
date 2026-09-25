@@ -61,7 +61,7 @@ struct RepositoryPullRequestsView: View {
                 }
                 .frame(maxWidth: 220)
                 Button("Refresh") { Task { await self.viewModel.loadPullRequests() } }
-                    .disabled(self.viewModel.isLoadingPullRequests)
+                    .disabled(self.viewModel.isLoadingPullRequests || self.viewModel.isLoadingMorePullRequests)
 
             }
             .onChange(of: self.viewModel.selectedAccountID) { _, _ in Task { await self.viewModel.loadPullRequests() } }
@@ -72,8 +72,14 @@ struct RepositoryPullRequestsView: View {
 
             if self.viewModel.isLoadingPullRequests {
                 DiffyLoadingState(title: "Loading Pull Requests…")
-            } else if self.viewModel.visiblePullRequests.isEmpty {
+            } else if self.viewModel.visiblePullRequests.isEmpty
+                && !self.viewModel.isLoadingMorePullRequests
+                && self.viewModel.pullRequestError == nil {
                 DiffyEmptyState(symbol: "tray", title: "Nothing Waiting Here", message: "No unmerged pull requests match these filters. Refresh to check again.")
+            }
+
+            if self.viewModel.isLoadingMorePullRequests {
+                DiffyLoadingState(title: "Loading More Pull Requests…")
             }
 
             if self.viewModel.isLoadingPullRequestMetadata {

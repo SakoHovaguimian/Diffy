@@ -2,6 +2,42 @@ import Foundation
 
 enum AIContextBuilder {
 
+    static func makeCompleteRiskContext(
+        details: PullRequestReviewDetails,
+        repositoryIdentity: String,
+        files: [AIFileSnapshot]
+    ) -> AIReviewContext {
+
+        var omissions: [String] = []
+        if files.contains(where: { $0.patch?.contains("Binary files ") == true || $0.patch?.contains("GIT binary patch") == true }) {
+            omissions.append("Binary changes were included as Git diff markers; their binary contents cannot be inspected as text.")
+        }
+        if !details.hasAllCommits {
+            omissions.append("GitHub did not provide the complete commit list for this PR.")
+        }
+
+        return AIReviewContext(
+            repositoryIdentity: repositoryIdentity,
+            pullRequestNumber: details.summary.number,
+            title: details.summary.title,
+            author: details.summary.author.login,
+            baseSHA: details.summary.baseSHA,
+            headSHA: details.summary.headSHA,
+            description: details.body,
+            commits: details.commits.map {
+                AICommitContext(sha: $0.id, title: $0.title, author: $0.authorName)
+            },
+            selectedPaths: [],
+            fileInventory: files.map(\.filename),
+            files: files,
+            annotations: [],
+            selectedAnnotationCount: 0,
+            omissions: omissions,
+            pullRequestConversation: details.conversation.map(AICommentContext.init)
+        )
+
+    }
+
     static func makeContext(
         details: PullRequestReviewDetails,
         repositoryIdentity: String,
@@ -40,7 +76,12 @@ enum AIContextBuilder {
 
         }
 
-        let inventory = eligibleFiles.prefix(800).map(\.filename)
+        let suppliedPaths = files.map(\.filename)
+        let suppliedPathSet = Set(suppliedPaths)
+        let remainingPaths = eligibleFiles.lazy.map(\.filename)
+            .filter { !suppliedPathSet.contains($0) }
+            .prefix(max(0, 800 - suppliedPaths.count))
+        let inventory = suppliedPaths + Array(remainingPaths)
         var omissions: [String] = []
 
         if !selected.isEmpty {
@@ -48,7 +89,7 @@ enum AIContextBuilder {
         }
 
         if eligibleFiles.count > files.count {
-            omissions.append("Only \(files.count) of \(eligibleFiles.count) eligible file patches were included.")
+            omissions.append("Only \(files.count) of \(eligibleFiles.count) eligible changed files were selected for this request.")
         }
 
         if selected.count > eligibleFiles.count {
@@ -59,14 +100,25 @@ enum AIContextBuilder {
             omissions.append("The file inventory omitted \(eligibleFiles.count - inventory.count) paths.")
         }
 
-        if files.contains(where: { $0.patch == nil }) {
-            omissions.append("Some GitHub patches were unavailable or omitted for binary or oversized files.")
+        let selectedFiles = Array(orderedFiles.prefix(files.count))
+        let unavailablePatchCount = selectedFiles.filter { $0.patch == nil }.count
+        if unavailablePatchCount > 0 {
+            omissions.append("GitHub did not provide text patches for \(unavailablePatchCount) selected files, which may be binary or oversized.")
         }
 
-        if files.contains(where: { snapshot in
-            details.files.first(where: { $0.filename == snapshot.filename })?.patch?.count ?? 0 > snapshot.patch?.count ?? 0
-        }) {
-            omissions.append("Long patches were truncated. Do not infer behavior beyond the provided hunks.")
+        let omittedPatchCount = zip(selectedFiles, files).filter { original, snapshot in
+            original.patch != nil && snapshot.patch == nil
+        }.count
+        if omittedPatchCount > 0 {
+            omissions.append("\(omittedPatchCount) selected text patches were omitted after the request's patch budget was reached.")
+        }
+
+        let truncatedPatchCount = zip(selectedFiles, files).filter { original, snapshot in
+            guard let originalPatch = original.patch, let suppliedPatch = snapshot.patch else { return false }
+            return originalPatch.count > suppliedPatch.count
+        }.count
+        if truncatedPatchCount > 0 {
+            omissions.append("\(truncatedPatchCount) text patches were truncated. Do not infer behavior beyond the provided hunks.")
         }
 
         let noteContexts = annotations.prefix(20).map {
@@ -75,14 +127,6 @@ enum AIContextBuilder {
 
         if annotations.count > noteContexts.count {
             omissions.append("Only \(noteContexts.count) of \(annotations.count) review notes were included.")
-        }
-
-        if details.body.count > 12_000 {
-            omissions.append("The PR description was truncated after 12,000 characters.")
-        }
-
-        if commitContexts.count > 80 {
-            omissions.append("Only the first 80 of \(commitContexts.count) commit summaries were included.")
         }
 
         if !details.hasAllCommits {
@@ -100,14 +144,15 @@ enum AIContextBuilder {
             author: details.summary.author.login,
             baseSHA: details.summary.baseSHA,
             headSHA: details.summary.headSHA,
-            description: String(details.body.prefix(12_000)),
-            commits: Array(commitContexts.prefix(80)),
+            description: details.body,
+            commits: commitContexts,
             selectedPaths: selected.sorted(),
             fileInventory: inventory,
             files: files,
             annotations: noteContexts,
             selectedAnnotationCount: annotations.count,
-            omissions: omissions
+            omissions: omissions,
+            pullRequestConversation: details.conversation.map(AICommentContext.init)
         )
 
     }

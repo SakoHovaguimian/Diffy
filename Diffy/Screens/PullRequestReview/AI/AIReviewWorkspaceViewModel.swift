@@ -13,6 +13,8 @@ final class AIReviewWorkspaceViewModel: ViewModel {
     private let credentialStore: AICredentialStoreProtocol
     private let commandAvailability: AICommandAvailabilityServiceProtocol
     private let modelCatalog: AIModelCatalogServiceProtocol
+    private let completeReviewFiles: @MainActor (PullRequestReviewDetails) async throws -> [AIFileSnapshot]
+    private let loadReviewConversation: @MainActor () async throws -> [PullRequestConversationEntry]
     private var details: PullRequestReviewDetails?
     private var availableAnnotations: [CodeAnnotation] = []
     private var generationTask: Task<Void, Never>?
@@ -42,9 +44,11 @@ final class AIReviewWorkspaceViewModel: ViewModel {
     @Published var selectedModel = AISettings.initial.defaultModel
     @Published var selectedRoute: AIExecutionRoute = .providerAPI
     @Published var selectedPaths: Set<String> = []
-    @Published var selectedLearningStepID: String?
+    @Published private var expandedLearningStepIDs: [UUID: Set<String>] = [:]
     @Published var selectedArchitectureNodeID: String?
     @Published var selectedRiskID: String?
+    @Published var selectedRiskFilePath: String?
+    @Published var riskFileFilter: RiskAttention?
     @Published var fileQuery = ""
     @Published var showsFileSelection = false
     @Published var showsNotes = false
@@ -72,7 +76,9 @@ final class AIReviewWorkspaceViewModel: ViewModel {
         settingsStore: AISettingsStoreProtocol,
         credentialStore: AICredentialStoreProtocol,
         commandAvailability: AICommandAvailabilityServiceProtocol,
-        modelCatalog: AIModelCatalogServiceProtocol
+        modelCatalog: AIModelCatalogServiceProtocol,
+        completeReviewFiles: @escaping @MainActor (PullRequestReviewDetails) async throws -> [AIFileSnapshot],
+        loadReviewConversation: @escaping @MainActor () async throws -> [PullRequestConversationEntry]
     ) {
 
         self.request = request
@@ -83,6 +89,8 @@ final class AIReviewWorkspaceViewModel: ViewModel {
         self.credentialStore = credentialStore
         self.commandAvailability = commandAvailability
         self.modelCatalog = modelCatalog
+        self.completeReviewFiles = completeReviewFiles
+        self.loadReviewConversation = loadReviewConversation
 
     }
 
@@ -231,6 +239,26 @@ final class AIReviewWorkspaceViewModel: ViewModel {
 
     }
 
+    // Disclosure state is local to each saved generation, separate from immutable AI output.
+    func expandedLearningSteps(for generation: AIReviewGeneration) -> Set<String> {
+
+        if let expanded = self.expandedLearningStepIDs[generation.id] {
+            return expanded
+        }
+
+        guard case .learningPath(let response) = generation.structuredOutput,
+              let first = response.steps.first else { return [] }
+        return [first.id]
+
+    }
+
+    func setExpandedLearningSteps(_ identifiers: Set<String>, for generation: AIReviewGeneration) {
+
+        guard case .learningPath(let response) = generation.structuredOutput else { return }
+        self.expandedLearningStepIDs[generation.id] = identifiers.intersection(Set(response.steps.map(\.id)))
+
+    }
+
     func activate(_ visualization: AIVisualization) {
         self.selectedVisualization = visualization
     }
@@ -337,7 +365,7 @@ final class AIReviewWorkspaceViewModel: ViewModel {
         let token = beginModelLookup()
         let provider = self.selectedProvider
         let route = self.selectedRoute
-        self.modelLookupMessage = "Checking \(provider.title) Connection…"
+        self.modelLookupMessage = "Checking \(provider.title) Access via \(route.title)…"
         self.modelDiscoveryTask = Task {
             await self.discoverModels(for: provider, route: route, token: token)
         }
@@ -383,7 +411,7 @@ final class AIReviewWorkspaceViewModel: ViewModel {
             }
 
             guard token == self.modelDiscoveryToken else { return }
-            self.modelLookupMessage = "Loading \(provider.title) Models…"
+            self.modelLookupMessage = "Loading \(provider.title) Models via \(route.title)…"
             let catalog = try await self.modelCatalog.models(for: provider, route: route)
             try Task.checkCancellation()
             guard token == self.modelDiscoveryToken,
@@ -606,8 +634,26 @@ final class AIReviewWorkspaceViewModel: ViewModel {
         do {
 
             try await verifyProvider(provider, model: model, route: route)
-            self.requestProgress = "Preparing Pull Request Context…"
-            let context = makeContext(details: details)
+            let details = try await detailsWithCurrentConversation(details, revision: revision)
+            self.requestProgress = visualization == .riskMap ? "Loading The Complete Pull Request Diff…" : "Preparing Pull Request Context…"
+            let context: AIReviewContext
+            if visualization == .riskMap {
+
+                guard details.hasAllFiles else {
+                    throw AIReviewError.unavailable("GitHub did not return every changed file. Refresh before generating a Risk Map.")
+                }
+                let files = try await self.completeReviewFiles(details)
+                try Task.checkCancellation()
+                try verifyRequestRevision(revision)
+                context = AIContextBuilder.makeCompleteRiskContext(
+                    details: details,
+                    repositoryIdentity: self.repositoryIdentity,
+                    files: files
+                )
+
+            } else {
+                context = makeContext(details: details)
+            }
             self.requestProgress = "Generating \(visualization.title) With \(provider.title)…"
             let output = try await self.reviewService.generate(
                 visualization: visualization,
@@ -615,7 +661,10 @@ final class AIReviewWorkspaceViewModel: ViewModel {
                 provider: provider,
                 model: model,
                 route: route,
-                userPrompt: prompt
+                userPrompt: prompt,
+                progress: { [weak self] message in
+                    self?.requestProgress = message
+                }
             )
             try Task.checkCancellation()
             try verifyRequestRevision(revision)
@@ -633,6 +682,11 @@ final class AIReviewWorkspaceViewModel: ViewModel {
                 context: context,
                 details: details
             )
+            if visualization == .riskMap {
+                self.selectedRiskID = nil
+                self.selectedRiskFilePath = nil
+                self.riskFileFilter = nil
+            }
             self.requestProgress = "Saving \(visualization.title) Locally…"
             await saveGeneration(generation)
             self.showsComposer = false
@@ -643,6 +697,19 @@ final class AIReviewWorkspaceViewModel: ViewModel {
         } catch {
             self.errorMessage = error.localizedDescription
         }
+
+    }
+
+    private func detailsWithCurrentConversation(
+        _ details: PullRequestReviewDetails,
+        revision: Int
+    ) async throws -> PullRequestReviewDetails {
+
+        self.requestProgress = "Loading PR Comments & Reviews…"
+        let conversation = try await self.loadReviewConversation()
+        try Task.checkCancellation()
+        try verifyRequestRevision(revision)
+        return details.replacingConversation(conversation)
 
     }
 
@@ -680,7 +747,7 @@ final class AIReviewWorkspaceViewModel: ViewModel {
         details: PullRequestReviewDetails
     ) -> AIReviewGeneration {
 
-        let analyzedFiles = details.files.map { file in
+        let analyzedFiles = visualization == .riskMap ? [] : details.files.map { file in
             AIFileSnapshot(
                 filename: file.filename,
                 previousFilename: file.previousFilename,
@@ -778,6 +845,7 @@ final class AIReviewWorkspaceViewModel: ViewModel {
             let model = self.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
             let route = self.selectedRoute
             try await verifyProvider(provider, model: model, route: route)
+            let details = try await detailsWithCurrentConversation(details, revision: revision)
             self.requestProgress = "Preparing Pull Request Context…"
             let context = makeContext(details: details)
             self.requestProgress = "Waiting For \(provider.title) To Answer…"
@@ -851,6 +919,7 @@ final class AIReviewWorkspaceViewModel: ViewModel {
             let model = self.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
             let route = self.selectedRoute
             try await verifyProvider(provider, model: model, route: route)
+            let details = try await detailsWithCurrentConversation(details, revision: revision)
             self.requestProgress = "Preparing Selected Review Notes…"
             let context = makeContext(details: details, annotations: annotations)
             self.requestProgress = "Waiting For \(provider.title) To Propose A Fix…"

@@ -7,7 +7,8 @@ protocol AIReviewServiceProtocol: Sendable {
         provider: AIProviderKind,
         model: String,
         route: AIExecutionRoute,
-        userPrompt: String
+        userPrompt: String,
+        progress: @escaping @MainActor @Sendable (String) async -> Void
     ) async throws -> AIReviewOutput
 
     func ask(

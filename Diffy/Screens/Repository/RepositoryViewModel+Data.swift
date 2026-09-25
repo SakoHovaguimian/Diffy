@@ -141,23 +141,44 @@ extension RepositoryViewModel {
         let requestID = UUID()
         self.pullRequestsRequestID = requestID
         self.isLoadingPullRequests = true
+        self.isLoadingMorePullRequests = false
         self.isLoadingPullRequestMetadata = false
         self.pullRequestError = nil
+        self.pullRequests = []
         let projectID = self.project?.id
 
         do {
 
-            let result = try await self.gitHub.unmergedPullRequests(for: link, account: account, validators: .none)
+            let firstPage = try await self.gitHub.unmergedPullRequests(for: link, account: account, page: 1)
             guard self.project?.id == projectID, self.pullRequestsRequestID == requestID, self.selectedAccountID == account.id else { return }
-            self.pullRequests = result.value ?? []
+            self.pullRequests = firstPage.pullRequests
             self.isLoadingPullRequests = false
+            self.isLoadingMorePullRequests = firstPage.hasMore
+
+            var page = 2
+            var hasMore = firstPage.hasMore
+
+            while hasMore {
+
+                let nextPage = try await self.gitHub.unmergedPullRequests(for: link, account: account, page: page)
+                guard self.project?.id == projectID, self.pullRequestsRequestID == requestID, self.selectedAccountID == account.id else { return }
+                self.pullRequests += nextPage.pullRequests
+                hasMore = nextPage.hasMore
+                page += 1
+
+            }
+
+            self.isLoadingMorePullRequests = false
             await loadPullRequestMetadata(link: link, account: account, requestID: requestID)
 
         } catch {
 
             guard self.project?.id == projectID, self.pullRequestsRequestID == requestID else { return }
-            self.pullRequestError = error.localizedDescription
+            self.pullRequestError = self.isLoadingPullRequests
+                ? error.localizedDescription
+                : "Could not load the remaining pull requests: \(error.localizedDescription)"
             self.isLoadingPullRequests = false
+            self.isLoadingMorePullRequests = false
 
             if case GitHubError.reauthorizationRequired = error {
                 try? self.accounts.markRequiresReauthorization(account)

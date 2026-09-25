@@ -81,7 +81,7 @@ actor LiveGitService: GitServiceProtocol {
 
         }
 
-        let branches = try await self.runner.run(["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(HEAD)%00%(committerdate:unix)", "refs/heads", "refs/remotes"], directory: root)
+        let branches = try await branchReferences(at: root, limit: scope == .initial ? 30 : nil, currentBranch: state.branchName)
         let tags = try await self.runner.run(["for-each-ref", "--format=%(refname:short)%00%(objectname)", "refs/tags"], directory: root)
         let commits = state.isUnborn ? [] : try await commits(in: repository, revision: nil, limit: 50)
 
@@ -92,7 +92,7 @@ actor LiveGitService: GitServiceProtocol {
             operation: operation(at: location),
             changes: changes,
             remotes: try await remotes(at: root),
-            branches: GitOutputParser.branches(branches.text),
+            branches: branches,
             tags: tags.text.split(separator: "\n").compactMap { line in
 
                 let fields = line.components(separatedBy: "\0")
@@ -104,6 +104,46 @@ actor LiveGitService: GitServiceProtocol {
             referencesCapturedAt: Date(),
             lastFetchAt: fetchDate
         )
+
+    }
+
+    func branches(in repository: GitRepositoryReference) async throws -> [RepositoryBranch] {
+
+        let selectedURL = try self.access.beginAccess(projectID: repository.projectID, checkout: repository.checkout)
+        defer { self.access.endAccess(projectID: repository.projectID) }
+        let root = try await repositoryRoot(at: selectedURL)
+        return try await branchReferences(at: root, limit: nil, currentBranch: nil)
+
+    }
+
+    private func branchReferences(at root: URL, limit: Int?, currentBranch: String?) async throws -> [RepositoryBranch] {
+
+        var arguments = ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(HEAD)%00%(committerdate:unix)"]
+        if let limit { arguments.append("--count=\(limit + 10)") }
+        arguments += ["refs/heads", "refs/remotes"]
+        let result = try await self.runner.run(arguments, directory: root)
+        let branches = GitOutputParser.branches(result.text)
+        guard let limit else { return branches }
+
+        var initial = Array(branches.prefix(limit))
+        if let currentBranch, !initial.contains(where: { $0.isCurrent }) {
+
+            let current = try await self.runner.run(
+                ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(HEAD)%00%(committerdate:unix)", "refs/heads/\(currentBranch)"],
+                directory: root
+            )
+
+            if let branch = GitOutputParser.branches(current.text).first(where: { $0.name == currentBranch }) {
+                if initial.isEmpty {
+                    initial.append(branch)
+                } else {
+                    initial[initial.count - 1] = branch
+                }
+            }
+
+        }
+
+        return initial
 
     }
 

@@ -41,7 +41,7 @@ final class ViewModelAssembly {
         WorkspaceViewModel(
             runtime: self.services.runtime,
             repositoryViewModel: RepositoryViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService, accounts: self.services.gitHubAccountService, diffBuilder: self.services.textDiffBuilder),
-            overviewViewModel: WorkspaceOverviewViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService),
+            overviewViewModel: WorkspaceOverviewViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService, diffBuilder: self.services.textDiffBuilder),
             workspaceService: self.services.workspaceService,
             preferencesService: self.services.preferencesService,
             fileNavigatorViewModel: FileNavigatorViewModel(preferencesService: self.services.preferencesService),
@@ -79,7 +79,30 @@ final class ViewModelAssembly {
                     settingsStore: services.aiSettingsStore,
                     credentialStore: services.aiCredentialStore,
                     commandAvailability: services.aiCommandAvailability,
-                    modelCatalog: services.aiModelCatalog
+                    modelCatalog: services.aiModelCatalog,
+                    completeReviewFiles: { [weak review, gitHub = services.gitHubService] details in
+
+                        guard let review, let account = review.account else {
+                            throw AIReviewError.unavailable("Connect a GitHub account and refresh this PR before generating a Risk Map.")
+                        }
+
+                        return try await gitHub.completeReviewFiles(
+                            for: review.request,
+                            account: account,
+                            files: details.files,
+                            baseSHA: details.summary.baseSHA,
+                            headSHA: details.summary.headSHA
+                        )
+
+                    },
+                    loadReviewConversation: { [weak review, gitHub = services.gitHubService] in
+
+                        guard let review, let account = review.account else {
+                            throw AIReviewError.unavailable("Connect a GitHub account and refresh this PR before asking AI.")
+                        }
+                        return try await gitHub.reviewConversation(for: review.request, account: account)
+
+                    }
                 )
 
             }

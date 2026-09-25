@@ -12,6 +12,7 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     var patchReview: AIReviewPatchViewModel?
     let accounts: [GitHubAccount]
     let gitHub: GitHubServiceProtocol
+    let textDiff: TextDiffViewModel
     let fileNavigator = FileNavigatorViewModel(preferencesService: PreferencesService(defaults: nil))
     private var navigationObservation: AnyCancellable?
     private var navigatorDragStartWidth: CGFloat?
@@ -24,7 +25,6 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     @Published var selectedFileID: String?
     @Published private(set) var historicalFileSelection: PullRequestHistoricalFileSelection?
     @Published private(set) var splitLines: [DiffLine] = []
-    @Published private(set) var unifiedLines: [DiffLine] = []
     @Published var viewedPaths: Set<String> = []
     @Published var selectedTab: PullRequestReviewTab = .filesChanged
     @Published var showsNotes = false
@@ -48,6 +48,7 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         request: PullRequestReviewRequest,
         accounts: [GitHubAccount],
         gitHub: GitHubServiceProtocol,
+        diffBuilder: TextDiffBuilding,
         localRepository: GitRepositoryReference? = nil,
         projectID: String? = nil
     ) {
@@ -57,6 +58,7 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.projectID = projectID
         self.accounts = accounts.filter { $0.host == request.link.host && $0.status == .connected }
         self.gitHub = gitHub
+        self.textDiff = TextDiffViewModel(diffBuilder: diffBuilder)
         self.selectedAccountID = self.accounts.first { $0.id == request.preferredAccountID }?.id ?? self.accounts.first?.id ?? ""
         self.navigationObservation = self.fileNavigator.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
@@ -79,10 +81,13 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.navigatorDragStartWidth = nil
     }
 
-    var lines: [DiffLine] { self.isUnified ? self.unifiedLines : self.splitLines }
+    var lines: [DiffLine] { self.splitLines }
     var account: GitHubAccount? { self.accounts.first { $0.id == self.selectedAccountID } }
     var isBusy: Bool { self.isLoading || self.isSubmitting }
     var selectedFile: PullRequestReviewFile? { self.details?.files.first { $0.id == self.selectedFileID } }
+    var selectedComparisonFile: DiffFile? {
+        self.selectedFile?.navigationFile.replacingContent(lines: self.splitLines, kind: .text)
+    }
     var hasDrafts: Bool { !self.drafts.isEmpty || !self.reviewBody.isEmpty || !self.conversationBody.isEmpty || self.commentEditor != nil }
 
     var navigationFiles: [DiffFile] {
@@ -146,6 +151,10 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
             }
         }
 
+    }
+
+    var discussionLineIDs: Set<Int> {
+        Set(self.lines.filter { !self.drafts(at: $0).isEmpty || !self.comments(at: $0).isEmpty }.map(\.id))
     }
 
     // MARK: - Loading
@@ -212,7 +221,6 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.conversation = []
         self.viewedPaths = []
         self.splitLines = []
-        self.unifiedLines = []
         self.notice = nil
         await load()
 
@@ -222,7 +230,6 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
 
         self.selectedFileID = file?.id
         self.splitLines = file?.patch.map(GitPatchParser.lines) ?? []
-        self.unifiedLines = file?.patch.map(GitPatchParser.unifiedLines) ?? []
 
     }
 
@@ -243,14 +250,29 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
 
     func openAnalyzedFile(generation: AIReviewGeneration, path: String) {
 
-        if let details = self.details,
-           generation.isCurrent(baseSHA: details.summary.baseSHA, headSHA: details.summary.headSHA),
-           details.files.contains(where: { $0.filename == path || $0.previousFilename == path }) {
-            openFile(path: path)
-            return
+        let isCurrentRevision = self.details.map {
+            generation.isCurrent(baseSHA: $0.summary.baseSHA, headSHA: $0.summary.headSHA)
+        } ?? false
+        if isCurrentRevision,
+           let currentFile = self.details?.files.first(where: { $0.filename == path || $0.previousFilename == path }) {
+
+            let currentPatchIsComplete: Bool
+            if let patch = currentFile.patch {
+                let counts = GitPatchParser.lineCounts(patch)
+                currentPatchIsComplete = counts.additions == currentFile.additions
+                    && counts.deletions == currentFile.deletions
+            } else {
+                currentPatchIsComplete = false
+            }
+            if generation.visualizationType != .riskMap || currentPatchIsComplete {
+                openFile(path: path)
+                return
+            }
+
         }
 
-        guard let file = generation.analyzedFiles.first(where: { $0.filename == path || $0.previousFilename == path }) else {
+        guard let file = (generation.analyzedFiles + generation.context.files)
+            .first(where: { $0.filename == path || $0.previousFilename == path }) else {
             self.notice = "This analysis did not capture a patch for \(path). The original explanation remains in history."
             return
         }
@@ -258,7 +280,8 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.historicalFileSelection = PullRequestHistoricalFileSelection(
             file: file,
             createdAt: generation.createdAt,
-            headSHA: generation.headSHA
+            headSHA: generation.headSHA,
+            isCurrentRevision: isCurrentRevision
         )
         self.selectedTab = .filesChanged
 
@@ -282,7 +305,8 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.historicalFileSelection = PullRequestHistoricalFileSelection(
             file: file,
             createdAt: entry.createdAt,
-            headSHA: entry.headSHA
+            headSHA: entry.headSHA,
+            isCurrentRevision: false
         )
         self.selectedTab = .filesChanged
 
@@ -396,7 +420,16 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     private func refreshConversation(account: GitHubAccount) async {
 
         do {
+
             self.conversation = try await self.gitHub.reviewConversation(for: self.request, account: account)
+            if let details = self.details {
+
+                let updated = details.replacingConversation(self.conversation)
+                self.details = updated
+                self.aiWorkspace?.update(details: updated)
+
+            }
+
         } catch {
             self.errorMessage = "Your submission succeeded, but the conversation could not refresh. \(error.localizedDescription)"
         }

@@ -5,204 +5,118 @@ struct AILearningPathView: View {
     let response: LearningPathResponse
     let generation: AIReviewGeneration
     let onOpenFile: (AIReviewGeneration, String) -> Void
-    @Binding var selectedStepID: String?
+    @Binding var expandedStepIDs: Set<String>
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var selectedStep: LearningPathStep? {
-        self.response.steps.first { $0.id == self.selectedStepID } ?? self.response.steps.first
+    private var allExpanded: Bool {
+        Set(self.response.steps.map(\.id)).isSubset(of: self.expandedStepIDs)
     }
 
     var body: some View {
 
-        HStack(spacing: 0) {
-
+        ScrollViewReader { proxy in
             ScrollView {
 
-                VStack(alignment: .leading, spacing: 0) {
+                LazyVStack(alignment: .leading, spacing: 0) {
 
                     introduction()
                     ForEach(Array(self.response.steps.enumerated()), id: \.element.id) { index, step in
-                        stepRow(step, number: index + 1, hasFollowingStep: index < self.response.steps.count - 1)
+
+                        AILearningStepCard(
+                            step: step,
+                            number: index + 1,
+                            steps: self.response.steps,
+                            isExpanded: self.expandedStepIDs.contains(step.id),
+                            onToggle: { toggleStep(step.id) },
+                            onOpenFile: { self.onOpenFile(self.generation, $0) },
+                            onRevealStep: { identifier in
+                                revealStep(identifier, proxy: proxy)
+                            }
+                        )
+                        .id(step.id)
+                        if index < self.response.steps.count - 1 {
+                            self.theme.border.frame(width: 1, height: 16)
+                                .padding(.leading, 35)
+                                .accessibilityHidden(true)
+                        }
+
                     }
 
                 }
+                .frame(maxWidth: 860)
                 .padding(24)
+                .frame(maxWidth: .infinity)
 
             }
-            .frame(minWidth: 350, maxWidth: .infinity)
-            self.theme.border.frame(width: 1)
-            stepInspector()
-                .frame(width: 330)
-
         }
 
     }
 
     private func introduction() -> some View {
 
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
 
+            Label("A Guided Walkthrough", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(self.theme.accent)
             Text(self.response.title)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 23, weight: .semibold))
+                .foregroundStyle(self.theme.text)
+                .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
+                .accessibilityAddTraits(.isHeader)
             Text(self.response.overview)
-                .font(.system(size: 12))
+                .font(.system(size: 13))
                 .foregroundStyle(self.theme.secondaryText)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
+            HStack {
 
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.bottom, 22)
-
-    }
-
-    private func stepRow(_ step: LearningPathStep, number: Int, hasFollowingStep: Bool) -> some View {
-
-        let isSelected = self.selectedStep?.id == step.id
-
-        return HStack(alignment: .top, spacing: 14) {
-
-            VStack(spacing: 0) {
-
-                Text(number.formatted())
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(isSelected ? self.theme.accent : self.theme.secondaryText)
-                    .frame(width: 28, height: 28)
-                    .background(isSelected ? self.theme.selection : self.theme.surface, in: Circle())
-                    .overlay(Circle().stroke(self.theme.border, lineWidth: 1))
-                if hasFollowingStep {
-                    self.theme.border.frame(width: 1).frame(maxHeight: .infinity)
+                Text("\(self.response.steps.count) \(self.response.steps.count == 1 ? "Step" : "Steps")")
+                    .font(.system(size: 11))
+                    .foregroundStyle(self.theme.secondaryText)
+                Spacer(minLength: 12)
+                Button(self.allExpanded ? "Collapse All" : "Expand All") {
+                    withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                        self.expandedStepIDs = self.allExpanded ? [] : Set(self.response.steps.map(\.id))
+                    }
                 }
+                .buttonStyle(.borderless)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(self.theme.accent)
 
             }
-            Button {
-                self.selectedStepID = step.id
-            } label: {
-
-                VStack(alignment: .leading, spacing: 7) {
-
-                    Text(step.title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(self.theme.text)
-                    Text(step.explanation)
-                        .font(.system(size: 12))
-                        .foregroundStyle(self.theme.secondaryText)
-                        .multilineTextAlignment(.leading)
-                    if !step.relevantFiles.isEmpty {
-
-                        Text("\(step.relevantFiles.count) Relevant \(step.relevantFiles.count == 1 ? "File" : "Files")")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(self.theme.accent)
-
-                    }
-
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(isSelected ? self.theme.selection : self.theme.surface, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(isSelected ? self.theme.accent.opacity(0.4) : self.theme.border, lineWidth: 1))
-
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Step \(number): \(step.title)")
-            .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .padding(.top, 10)
 
         }
-        .frame(minHeight: 100)
-
-    }
-
-    @ViewBuilder
-    private func stepInspector() -> some View {
-
-        if let step = self.selectedStep {
-
-            ScrollView {
-
-                VStack(alignment: .leading, spacing: 20) {
-
-                    Text(step.title)
-                        .font(.system(size: 16, weight: .semibold))
-                        .textSelection(.enabled)
-                    inspectorSection("Why It Matters") {
-                        Text(step.whyItMatters)
-                    }
-                    if !step.dependsOn.isEmpty {
-                        inspectorSection("Builds On") {
-
-                            ForEach(step.dependsOn, id: \.self) { identifier in
-                                Button {
-                                    self.selectedStepID = identifier
-                                } label: {
-                                    Text(self.response.steps.first { $0.id == identifier }?.title ?? identifier)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundStyle(self.theme.accent)
-                            }
-
-                        }
-                    }
-                    if !step.relevantSymbols.isEmpty {
-                        inspectorSection("Relevant Symbols") {
-
-                            ForEach(step.relevantSymbols, id: \.self) { symbol in
-                                Text(symbol).font(.system(size: 11, design: .monospaced))
-                            }
-
-                        }
-                    }
-                    fileSection("Open These Files", files: step.suggestedFiles)
-                    fileSection("Other Relevant Files", files: step.relevantFiles.filter { !step.suggestedFiles.contains($0) })
-
-                }
-                .padding(20)
-
-            }
-            .background(self.theme.surface)
-
-        }
-
-    }
-
-    @ViewBuilder
-    private func inspectorSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-
-        VStack(alignment: .leading, spacing: 8) {
-
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold))
-                .tracking(0.8)
-                .foregroundStyle(self.theme.secondaryText)
-            content()
-                .font(.system(size: 12))
-                .textSelection(.enabled)
-
-        }
+        .padding(.bottom, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
 
     }
 
-    @ViewBuilder
-    private func fileSection(_ title: String, files: [String]) -> some View {
+    private func toggleStep(_ identifier: String) {
 
-        if !files.isEmpty {
-            inspectorSection(title) {
+        withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.2)) {
 
-                ForEach(files, id: \.self) { path in
-                    Button {
-                        self.onOpenFile(self.generation, path)
-                    } label: {
-                        Label(path, systemImage: "doc.text.magnifyingglass")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .lineLimit(2)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(self.theme.accent)
-                    .help("Open The Diff For \(path)")
-                }
-
+            if self.expandedStepIDs.contains(identifier) {
+                self.expandedStepIDs.remove(identifier)
+            } else {
+                self.expandedStepIDs.insert(identifier)
             }
+
+        }
+
+    }
+
+    private func revealStep(_ identifier: String, proxy: ScrollViewProxy) {
+
+        withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+
+            self.expandedStepIDs.insert(identifier)
+            proxy.scrollTo(identifier, anchor: .top)
+
         }
 
     }

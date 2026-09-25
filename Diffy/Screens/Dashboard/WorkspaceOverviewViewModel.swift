@@ -8,6 +8,7 @@ final class WorkspaceOverviewViewModel: ViewModel {
     private let runtime: AppRuntime
     private let git: GitServiceProtocol
     private let gitHub: GitHubServiceProtocol
+    private let diffBuilder: TextDiffBuilding
     private var refreshID = UUID()
 
     @Published private(set) var activeProjects: [OverviewProjectChange] = []
@@ -42,12 +43,14 @@ final class WorkspaceOverviewViewModel: ViewModel {
     init(
         runtime: AppRuntime,
         git: GitServiceProtocol,
-        gitHub: GitHubServiceProtocol
+        gitHub: GitHubServiceProtocol,
+        diffBuilder: TextDiffBuilding
     ) {
 
         self.runtime = runtime
         self.git = git
         self.gitHub = gitHub
+        self.diffBuilder = diffBuilder
 
     }
 
@@ -63,7 +66,7 @@ final class WorkspaceOverviewViewModel: ViewModel {
             link: GitHubRepositoryLink(coordinate: coordinate),
             preferredAccountID: request.accountID
         )
-        return PullRequestReviewViewModel(request: reviewRequest, accounts: accounts, gitHub: self.gitHub)
+        return PullRequestReviewViewModel(request: reviewRequest, accounts: accounts, gitHub: self.gitHub, diffBuilder: self.diffBuilder)
 
     }
 

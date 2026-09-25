@@ -9,25 +9,15 @@ struct MockAIProvider: AIProvider {
     ) async throws -> Response {
 
         let file = request.context.files.first?.filename ?? request.context.fileInventory.first ?? ""
+        let patchFile = request.context.files.first {
+            request.context.patchPaths.contains($0.filename)
+        }?.filename
         let value: Any
 
         switch request.schema {
 
         case .learningPath:
-            value = LearningPathResponse(
-                title: "Understand this pull request",
-                overview: "A guided route through the change at the recorded revision.",
-                steps: [LearningPathStep(
-                    id: "start",
-                    title: "Read the main change",
-                    explanation: "Open the central changed file and follow the new behavior.",
-                    whyItMatters: "It establishes the purpose of this PR before reviewing details.",
-                    relevantFiles: file.isEmpty ? [] : [file],
-                    relevantSymbols: [],
-                    suggestedFiles: file.isEmpty ? [] : [file],
-                    dependsOn: []
-                )]
-            )
+            value = MockLearningPathBuilder.response(context: request.context)
 
         case .architectureMap:
             value = ArchitectureMapResponse(
@@ -39,29 +29,55 @@ struct MockAIProvider: AIProvider {
                     kind: .other,
                     change: .changed,
                     responsibility: "Owns a part of the changed behavior.",
-                    changedFiles: file.isEmpty ? [] : [file],
+                    changedFiles: patchFile.map { [$0] } ?? [],
                     relevantSymbols: [],
                     whyItMatters: "Review its relationships as the change develops."
                 )],
                 edges: []
             )
 
+        case .riskChunk:
+            value = RiskChunkResponse(
+                assessments: request.context.files.enumerated().map { index, snapshot in
+                    RiskChunkAssessment(
+                        id: "chunk-\(index)",
+                        attention: .medium,
+                        summary: "Review the changed behavior in \(snapshot.filename).",
+                        factors: ["Changed behavior"],
+                        evidence: ["The supplied diff part includes this file."],
+                        inspect: ["Read the changed lines and their callers."],
+                        confidence: .low,
+                        uncertainty: "Preview data is illustrative."
+                    )
+                }
+            )
+
         case .riskMap:
-            value = RiskMapResponse(
-                title: "Risk Map",
-                overview: "Areas to inspect in the supplied change.",
-                risks: [RiskItem(
+
+            let risks: [RiskItem]
+            if let patchFile {
+                risks = [RiskItem(
                     id: "main-change",
                     title: "Primary behavior",
                     attention: .medium,
                     whyFlagged: "This file carries the main changed behavior.",
                     evidence: ["The supplied patch changes this file."],
-                    files: file.isEmpty ? [] : [file],
+                    files: [patchFile],
                     symbols: [],
                     inspect: ["Read the altered control flow and edge cases."],
                     confidence: .low,
                     uncertainty: "Preview data is illustrative."
                 )]
+            } else {
+                risks = []
+            }
+
+            value = RiskMapSynthesis(
+                title: "Risk Map",
+                overview: "Areas to inspect in the supplied change.",
+                blastRadius: "Review the affected paths and their callers together.",
+                blastRadiusLevel: .medium,
+                risks: risks
             )
 
         case .question:

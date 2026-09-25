@@ -18,7 +18,7 @@ struct PullRequestHistoricalFileView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
 
-                    Label("Historical Diff", systemImage: "clock.arrow.circlepath")
+                    Label(self.selection.isCurrentRevision ? "Captured Full Diff" : "Historical Diff", systemImage: "clock.arrow.circlepath")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(self.theme.accent)
                     Text(self.selection.file.filename)
@@ -41,8 +41,17 @@ struct PullRequestHistoricalFileView: View {
             ScrollView([.horizontal, .vertical]) {
 
                 if self.lines.isEmpty {
-                    DiffyStatusBanner(message: "The historical analysis did not capture a text patch for this file.")
-                        .padding(20)
+
+                    if let patch = self.selection.file.patch, !patch.isEmpty {
+                        Text(patch)
+                            .font(.system(size: 11, design: .monospaced))
+                            .textSelection(.enabled)
+                            .padding(20)
+                    } else {
+                        DiffyStatusBanner(message: "The analysis did not capture a diff for this file.")
+                            .padding(20)
+                    }
+
                 } else {
 
                     LazyVStack(alignment: .leading, spacing: 0) {

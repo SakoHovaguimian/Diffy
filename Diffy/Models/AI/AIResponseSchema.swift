@@ -5,6 +5,7 @@ import Foundation
 enum AIResponseSchema: String, Sendable {
     case learningPath
     case architectureMap
+    case riskChunk
     case riskMap
     case question
     case noteFix
@@ -27,7 +28,22 @@ enum AIResponseSchema: String, Sendable {
                     "relevantFiles": Self.array(Self.string),
                     "relevantSymbols": Self.array(Self.string),
                     "suggestedFiles": Self.array(Self.string),
-                    "dependsOn": Self.array(Self.string)
+                    "dependsOn": Self.array(Self.string),
+                    "breakdown_descriptions": Self.string,
+                    "codeReferences": Self.array(Self.object([
+                        "id": Self.string,
+                        "label": Self.string,
+                        "filePath": Self.string
+                    ])),
+                    "examples": Self.array(Self.object([
+                        "id": Self.string,
+                        "title": Self.string,
+                        "kind": Self.enumeration(["source", "illustrative"]),
+                        "language": Self.string,
+                        "code": Self.string,
+                        "explanation": Self.string,
+                        "filePath": Self.string
+                    ]))
                 ]))
             ])
 
@@ -54,10 +70,26 @@ enum AIResponseSchema: String, Sendable {
                 ]))
             ])
 
+        case .riskChunk:
+            Self.object([
+                "assessments": Self.array(Self.object([
+                    "id": Self.string,
+                    "attention": Self.enumeration(["high", "medium", "low"]),
+                    "summary": Self.string,
+                    "factors": Self.array(Self.string),
+                    "evidence": Self.array(Self.string),
+                    "inspect": Self.array(Self.string),
+                    "confidence": Self.enumeration(["high", "medium", "low"]),
+                    "uncertainty": Self.string
+                ]))
+            ])
+
         case .riskMap:
             Self.object([
                 "title": Self.string,
                 "overview": Self.string,
+                "blastRadius": Self.string,
+                "blastRadiusLevel": Self.enumeration(["high", "medium", "low"]),
                 "risks": Self.array(Self.object([
                     "id": Self.string,
                     "title": Self.string,

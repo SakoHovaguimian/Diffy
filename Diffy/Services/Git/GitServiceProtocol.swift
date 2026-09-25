@@ -22,6 +22,8 @@ protocol GitServiceProtocol: Sendable {
         previous: GitRepositorySnapshot?
     ) async throws -> GitRepositorySnapshot
 
+    func branches(in repository: GitRepositoryReference) async throws -> [RepositoryBranch]
+
     func comparisonFiles(
         in repository: GitRepositoryReference,
         selection: ComparisonSelection
