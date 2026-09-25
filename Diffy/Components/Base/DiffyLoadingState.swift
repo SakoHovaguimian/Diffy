@@ -10,11 +10,11 @@ struct DiffyLoadingState: View {
 
         HStack(spacing: self.contentSize.scaled(12)) {
 
-            progressMark()
+            self.progressMark()
 
             VStack(alignment: .leading, spacing: self.contentSize.scaled(2)) {
 
-                Text("IN PROGRESS")
+                Text("In Progress".uppercased())
                     .font(self.contentSize.font(size: 8, weight: .semibold))
                     .tracking(self.contentSize.scaled(1.15))
                     .foregroundStyle(self.theme.accent)
@@ -34,7 +34,6 @@ struct DiffyLoadingState: View {
             RoundedRectangle(cornerRadius: self.contentSize.scaled(12))
                 .stroke(self.theme.border.opacity(self.theme.isDark ? 0.82 : 0.72))
         }
-        .fixedSize()
         .accessibilityElement(children: .combine)
 
     }
@@ -52,6 +51,7 @@ struct DiffyLoadingState: View {
             ProgressView()
                 .controlSize(.small)
                 .tint(self.theme.accent)
+                .scaleEffect(self.contentSize.scale)
                 .accessibilityHidden(true)
 
         }
