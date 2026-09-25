@@ -1,0 +1,23 @@
+included:
+  - Diffy
+
+# Expanded-block padding is intentional. Do not enable rules that strip it.
+only_rules:
+  - colon
+  - comma
+  - control_statement
+  - duplicate_imports
+  - force_cast
+  - force_try
+  - opening_brace
+  - return_arrow_whitespace
+  - syntactic_sugar
+  - trailing_newline
+  - trailing_semicolon
+  - trailing_whitespace
+  - unneeded_break_in_switch
+  - vertical_whitespace
+  - void_return
+
+vertical_whitespace:
+  max_empty_lines: 1
