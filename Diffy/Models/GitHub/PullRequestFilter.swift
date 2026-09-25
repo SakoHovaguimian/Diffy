@@ -1,7 +1,7 @@
 import Foundation
 
 enum PullRequestFilter: String, CaseIterable, Codable, Hashable, Identifiable, Sendable {
-    case allOpen
+    case all
     case authoredByMe
     case assignedToMe
     case reviewRequested
@@ -15,7 +15,7 @@ enum PullRequestFilter: String, CaseIterable, Codable, Hashable, Identifiable, S
 
         switch self {
 
-        case .allOpen: "All open"
+        case .all: "Anyone"
         case .authoredByMe: "Authored by me"
         case .assignedToMe: "Assigned to me"
         case .reviewRequested: "Review requested"
@@ -29,7 +29,7 @@ enum PullRequestFilter: String, CaseIterable, Codable, Hashable, Identifiable, S
 
         switch self {
 
-        case .allOpen: "tray.full"
+        case .all: "tray.full"
         case .authoredByMe: "person"
         case .assignedToMe: "person.crop.circle.badge.checkmark"
         case .reviewRequested: "eye"
@@ -43,7 +43,7 @@ enum PullRequestFilter: String, CaseIterable, Codable, Hashable, Identifiable, S
 
         switch self {
 
-        case .allOpen: true
+        case .all: true
         case .authoredByMe: pullRequest.isAuthored(by: viewerLogin)
         case .assignedToMe: pullRequest.isAssigned(to: viewerLogin)
         case .reviewRequested: pullRequest.requestsReview(from: viewerLogin)

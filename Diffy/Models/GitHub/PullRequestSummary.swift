@@ -9,6 +9,7 @@ struct PullRequestSummary: Codable, Hashable, Identifiable, Sendable {
     let requestedReviewers: [GitHubUserSummary]
     let requestedTeams: [GitHubTeamSummary]
     let isDraft: Bool
+    let lifecycle: PullRequestLifecycle
     let baseRef: String
     let baseSHA: String
     let headRef: String
@@ -18,6 +19,10 @@ struct PullRequestSummary: Codable, Hashable, Identifiable, Sendable {
     let updatedAt: Date
     let webURL: URL
     var checks: PullRequestChecksSummary?
+
+    var statusTitle: String {
+        self.isDraft && self.lifecycle == .open ? "Draft" : self.lifecycle.title
+    }
 
     func isFromFork(of baseFullName: String) -> Bool {
 

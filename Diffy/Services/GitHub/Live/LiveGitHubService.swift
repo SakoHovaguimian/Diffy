@@ -62,10 +62,18 @@ struct LiveGitHubService: GitHubServiceProtocol {
     }
 
     func assignedPullRequests(for account: GitHubAccount) async throws -> AssignedPullRequestListing {
+        try await searchedPullRequests(for: account, qualifier: "assignee:")
+    }
+
+    func reviewRequestedPullRequests(for account: GitHubAccount) async throws -> AssignedPullRequestListing {
+        try await searchedPullRequests(for: account, qualifier: "review-requested:")
+    }
+
+    private func searchedPullRequests(for account: GitHubAccount, qualifier: String) async throws -> AssignedPullRequestListing {
 
         var query = URLComponents()
         query.queryItems = [
-            URLQueryItem(name: "q", value: "is:pull-request is:open assignee:\(account.login)"),
+            URLQueryItem(name: "q", value: "is:pull-request is:open \(qualifier)\(account.login)"),
             URLQueryItem(name: "sort", value: "updated"),
             URLQueryItem(name: "order", value: "desc"),
             URLQueryItem(name: "per_page", value: "100")
@@ -78,21 +86,27 @@ struct LiveGitHubService: GitHubServiceProtocol {
         )
 
         return AssignedPullRequestListing(
-            requests: response.items.map(\.summary),
+            requests: response.items.map {
+
+                var summary = $0.summary
+                summary.accountID = account.id
+                return summary
+
+            },
             hasMore: response.incompleteResults || response.totalCount > response.items.count
         )
 
     }
 
-    func openPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, validators: GitHubResourceValidators) async throws -> GitHubFetchResult<[PullRequestSummary]> {
+    func unmergedPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, validators: GitHubResourceValidators) async throws -> GitHubFetchResult<[PullRequestSummary]> {
 
         var result: [PullRequestSummary] = []
         var page = 1
 
         while true {
 
-            let response = try await get([GitHubPullRequestResponse].self, path: repositoryPath(link.coordinate) + "/pulls?state=open&sort=updated&direction=desc&per_page=100&page=\(page)", account: account)
-            result += response.map(\.summary)
+            let response = try await get([GitHubPullRequestResponse].self, path: repositoryPath(link.coordinate) + "/pulls?state=all&sort=updated&direction=desc&per_page=100&page=\(page)", account: account)
+            result += response.map(\.summary).filter { $0.lifecycle != .merged }
 
             if response.count < 100 { break }
             page += 1
@@ -111,12 +125,24 @@ struct LiveGitHubService: GitHubServiceProtocol {
 
         do {
 
-            let response = try await get(ChecksPage.self, path: repositoryPath(link.coordinate) + "/commits/\(pullRequest.headSHA)/check-runs?per_page=100", account: account)
-            let pending = response.checkRuns.filter { $0.status != "completed" }.count
-            let failed = response.checkRuns.filter { ["failure", "cancelled", "timed_out", "action_required", "startup_failure"].contains($0.conclusion ?? "") }.count
-            let passed = response.checkRuns.filter { $0.conclusion == "success" }.count
+            var runs: [ChecksPage.Check] = []
+            var page = 1
+
+            while true {
+
+                let response = try await get(ChecksPage.self, path: repositoryPath(link.coordinate) + "/commits/\(pullRequest.headSHA)/check-runs?per_page=100&page=\(page)", account: account)
+                runs += response.checkRuns
+                if runs.count >= response.totalCount { break }
+                if page >= 10 { return .unavailable }
+                page += 1
+
+            }
+
+            let pending = runs.filter { $0.status != "completed" }.count
+            let failed = runs.filter { ["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"].contains($0.conclusion ?? "") }.count
+            let passed = runs.filter { ["success", "neutral", "skipped"].contains($0.conclusion ?? "") }.count
             let state: PullRequestChecksState = failed > 0 ? .failure : (pending > 0 ? .pending : (passed > 0 ? .success : .neutral))
-            return PullRequestChecksSummary(state: state, total: response.checkRuns.count, passed: passed, failed: failed, pending: pending)
+            return PullRequestChecksSummary(state: state, total: runs.count, passed: passed, failed: failed, pending: pending)
 
         } catch {
             return .unavailable
@@ -124,7 +150,7 @@ struct LiveGitHubService: GitHubServiceProtocol {
 
     }
 
-    private func get<Value: Decodable & Sendable>(_ type: Value.Type, path: String, account: GitHubAccount) async throws -> Value {
+    func get<Value: Decodable & Sendable>(_ type: Value.Type, path: String, account: GitHubAccount) async throws -> Value {
 
         guard account.host == self.configuration.host else {
             throw GitHubError.accountNotFound
@@ -135,7 +161,7 @@ struct LiveGitHubService: GitHubServiceProtocol {
 
     }
 
-    private func repositoryPath(_ coordinate: GitHubRepositoryCoordinate) -> String {
+    func repositoryPath(_ coordinate: GitHubRepositoryCoordinate) -> String {
 
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_."))
         let owner = coordinate.owner.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
@@ -172,6 +198,7 @@ struct LiveGitHubService: GitHubServiceProtocol {
         }
 
         let checkRuns: [Check]
+        let totalCount: Int
     }
 
 }

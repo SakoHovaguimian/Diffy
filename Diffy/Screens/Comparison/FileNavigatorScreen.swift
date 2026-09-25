@@ -57,7 +57,7 @@ struct FileNavigatorScreen: View {
             navigatorFooter()
 
         }
-        .background(self.theme.surface)
+        .background(self.theme.isDark ? self.theme.surface : self.theme.sidebar)
 
     }
 
@@ -105,7 +105,8 @@ struct FileNavigatorScreen: View {
         }
         .font(self.contentSize.font(size: 11))
         .padding(self.contentSize.scaled(8))
-        .background(self.theme.elevated, in: RoundedRectangle(cornerRadius: self.contentSize.scaled(6)))
+        .background(self.theme.isDark ? self.theme.elevated : self.theme.surface, in: RoundedRectangle(cornerRadius: self.contentSize.scaled(6)))
+        .overlay(RoundedRectangle(cornerRadius: self.contentSize.scaled(6)).stroke(self.theme.isDark ? .clear : self.theme.border))
         .padding(.horizontal, self.contentSize.scaled(12))
 
     }
@@ -257,11 +258,11 @@ struct FileNavigatorScreen: View {
                         .background(self.theme.surface, in: Capsule())
 
                 }
-                .foregroundStyle(self.theme.secondaryText)
+                .foregroundStyle(self.theme.isDark ? self.theme.secondaryText : self.theme.text)
                 .padding(.leading, self.contentSize.scaled(CGFloat(entry.depth) * 15 + 8))
                 .padding(.trailing, self.contentSize.scaled(8))
                 .padding(.vertical, self.contentSize.scaled(10))
-                .background(self.theme.elevated.opacity(0.75), in: RoundedRectangle(cornerRadius: self.contentSize.scaled(8)))
+                .background(self.theme.elevated.opacity(self.theme.isDark ? 0.75 : 1), in: RoundedRectangle(cornerRadius: self.contentSize.scaled(8)))
                 .contentShape(Rectangle())
 
             }

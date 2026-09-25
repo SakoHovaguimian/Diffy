@@ -152,6 +152,10 @@ final class TextDiffViewModel: ViewModel {
         self.draftLines.compactMap { $0.right == nil ? nil : $0.status }
     }
 
+    func updatedLineComparisons() -> [String?] {
+        self.draftLines.filter { $0.right != nil }.map(\.left)
+    }
+
     private func sourceLines(_ source: String) -> [String] {
         source.isEmpty ? [] : source.components(separatedBy: "\n")
     }

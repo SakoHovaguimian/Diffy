@@ -84,7 +84,7 @@ struct ReviewScreen: View {
             exportFooter()
 
         }
-        .background(self.theme.surface)
+        .background(self.theme.isDark ? self.theme.surface : self.theme.sidebar)
         .sheet(isPresented: self.$showsExport) {
 
             ReviewExportScreen(
@@ -278,8 +278,8 @@ struct ReviewScreen: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(self.theme.elevated, in: RoundedRectangle(cornerRadius: 9))
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(self.theme.border.opacity(0.65)))
+        .background(self.theme.isDark ? self.theme.elevated : self.theme.surface, in: RoundedRectangle(cornerRadius: 9))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(self.theme.border.opacity(self.theme.isDark ? 0.65 : 1)))
 
     }
 

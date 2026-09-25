@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum FileChangeStatus: String, CaseIterable, Codable, Identifiable {
+enum FileChangeStatus: String, CaseIterable, Codable, Identifiable, Sendable {
 
     case modified = "Modified"
     case added = "Added"

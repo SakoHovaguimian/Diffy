@@ -10,4 +10,5 @@ struct ComparisonReviewRequest: Identifiable {
     let mode: ComparisonMode
     var emptyMessage = "There are no file changes between these sources."
     var warning: String?
+    var successMessage: String?
 }

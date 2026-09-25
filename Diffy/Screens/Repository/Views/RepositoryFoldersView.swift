@@ -34,37 +34,23 @@ struct RepositoryFoldersView: View {
 
                 }
                 Divider()
-                HStack {
-
-                    Text("Tracked files").font(.system(size: 16, weight: .semibold))
-                    Text("\(self.viewModel.trackedPaths.count)").font(.system(size: 11, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
-                    Spacer()
-                    TextField("Filter paths", text: self.$viewModel.search).textFieldStyle(.roundedBorder).frame(maxWidth: 250)
-                    if !self.viewModel.search.isEmpty { Button("Clear") { self.viewModel.search = "" } }
-
-                }
-                LazyVStack(alignment: .leading, spacing: 0) {
-
-                    ForEach(self.viewModel.visiblePaths.prefix(self.viewModel.visibleLimit), id: \.self) { path in
-
-                        HStack(spacing: 12) {
-
-                            Image(systemName: "doc.text").foregroundStyle(self.theme.accent)
-                            Text(path).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
-                            Spacer()
-
-                        }
-                        .padding(.vertical, 10)
-                        .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
-
-                    }
-
-                }
-
-                if self.viewModel.visiblePaths.count > self.viewModel.visibleLimit {
-                    Button("Show more files") { self.viewModel.visibleLimit += 50 }
-                } else if self.viewModel.visiblePaths.isEmpty {
-                    Text("No tracked files match this filter.").foregroundStyle(self.theme.secondaryText)
+                Text("Selected folder contents · \(self.viewModel.folderEntries.count) files")
+                    .font(.system(size: 16, weight: .semibold))
+                if self.viewModel.folderEntries.isEmpty {
+                    Text("Compare two folders to browse every file in their combined contents.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(self.theme.secondaryText)
+                } else {
+                    RepositoryPathNavigation(
+                        entries: self.viewModel.folderEntries,
+                        selectedPath: self.viewModel.selectedFolderPath,
+                        onSelect: self.viewModel.inspectFolderFile,
+                        query: self.$viewModel.search,
+                        layout: self.$viewModel.folderLayout,
+                        sort: self.$viewModel.folderSort,
+                        expandedFolders: self.$viewModel.folderExpandedFolders
+                    )
+                    .frame(minHeight: 300)
                 }
 
             }

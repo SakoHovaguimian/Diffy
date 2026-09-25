@@ -52,7 +52,7 @@ struct RepositoryOverviewView: View {
                         Button("Show in Finder") { ExternalLinkController().reveal(snapshot.location.rootPath) }
 
                     }
-                    Text("Updated \(snapshot.capturedAt.formatted(date: .omitted, time: .standard)). Remote counts reflect the last fetch.")
+                    Text("Updated \(snapshot.capturedAt.formatted(date: .omitted, time: .standard)). Remote counts use locally fetched tracking refs; \(snapshot.lastFetchAt.map { "last fetch recorded \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown").")
                         .font(.system(size: 10)).foregroundStyle(self.theme.secondaryText)
 
                 }
@@ -70,7 +70,7 @@ struct RepositoryOverviewView: View {
 
         HStack(spacing: 1) {
 
-            metric("Unstaged", count: snapshot.unstagedChanges.count, detail: "Changes on disk", color: self.theme.accent, mode: .workingTree)
+            metric("Unstaged", count: snapshot.unstagedChanges.count, detail: "Changes on disk", color: self.theme.accent, mode: .workingTree, lineCounts: self.viewModel.unstagedLineCounts)
             metric("Staged", count: snapshot.stagedChanges.count, detail: "In your next commit", color: self.theme.added, mode: .staged)
             metric("Conflicts", count: snapshot.conflicts.count, detail: "Decisions to make", color: self.theme.modified, mode: .merge)
 
@@ -81,7 +81,7 @@ struct RepositoryOverviewView: View {
 
     }
 
-    private func metric(_ title: String, count: Int, detail: String, color: Color, mode: ComparisonMode) -> some View {
+    private func metric(_ title: String, count: Int, detail: String, color: Color, mode: ComparisonMode, lineCounts: DiffLineCounts? = nil) -> some View {
 
         Button { self.selectMode(mode) } label: {
 
@@ -94,7 +94,21 @@ struct RepositoryOverviewView: View {
                     Image(systemName: "arrow.up.right").font(.system(size: 10))
 
                 }
-                Text(count, format: .number).font(.system(size: 38, weight: .light, design: .rounded)).foregroundStyle(color)
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+
+                    Text(count, format: .number).font(.system(size: 38, weight: .light, design: .rounded)).foregroundStyle(color)
+                    Spacer(minLength: 4)
+                    if title == "Unstaged" {
+                        if let lineCounts {
+                            Text("+\(lineCounts.additions)").foregroundStyle(self.theme.added)
+                            Text("−\(lineCounts.deletions)").foregroundStyle(self.theme.removed)
+                        } else {
+                            Text("Lines unavailable").foregroundStyle(self.theme.secondaryText)
+                        }
+                    }
+
+                }
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
                 Text(detail).font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
 
             }
@@ -112,14 +126,18 @@ struct RepositoryOverviewView: View {
 
         VStack(alignment: .leading, spacing: 18) {
 
-            sectionTitle("Branch position", detail: snapshot.upstream?.name ?? "No upstream configured")
-            HStack(spacing: 24) {
-
-                Label("\(snapshot.upstream?.ahead ?? 0) ahead", systemImage: "arrow.up")
-                Label("\(snapshot.upstream?.behind ?? 0) behind", systemImage: "arrow.down")
-
+            sectionTitle("Branch position", detail: snapshot.upstream.map { "\($0.name) · \(snapshot.lastFetchAt.map { "last fetched \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown")" } ?? "No upstream configured")
+            if let upstream = snapshot.upstream {
+                HStack(spacing: 24) {
+                    Label("\(upstream.ahead) ahead", systemImage: "arrow.up")
+                    Label("\(upstream.behind) behind", systemImage: "arrow.down")
+                }
+                .font(.system(size: 12, weight: .medium))
+            } else {
+                Text("Choose a tracking branch from Pull to see remote position.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(self.theme.secondaryText)
             }
-            .font(.system(size: 12, weight: .medium))
             Divider()
             sectionTitle("References", detail: "\(snapshot.localBranches.count) local branches · \(snapshot.tags.count) tags")
 

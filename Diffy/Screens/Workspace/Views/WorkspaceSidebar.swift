@@ -188,13 +188,14 @@ struct WorkspaceSidebar: View {
                             .rotationEffect(.degrees(bucket.isExpanded ? 90 : 0))
                             .animation(.easeInOut(duration: 0.22), value: bucket.isExpanded)
                         Image(systemName: bucket.symbol)
+                            .foregroundStyle(color)
                         Text(bucket.title.uppercased())
                             .tracking(1)
                         Spacer(minLength: 0)
 
                     }
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(color)
+                    .foregroundStyle(self.theme.isDark ? color : self.theme.text)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 7)
                     .contentShape(Rectangle())
@@ -496,7 +497,18 @@ struct WorkspaceSidebar: View {
             }
             .padding(.horizontal, 10)
             .frame(height: self.projectRowHeight)
-            .background(isSelected ? color.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 7))
+            .background(isSelected ? color.opacity(self.theme.isDark ? 0.10 : 0.18) : .clear, in: RoundedRectangle(cornerRadius: 7))
+            .overlay(alignment: .leading) {
+
+                if isSelected && !self.theme.isDark {
+
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(color)
+                        .frame(width: 3, height: 22)
+
+                }
+
+            }
             .contentShape(Rectangle())
 
         }
@@ -504,7 +516,7 @@ struct WorkspaceSidebar: View {
         .draggable(project.id)
         .contextMenu {
 
-            Button("Open overview") { self.viewModel.selectProject(project) }
+            Button("Open overview") { self.viewModel.openProjectOverview(project) }
             Button("Edit Project…") { self.viewModel.editProject(project) }
             Button("Toggle favorite") { self.viewModel.toggleFavorite(project) }
 
@@ -581,7 +593,7 @@ struct WorkspaceSidebar: View {
                     .frame(maxWidth: .infinity)
 
             }
-            .buttonStyle(SidebarCreationButtonStyle(color: self.theme.accent))
+            .buttonStyle(SidebarCreationButtonStyle(theme: self.theme))
             .help("Create a new Bucket")
 
             Button {
@@ -592,7 +604,7 @@ struct WorkspaceSidebar: View {
                     .frame(maxWidth: .infinity)
 
             }
-            .buttonStyle(SidebarCreationButtonStyle(color: self.theme.accent))
+            .buttonStyle(SidebarCreationButtonStyle(theme: self.theme))
             .help("Choose a folder to add to Unassigned")
 
             SettingsLink {
@@ -624,18 +636,30 @@ struct WorkspaceSidebar: View {
 
 private struct SidebarCreationButtonStyle: ButtonStyle {
 
-    let color: Color
+    let theme: DiffyTheme
 
     func makeBody(configuration: Configuration) -> some View {
 
         configuration.label
             .lineLimit(1)
-            .foregroundStyle(.white)
+            .foregroundStyle(self.theme.isDark ? Color.white : self.theme.text)
             .frame(height: 34)
             .background(
-                self.color.opacity(configuration.isPressed ? 0.78 : 1),
+                self.theme.isDark
+                    ? self.theme.accent.opacity(configuration.isPressed ? 0.78 : 1)
+                    : self.theme.surface.opacity(configuration.isPressed ? 0.72 : 1),
                 in: RoundedRectangle(cornerRadius: 8)
             )
+            .overlay {
+
+                if !self.theme.isDark {
+
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(self.theme.border, lineWidth: 1)
+
+                }
+
+            }
 
     }
 

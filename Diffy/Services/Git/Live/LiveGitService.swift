@@ -63,16 +63,32 @@ actor LiveGitService: GitServiceProtocol {
         let status = try await self.runner.run(["status", "--porcelain=v1", "-z", "--untracked-files=all"], directory: root)
         let branch = try await self.runner.run(["symbolic-ref", "--quiet", "--short", "HEAD"], directory: url, acceptsFailure: true)
         let head = try await self.runner.run(["rev-parse", "--verify", "HEAD"], directory: url, acceptsFailure: true)
-        let branches = try await self.runner.run(["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(HEAD)%00%(committerdate:unix)", "refs/heads", "refs/remotes"], directory: root)
-        let tags = try await self.runner.run(["for-each-ref", "--format=%(refname:short)%00%(objectname)", "refs/tags"], directory: root)
         let changes = GitOutputParser.changes(status.text)
         let state = GitHeadState(branchName: branch.status == 0 ? branch.trimmed : nil, commitID: head.status == 0 ? head.trimmed : nil)
+        let upstream = try await upstream(at: root, branch: state.branchName)
+        let fetchDate = try? URL(fileURLWithPath: location.gitDirectoryPath)
+            .appendingPathComponent("FETCH_HEAD")
+            .resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+
+        if scope == .status {
+
+            let snapshot = GitRepositorySnapshot(
+                location: location, head: state, upstream: upstream, operation: operation(at: location),
+                changes: changes, remotes: [], branches: [], tags: [], recentCommits: [],
+                capturedAt: Date(), referencesCapturedAt: nil, lastFetchAt: fetchDate
+            )
+            return previous?.replacingStatus(with: snapshot) ?? snapshot
+
+        }
+
+        let branches = try await self.runner.run(["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(HEAD)%00%(committerdate:unix)", "refs/heads", "refs/remotes"], directory: root)
+        let tags = try await self.runner.run(["for-each-ref", "--format=%(refname:short)%00%(objectname)", "refs/tags"], directory: root)
         let commits = state.isUnborn ? [] : try await commits(in: repository, revision: nil, limit: 50)
 
         return GitRepositorySnapshot(
             location: location,
             head: state,
-            upstream: try await upstream(at: root, branch: state.branchName),
+            upstream: upstream,
             operation: operation(at: location),
             changes: changes,
             remotes: try await remotes(at: root),
@@ -85,7 +101,8 @@ actor LiveGitService: GitServiceProtocol {
             },
             recentCommits: commits,
             capturedAt: Date(),
-            referencesCapturedAt: Date()
+            referencesCapturedAt: Date(),
+            lastFetchAt: fetchDate
         )
 
     }
@@ -152,8 +169,15 @@ actor LiveGitService: GitServiceProtocol {
         try await log(in: repository, revision: revision, path: nil, limit: limit)
     }
 
-    func fileHistory(in repository: GitRepositoryReference, path: String, limit: Int) async throws -> [RepositoryCommit] {
-        try await log(in: repository, revision: nil, path: path, limit: limit)
+    func fileHistory(
+        in repository: GitRepositoryReference,
+        revision: String?,
+        path: String,
+        limit: Int
+    ) async throws -> [RepositoryCommit] {
+
+        try await log(in: repository, revision: revision, path: path, limit: limit)
+
     }
 
     private func log(in repository: GitRepositoryReference, revision: String?, path: String?, limit: Int) async throws -> [RepositoryCommit] {

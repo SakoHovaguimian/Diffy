@@ -93,13 +93,33 @@ struct GitHubRepositoryBrowser: View {
 
             }
             Spacer(minLength: 12)
-            Button("Link folder…") { chooseFolder(repository, clone: false) }
-            Button("Clone…") { chooseFolder(repository, clone: true) }
+            repositoryActions(for: repository)
 
         }
         .padding(14)
         .disabled(self.viewModel.isImporting)
         .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
+
+    }
+
+    private func repositoryActions(for repository: GitHubRepositorySummary) -> some View {
+
+        HStack(spacing: 8) {
+
+            Button("Link") { chooseFolder(repository, clone: false) }
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(1)
+                .accessibilityLabel("Link folder")
+                .help("Link an existing local folder")
+            Button("Clone") { chooseFolder(repository, clone: true) }
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(1)
+                .help("Clone into a local folder")
+
+        }
+        .frame(width: 140, alignment: .trailing)
+        .fixedSize(horizontal: true, vertical: false)
+        .layoutPriority(1)
 
     }
 

@@ -1,6 +1,6 @@
 import Foundation
 
-enum GitSnapshotScope: Sendable {
+enum GitSnapshotScope: Equatable, Sendable {
 
     /// HEAD, upstream, file status, and paused operations. References are carried
     /// over from the previous snapshot.

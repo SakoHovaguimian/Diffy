@@ -89,7 +89,7 @@ extension LiveGitService {
 
     }
 
-    private func comparisonKind(path: String) -> ComparisonFileKind {
+    func comparisonKind(path: String) -> ComparisonFileKind {
 
         let imageExtensions = ["png", "jpg", "jpeg", "gif", "tiff", "tif", "heic", "webp", "bmp", "ico"]
         return imageExtensions.contains((path as NSString).pathExtension.lowercased()) ? .image : .text

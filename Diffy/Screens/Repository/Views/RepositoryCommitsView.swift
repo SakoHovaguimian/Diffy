@@ -11,12 +11,18 @@ struct RepositoryCommitsView: View {
 
             VStack(alignment: .leading, spacing: 28) {
 
-                DiffyPageHeading(eyebrow: "Commit history", title: "Every change has a story.", detail: "Follow the current branch's history. Open a commit to inspect exactly what it introduced.")
+                DiffyPageHeading(eyebrow: "Commit history", title: "Every change has a story.", detail: "Browse any branch without checking it out. Open a commit to inspect exactly what it introduced.")
                 HStack {
 
-                    Label(self.viewModel.snapshot?.head.displayName ?? "HEAD", systemImage: "arrow.triangle.branch")
+                    RepositoryBranchPicker(
+                        branches: self.viewModel.snapshot?.branches ?? [],
+                        selection: Binding(
+                            get: { self.viewModel.commitsBranch },
+                            set: { self.viewModel.selectCommitsBranch($0) }
+                        )
+                    )
                     Spacer()
-                    Text("Latest \(self.viewModel.snapshot?.recentCommits.count ?? 0) commits")
+                    Text("Latest \(self.viewModel.branchCommits.count) commits")
 
                 }
                 .font(.system(size: 12))
@@ -24,14 +30,25 @@ struct RepositoryCommitsView: View {
                 Divider()
                 LazyVStack(alignment: .leading, spacing: 8) {
 
-                    ForEach(Array((self.viewModel.snapshot?.recentCommits ?? []).enumerated()), id: \.element.id) { index, commit in
-                        RepositoryCommitRow(commit: commit, showsConnector: index < (self.viewModel.snapshot?.recentCommits.count ?? 0) - 1) { self.viewModel.inspectCommit(commit) }
+                    ForEach(Array(self.viewModel.branchCommits.enumerated()), id: \.element.id) { index, commit in
+                        RepositoryCommitRow(commit: commit, showsConnector: index < self.viewModel.branchCommits.count - 1) { self.viewModel.inspectCommit(commit) }
                     }
 
                 }
 
-                if self.viewModel.snapshot?.recentCommits.isEmpty ?? true {
-                    DiffyEmptyState(symbol: "clock", title: "The story starts here", message: "Make the first commit from your staged changes.")
+                if self.viewModel.isLoadingCommits {
+                    ProgressView("Reading \(self.viewModel.commitsBranch)…")
+                } else if let error = self.viewModel.commitsError {
+
+                    VStack(alignment: .leading, spacing: 12) {
+
+                        DiffyStatusBanner(message: error, isError: true)
+                        Button("Retry") { Task { await self.viewModel.loadCommits() } }
+
+                    }
+
+                } else if self.viewModel.branchCommits.isEmpty {
+                    DiffyEmptyState(symbol: "clock", title: "No commits on this branch", message: "Choose another branch, or make the first commit from your staged changes.")
                 }
 
             }

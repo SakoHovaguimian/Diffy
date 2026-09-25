@@ -283,7 +283,7 @@ struct TextDiffScreen: View {
                 LazyVStack(spacing: 0) {
 
                     ForEach(self.comparisonFile.lines) { line in
-                        codeLine(line, side: .left)
+                        codeLine(line, side: .left, paneWidth: width)
                             .frame(width: width)
                             .allowsHitTesting(false)
                             .id(line.id)
@@ -324,6 +324,7 @@ struct TextDiffScreen: View {
                 set: { self.viewModel.updateDraft($0, file: self.file) }
             ),
             lineStatuses: self.viewModel.updatedLineStatuses(),
+            lineComparisons: self.viewModel.updatedLineComparisons(),
             focusLine: self.viewModel.editingLineNumber
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -566,11 +567,11 @@ struct TextDiffScreen: View {
             VStack(spacing: 0) {
 
                 if line.isChanged, line.left != nil {
-                    codeLine(line, side: .left).frame(width: width)
+                    codeLine(line, side: .left, paneWidth: width).frame(width: width)
                 }
 
                 if line.right != nil {
-                    codeLine(line, side: .right).frame(width: width)
+                    codeLine(line, side: .right, paneWidth: width).frame(width: width)
                 }
 
             }
@@ -579,7 +580,7 @@ struct TextDiffScreen: View {
 
             HStack(alignment: .top, spacing: 0) {
 
-                codeLine(line, side: .left)
+                codeLine(line, side: .left, paneWidth: contentWidth * self.viewModel.paneRatio)
                     .frame(width: contentWidth * self.viewModel.paneRatio)
                     .clipped()
 
@@ -591,7 +592,7 @@ struct TextDiffScreen: View {
                     .gesture(paneResizeGesture(contentWidth: contentWidth))
                     .help("Drag to resize comparison panes")
 
-                codeLine(line, side: .right)
+                codeLine(line, side: .right, paneWidth: contentWidth * (1 - self.viewModel.paneRatio))
                     .frame(width: contentWidth * (1 - self.viewModel.paneRatio))
                     .clipped()
 
@@ -621,16 +622,18 @@ struct TextDiffScreen: View {
 
     }
 
-    private func codeLine(_ line: DiffLine, side: SourceSide) -> some View {
+    private func codeLine(_ line: DiffLine, side: SourceSide, paneWidth: CGFloat) -> some View {
 
         CodeLineView(
             source: side == .left ? line.left : line.right,
+            oppositeSource: side == .left ? line.right : line.left,
             number: side == .left ? line.oldNumber : line.newNumber,
             status: line.status,
             side: side,
             selected: self.viewModel.isSelected(line, side: side),
             annotated: hasAnnotation(line, side: side),
             emphasis: line.emphasis,
+            paneWidth: paneWidth,
             action: {
                 self.viewModel.select(line, side: side, extends: NSEvent.modifierFlags.contains(.shift))
             },

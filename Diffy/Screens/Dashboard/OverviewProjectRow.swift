@@ -5,6 +5,7 @@ struct OverviewProjectRow: View {
     let change: OverviewProjectChange
     let bucket: Bucket?
     let open: () -> Void
+    var pull: (() -> Void)?
     @Environment(\.diffyTheme) private var theme
 
     private var tint: Color {
@@ -21,69 +22,88 @@ struct OverviewProjectRow: View {
 
     var body: some View {
 
-        Button(action: self.open) {
+        HStack(spacing: 0) {
 
-            HStack(alignment: .top, spacing: 13) {
+            Button(action: self.open) {
 
-                Image(systemName: self.change.project.symbol)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(self.tint)
-                    .frame(width: 42, height: 42)
-                    .background(self.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                HStack(alignment: .top, spacing: 13) {
 
-                VStack(alignment: .leading, spacing: 7) {
+                    Image(systemName: self.change.project.symbol)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(self.tint)
+                        .frame(width: 42, height: 42)
+                        .background(self.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
 
-                    HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 7) {
 
-                        Text(self.change.project.displayName)
-                            .font(.system(size: 13, weight: .semibold))
+                        HStack(spacing: 8) {
+
+                            Text(self.change.project.displayName)
+                                .font(.system(size: 13, weight: .semibold))
+                                .lineLimit(1)
+
+                            Spacer(minLength: 4)
+
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(self.theme.secondaryText)
+
+                        }
+
+                        Label(self.change.branchName, systemImage: "arrow.triangle.branch")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(self.theme.secondaryText)
                             .lineLimit(1)
+                            .truncationMode(.middle)
 
-                        Spacer(minLength: 4)
+                        HStack(spacing: 12) {
 
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(self.theme.secondaryText)
+                            Text("\(self.change.changedFileCount) changed files")
+                                .foregroundStyle(self.theme.secondaryText)
 
-                    }
+                            if let counts = self.change.lineCounts {
 
-                    Label(self.change.branchName, systemImage: "arrow.triangle.branch")
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(self.theme.secondaryText)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                                Text("+\(counts.additions)").foregroundStyle(self.theme.added)
+                                Text("−\(counts.deletions)").foregroundStyle(self.theme.removed)
 
-                    HStack(spacing: 12) {
+                            } else {
+                                Text("Line counts unavailable").foregroundStyle(self.theme.secondaryText)
+                            }
 
-                        Text("\(self.change.changedFileCount) changed files")
-                            .foregroundStyle(self.theme.secondaryText)
+                            if self.change.hasConflicts {
+                                DiffyBadge(title: "Conflicts", color: self.theme.modified)
+                            }
 
-                        if let counts = self.change.lineCounts {
-
-                            Text("+\(counts.additions)").foregroundStyle(self.theme.added)
-                            Text("−\(counts.deletions)").foregroundStyle(self.theme.removed)
-
-                        } else {
-                            Text("Line counts unavailable").foregroundStyle(self.theme.secondaryText)
                         }
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
 
-                        if self.change.hasConflicts {
-                            DiffyBadge(title: "Conflicts", color: self.theme.modified)
+                        if let upstream = self.change.upstream, upstream.behind > 0 {
+                            Text("\(upstream.behind) behind \(upstream.name) in local tracking data · \(self.change.lastFetchAt.map { "last fetch recorded \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown")")
+                                .font(.system(size: 10))
+                                .foregroundStyle(self.theme.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
 
                     }
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
 
                 }
+                .padding(18)
+                .contentShape(Rectangle())
 
             }
-            .padding(18)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .help("Open working tree for \(self.change.project.displayName)")
+            .accessibilityLabel(self.accessibilitySummary)
+
+            if let pull = self.pull, (self.change.upstream?.behind ?? 0) > 0 {
+                Button("Pull", action: pull)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .padding(.trailing, 18)
+                    .help("Pull \(self.change.upstream?.name ?? "tracked upstream") and review changes")
+            }
 
         }
-        .buttonStyle(.plain)
-        .help("Open working tree for \(self.change.project.displayName)")
-        .accessibilityLabel(self.accessibilitySummary)
 
     }
 

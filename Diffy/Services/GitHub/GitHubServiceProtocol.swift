@@ -25,9 +25,10 @@ protocol GitHubServiceProtocol: Sendable {
     /// The most recently updated open pull requests assigned to this account across
     /// repositories visible to it. `hasMore` identifies GitHub's result cap.
     func assignedPullRequests(for account: GitHubAccount) async throws -> AssignedPullRequestListing
+    func reviewRequestedPullRequests(for account: GitHubAccount) async throws -> AssignedPullRequestListing
 
-    /// Open pull requests, requested conditionally with the supplied validators.
-    func openPullRequests(
+    /// Pull requests that have not merged, including closed requests.
+    func unmergedPullRequests(
         for link: GitHubRepositoryLink,
         account: GitHubAccount,
         validators: GitHubResourceValidators
@@ -45,5 +46,10 @@ protocol GitHubServiceProtocol: Sendable {
         link: GitHubRepositoryLink,
         account: GitHubAccount
     ) async -> PullRequestChecksSummary
+
+    func reviewDetails(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> PullRequestReviewDetails
+    func reviewConversation(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> [PullRequestConversationEntry]
+    func submitReview(_ submission: PullRequestReviewSubmission, for request: PullRequestReviewRequest, account: GitHubAccount) async throws
+    func postPullRequestComment(_ body: String, replyingTo commentID: Int?, for request: PullRequestReviewRequest, account: GitHubAccount) async throws
 
 }

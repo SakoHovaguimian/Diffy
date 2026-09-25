@@ -245,13 +245,88 @@ extension LiveGitService {
 
     func folderComparisonFiles(left: URL, right: URL) async throws -> [DiffFile] {
 
-        let patch = try await folderPatch(left: left, right: right)
-        return [DiffFile(id: "folders", path: right.lastPathComponent, originalPath: left.path, status: patch.isEmpty ? .identical : .modified, kind: .text, isStaged: false, lastEditedAt: nil, size: patch.utf8.count, lines: GitPatchParser.lines(patch))]
+        let leftAccess = left.startAccessingSecurityScopedResource()
+        let rightAccess = right.startAccessingSecurityScopedResource()
+        defer { if leftAccess { left.stopAccessingSecurityScopedResource() } }
+        defer { if rightAccess { right.stopAccessingSecurityScopedResource() } }
+        let leftFiles = folderContents(at: left)
+        let rightFiles = folderContents(at: right)
+        let paths = Set(leftFiles.keys).union(rightFiles.keys)
+
+        return paths.map { path in
+
+            let original = leftFiles[path]
+            let updated = rightFiles[path]
+            let status: FileChangeStatus
+
+            if original == nil {
+                status = .added
+            } else if updated == nil {
+                status = .removed
+            } else if let original, let updated {
+                status = FileManager.default.contentsEqual(atPath: original.path, andPath: updated.path) ? .identical : .modified
+            } else {
+                status = .modified
+            }
+
+            let url = updated ?? original
+            let values = try? url?.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+            return DiffFile(
+                id: path, path: path, originalPath: nil, status: status,
+                kind: comparisonKind(path: path), isStaged: false,
+                lastEditedAt: values?.contentModificationDate, size: values?.fileSize ?? 0,
+                lines: [], isContentLoaded: false
+            )
+
+        }
+        .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
 
     }
 
     func folderFileComparison(left: URL, right: URL, file: DiffFile) async throws -> DiffFile {
-        file.replacingLines(GitPatchParser.lines(try await folderPatch(left: left, right: right)))
+        file.replacingLines(GitPatchParser.lines(try await folderFilePatch(left: left, right: right, path: file.path)))
+    }
+
+    func folderFilePatch(left: URL, right: URL, path: String) async throws -> String {
+
+        try validatePath(path)
+        let leftAccess = left.startAccessingSecurityScopedResource()
+        let rightAccess = right.startAccessingSecurityScopedResource()
+        defer { if leftAccess { left.stopAccessingSecurityScopedResource() } }
+        defer { if rightAccess { right.stopAccessingSecurityScopedResource() } }
+        let original = left.appendingPathComponent(path)
+        let updated = right.appendingPathComponent(path)
+        let leftPath = FileManager.default.fileExists(atPath: original.path) ? original.path : "/dev/null"
+        let rightPath = FileManager.default.fileExists(atPath: updated.path) ? updated.path : "/dev/null"
+        let output = try await self.runner.run(
+            ["diff", "--no-index", "--no-ext-diff", "--no-textconv", "--no-color", "--unified=1000000", "--", leftPath, rightPath],
+            directory: FileManager.default.temporaryDirectory, acceptsFailure: true
+        )
+        guard output.status <= 1 else { throw GitError.unsupported(output.error) }
+        return output.text
+
+    }
+
+    private func folderContents(at root: URL) -> [String: URL] {
+
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
+            options: []
+        ) else { return [:] }
+
+        var files: [String: URL] = [:]
+
+        for case let url as URL in enumerator {
+
+            let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+            guard values?.isRegularFile == true || values?.isSymbolicLink == true else { continue }
+            let path = String(url.path.dropFirst(root.path.count + 1))
+            files[path] = url
+
+        }
+
+        return files
     }
 
 }

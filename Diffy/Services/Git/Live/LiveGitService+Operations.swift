@@ -112,6 +112,16 @@ extension LiveGitService {
 
             return ["fetch", "--all"]
 
+        case let .addRemote(name, remoteURL):
+            guard !name.isEmpty, !name.hasPrefix("-"), !name.contains(where: \.isWhitespace),
+                  !remoteURL.isEmpty, !remoteURL.hasPrefix("-"), !remoteURL.contains("\0") else {
+                throw GitError.unsupported("Enter a remote name and HTTPS or SSH URL.")
+            }
+            if let components = URLComponents(string: remoteURL), components.user != nil || components.password != nil {
+                throw GitError.unsupported("Remote URLs must not contain credentials.")
+            }
+            return ["remote", "add", name, remoteURL]
+
         case let .push(options):
             return try pushArguments(options, snapshot: snapshot)
 
@@ -127,6 +137,12 @@ extension LiveGitService {
             case .merge: return ["pull", "--no-rebase", "--no-edit"]
 
             }
+
+        case let .setUpstream(branch):
+            guard snapshot.remoteBranches.contains(where: { $0.name == branch }) else {
+                throw GitError.invalidRevision(branch)
+            }
+            return ["branch", "--set-upstream-to=" + branch]
 
         case let .startRebase(onto):
             return ["rebase", "--no-autostash", try await resolvedRevision(onto, at: root)]

@@ -1,6 +1,7 @@
 import Foundation
 
 enum GitHubError: Error, Hashable, Sendable {
+    case reviewUnavailable(String)
     case notConfigured
     case accountNotFound
     case reauthorizationRequired(accountID: String)
@@ -23,6 +24,7 @@ extension GitHubError: LocalizedError {
 
         switch self {
 
+        case let .reviewUnavailable(message): message
         case .notConfigured: "GitHub isn't configured for this build."
         case .accountNotFound: "That GitHub account is no longer connected."
         case .reauthorizationRequired: "This GitHub account needs to be reconnected."

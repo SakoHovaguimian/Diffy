@@ -18,7 +18,7 @@ struct ComparisonReviewScreen: View {
             reviewContent()
 
         }
-        .frame(minWidth: 800, idealWidth: 1280, maxWidth: .infinity, minHeight: 500, idealHeight: 800, maxHeight: .infinity)
+        .frame(minWidth: 720, idealWidth: 1440, maxWidth: .infinity, minHeight: 480, idealHeight: 900, maxHeight: .infinity)
         .background(self.theme.background)
         .background(ComparisonModalSizingView())
         .task { await self.viewModel.load() }
@@ -41,6 +41,12 @@ struct ComparisonReviewScreen: View {
                     .font(.system(size: 12))
                     .foregroundStyle(self.theme.secondaryText)
                     .textSelection(.enabled)
+                if let success = self.viewModel.request.successMessage {
+                    Label(success, systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(self.theme.added)
+                        .padding(.top, 5)
+                }
 
             }
             Spacer(minLength: 12)
@@ -69,6 +75,11 @@ struct ComparisonReviewScreen: View {
                 Label("\(self.viewModel.files.count.formatted()) changed files", systemImage: "doc.on.doc")
                     .font(.system(size: 12, weight: .medium))
                 DiffChangeSummary(counts: self.viewModel.counts)
+                if self.viewModel.hasUnavailableLineCounts {
+                    Text("Line totals exclude files without text counts")
+                        .font(.system(size: 10))
+                        .foregroundStyle(self.theme.secondaryText)
+                }
                 Spacer()
                 Text("\(self.viewModel.viewedCount) of \(self.viewModel.files.count) viewed")
                     .font(.system(size: 11))

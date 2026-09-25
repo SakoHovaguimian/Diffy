@@ -40,6 +40,29 @@ struct RepositoryActionBar: View {
         .padding(.vertical, 12)
         .background(self.theme.surface)
         .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
+        .sheet(isPresented: self.$viewModel.showsAddRemote) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Add Git remote").font(.headline)
+                Text("Add a remote, fetch its branches, then choose one as this branch’s upstream.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(self.theme.secondaryText)
+                TextField("Remote name", text: self.$viewModel.newRemoteName)
+                TextField("HTTPS or SSH URL", text: self.$viewModel.newRemoteURL)
+                HStack {
+                    Spacer()
+                    Button("Cancel") { self.viewModel.showsAddRemote = false }
+                    Button("Add Remote") {
+                        self.viewModel.request(.addRemote(name: self.viewModel.newRemoteName, url: self.viewModel.newRemoteURL))
+                        self.viewModel.showsAddRemote = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(self.viewModel.newRemoteName.isEmpty || self.viewModel.newRemoteURL.isEmpty)
+                }
+            }
+            .padding(24)
+            .frame(width: 440)
+            .diffyStyle()
+        }
 
     }
 
@@ -48,16 +71,32 @@ struct RepositoryActionBar: View {
         HStack(spacing: 8) {
 
             Button { self.viewModel.request(.fetch(remote: nil)) } label: { Label("Fetch", systemImage: "arrow.down.circle") }
+                .disabled(!self.viewModel.canMutate || (self.viewModel.snapshot?.remotes.isEmpty ?? true))
             Menu {
 
-                ForEach(GitPullStrategy.allCases) { strategy in
-                    Button(strategy.title) { self.viewModel.request(.pull(strategy)) }
+                if self.viewModel.snapshot?.upstream != nil {
+                    ForEach(GitPullStrategy.allCases) { strategy in
+                        Button(strategy.title) { self.viewModel.request(.pull(strategy)) }
+                    }
+                } else {
+                    Text("Choose a tracking branch")
+                    ForEach(self.viewModel.snapshot?.remoteBranches ?? []) { branch in
+                        Button(branch.name) { self.viewModel.request(.setUpstream(branch: branch.name)) }
+                    }
+                    if self.viewModel.snapshot?.remoteBranches.isEmpty ?? true {
+                        if self.viewModel.snapshot?.remotes.isEmpty ?? true {
+                            Button("Add a remote…") { self.viewModel.showsAddRemote = true }
+                        } else {
+                            Button("Fetch remote branches") { self.viewModel.request(.fetch(remote: nil)) }
+                            Text("You can also publish this branch with Push.")
+                        }
+                    }
                 }
 
             } label: {
                 Label("Pull", systemImage: "arrow.down")
             }
-            .disabled(self.viewModel.snapshot?.upstream == nil)
+            .disabled(!self.viewModel.canMutate)
             Menu {
 
                 Button("Push") { self.viewModel.request(.push(GitPushOptions())) }
@@ -76,9 +115,9 @@ struct RepositoryActionBar: View {
             } label: {
                 Label("Push", systemImage: "arrow.up")
             }
+            .disabled(!self.viewModel.canMutate || (self.viewModel.snapshot?.remotes.isEmpty ?? true))
 
         }
-        .disabled(!self.viewModel.canMutate || (self.viewModel.snapshot?.remotes.isEmpty ?? true))
         .help(self.viewModel.runtime.isLive ? "Git uses this Mac's existing remote credentials." : "Git actions are available in Diffy Live.")
 
     }

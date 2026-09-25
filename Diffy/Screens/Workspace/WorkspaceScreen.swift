@@ -3,13 +3,11 @@ import SwiftUI
 struct WorkspaceScreen: View {
 
     @StateObject var viewModel: WorkspaceViewModel
-    @EnvironmentObject private var settings: SettingsViewModel
     @EnvironmentObject private var review: ReviewViewModel
     @EnvironmentObject private var accounts: GitHubAccountsViewModel
     @ObservedObject private var repository: RepositoryViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var sidebarDragStartWidth: Double?
     @State private var reviewWidth: CGFloat = 310
     @State private var reviewDragStartWidth: CGFloat?
 
@@ -28,17 +26,8 @@ struct WorkspaceScreen: View {
 
                 if self.viewModel.showsSidebar {
 
-                    WorkspaceSidebar(viewModel: self.viewModel)
-                        .disabled(self.repository.isOperating)
-                        .frame(width: max(214, self.settings.appearance.sidebarWidth))
+                    WorkspaceSidebarPane(viewModel: self.viewModel, isOperating: self.repository.isOperating)
                         .transition(.move(edge: .leading).combined(with: .opacity))
-
-                    Rectangle()
-                        .fill(self.theme.border)
-                        .frame(width: 5)
-                        .contentShape(Rectangle())
-                        .gesture(sidebarResizeGesture())
-                        .help("Drag to resize sidebar")
 
                 }
 
@@ -47,12 +36,7 @@ struct WorkspaceScreen: View {
 
                 if self.viewModel.showsReview {
 
-                    Rectangle()
-                        .fill(self.theme.border)
-                        .frame(width: 5)
-                        .contentShape(Rectangle())
-                        .gesture(reviewResizeGesture())
-                        .help("Drag to resize review notes")
+                    HorizontalResizeHandle(label: "Drag to resize review notes", resizeGesture: reviewResizeGesture())
                         .transition(.opacity)
 
                     ReviewScreen(workspace: self.viewModel)
@@ -77,6 +61,10 @@ struct WorkspaceScreen: View {
 
                 await self.repository.load(project)
                 guard !Task.isCancelled, self.repository.project?.id == project.id else { return }
+                if self.viewModel.pendingPullProjectID == project.id {
+                    self.viewModel.pendingPullProjectID = nil
+                    self.repository.request(.pull(.fastForwardOnly))
+                }
                 if !self.viewModel.showsDashboard { self.repository.activate(self.viewModel.mode) }
 
             }
@@ -159,28 +147,9 @@ struct WorkspaceScreen: View {
 
     }
 
-    private func sidebarResizeGesture() -> some Gesture {
-
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-
-                if self.sidebarDragStartWidth == nil {
-                    self.sidebarDragStartWidth = self.settings.appearance.sidebarWidth
-                }
-
-                let startingWidth = self.sidebarDragStartWidth ?? self.settings.appearance.sidebarWidth
-                self.settings.appearance.sidebarWidth = min(320, max(214, startingWidth + value.translation.width))
-
-            }
-            .onEnded { _ in
-                self.sidebarDragStartWidth = nil
-            }
-
-    }
-
     private func reviewResizeGesture() -> some Gesture {
 
-        DragGesture(minimumDistance: 0)
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { value in
 
                 if self.reviewDragStartWidth == nil {

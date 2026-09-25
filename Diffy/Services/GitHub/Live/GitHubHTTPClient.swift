@@ -13,7 +13,8 @@ final class GitHubHTTPClient: NSObject, URLSessionTaskDelegate, Sendable {
         path: String,
         token: String? = nil,
         form: [String: String]? = nil,
-        web: Bool = false
+        web: Bool = false,
+        jsonBody: Data? = nil
     ) async throws -> Value {
 
         let base = web ? self.configuration.webBaseURL : self.configuration.apiBaseURL
@@ -43,6 +44,14 @@ final class GitHubHTTPClient: NSObject, URLSessionTaskDelegate, Sendable {
 
         }
 
+        if let jsonBody {
+
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = jsonBody
+
+        }
+
         let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
         let data: Data
@@ -53,11 +62,20 @@ final class GitHubHTTPClient: NSObject, URLSessionTaskDelegate, Sendable {
         } catch let error as URLError where error.code == .cancelled {
             throw CancellationError()
         } catch {
+
+            if jsonBody != nil {
+                throw GitHubError.reviewUnavailable("The connection was interrupted before GitHub confirmed the submission.")
+            }
             throw GitHubError.offline
+
         }
 
         guard let response = response as? HTTPURLResponse else {
             throw GitHubError.invalidResponse("")
+        }
+
+        if response.statusCode == 422, jsonBody != nil {
+            throw GitHubError.reviewUnavailable("GitHub rejected this submission. Check the review state, comment locations, and account permissions. If you already have a pending review on GitHub, finish it there first.")
         }
 
         try validate(response)

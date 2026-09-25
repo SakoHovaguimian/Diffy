@@ -21,7 +21,7 @@ struct DiffyTheme {
     let comment: Color
 
     var selection: Color {
-        self.accent.opacity(self.isDark ? 0.20 : 0.09)
+        self.accent.opacity(self.isDark ? 0.20 : 0.17)
     }
 
     static func resolve(_ selection: ThemeSelection,
@@ -37,22 +37,22 @@ struct DiffyTheme {
 
         DiffyTheme(
             isDark: false,
-            background: Color(hex: "F6F8FA"),
-            sidebar: Color(hex: "F0F2F5"),
+            background: Color(hex: "F4F6F8"),
+            sidebar: Color(hex: "E9EEF2"),
             surface: Color(hex: "FFFFFF"),
-            elevated: Color(hex: "F7F8FB"),
-            text: Color(hex: "303540"),
-            secondaryText: Color(hex: "79818E"),
-            border: Color(hex: "E3E6ED"),
+            elevated: Color(hex: "EDF1F5"),
+            text: Color(hex: "26313D"),
+            secondaryText: Color(hex: "586675"),
+            border: Color(hex: "CFD7E0"),
             accent: Color(hex: accentHex),
             added: Color(hex: "25886C"),
             removed: Color(hex: "D05B72"),
-            changed: Color(hex: "4D83C3"),
-            modified: Color(hex: "BA8740"),
-            keyword: Color(hex: "E84994"),
-            type: Color(hex: "8D60D7"),
-            string: Color(hex: "66962B"),
-            comment: Color(hex: "98A1AD")
+            changed: Color(hex: "386DAA"),
+            modified: Color(hex: "986B2B"),
+            keyword: Color(hex: "B72F70"),
+            type: Color(hex: "7145BD"),
+            string: Color(hex: "4E7627"),
+            comment: Color(hex: "647482")
         )
 
     }

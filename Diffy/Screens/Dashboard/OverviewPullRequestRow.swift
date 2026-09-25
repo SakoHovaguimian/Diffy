@@ -3,11 +3,12 @@ import SwiftUI
 struct OverviewPullRequestRow: View {
 
     let request: AssignedPullRequestSummary
+    let review: () -> Void
     @Environment(\.diffyTheme) private var theme
 
     var body: some View {
 
-        Link(destination: self.request.webURL) {
+        VStack(alignment: .leading, spacing: 14) {
 
             HStack(alignment: .top, spacing: 12) {
 
@@ -36,17 +37,13 @@ struct OverviewPullRequestRow: View {
 
                 Spacer(minLength: 4)
 
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(self.theme.secondaryText)
-
             }
-            .padding(18)
-            .contentShape(Rectangle())
+
+            PullRequestActions(webURL: self.request.webURL, review: self.review)
+                .padding(.leading, 37)
 
         }
-        .buttonStyle(.plain)
-        .help("Open pull request #\(self.request.number) on GitHub")
+        .padding(18)
 
     }
 

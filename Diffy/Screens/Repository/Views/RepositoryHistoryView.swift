@@ -11,38 +11,38 @@ struct RepositoryHistoryView: View {
 
             VStack(alignment: .leading, spacing: 14) {
 
-                Text("Find a file").font(.system(size: 16, weight: .semibold))
-                HStack {
+                Text("Project files").font(.system(size: 16, weight: .semibold))
+                Text(self.inventoryDetail)
+                    .font(.system(size: 10))
+                    .foregroundStyle(self.theme.secondaryText)
+                RepositoryBranchPicker(
+                    branches: self.viewModel.snapshot?.branches ?? [],
+                    selection: Binding(
+                        get: { self.viewModel.historyBranch },
+                        set: { self.viewModel.selectHistoryBranch($0) }
+                    )
+                )
+                if self.viewModel.isLoadingHistoryFiles {
+                    ProgressView("Reading files…")
+                } else if let error = self.viewModel.historyFilesError {
 
-                    TextField("Filter tracked files", text: self.$viewModel.search).textFieldStyle(.roundedBorder)
-                    if !self.viewModel.search.isEmpty { Button("Clear") { self.viewModel.search = "" } }
+                    VStack(alignment: .leading, spacing: 10) {
 
-                }
-                ScrollView {
-
-                    LazyVStack(alignment: .leading, spacing: 0) {
-
-                        ForEach(self.viewModel.visiblePaths.prefix(self.viewModel.visibleLimit), id: \.self) { path in
-
-                            Button { Task { await self.viewModel.loadHistory(path: path) } } label: {
-                                Label(path, systemImage: "doc.text")
-                                    .font(.system(size: 11))
-                                    .lineLimit(2)
-                                    .truncationMode(.middle)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(10)
-                                    .background(self.viewModel.historyPath == path ? self.theme.selection : Color.clear, in: RoundedRectangle(cornerRadius: 6))
-                            }
-                            .buttonStyle(.plain)
-
-                        }
-
-                        if self.viewModel.visiblePaths.count > self.viewModel.visibleLimit {
-                            Button("Show more files") { self.viewModel.visibleLimit += 50 }.padding(10)
-                        }
+                        DiffyStatusBanner(message: error, isError: true)
+                        Button("Retry") { Task { await self.viewModel.loadPaths() } }
 
                     }
 
+                } else {
+                    RepositoryPathNavigation(
+                        entries: self.viewModel.pathEntries,
+                        selectedPath: self.viewModel.historyPath,
+                        onSelect: { path in Task { await self.viewModel.loadHistory(path: path) } },
+                        query: self.$viewModel.search,
+                        layout: self.$viewModel.historyLayout,
+                        sort: self.$viewModel.historySort,
+                        expandedFolders: self.$viewModel.historyExpandedFolders
+                    )
                 }
 
             }
@@ -52,12 +52,16 @@ struct RepositoryHistoryView: View {
 
                 VStack(alignment: .leading, spacing: 26) {
 
-                    DiffyPageHeading(eyebrow: "File history", title: "A closer look through time.", detail: self.viewModel.historyPath.isEmpty ? "Choose a tracked file to follow its commits, including renames." : self.viewModel.historyPath)
+                    DiffyPageHeading(
+                        eyebrow: "File history · \(self.viewModel.historyBranch)",
+                        title: "A closer look through time.",
+                        detail: self.viewModel.historyPath.isEmpty ? "Choose a file to follow its commits, including renames. Files without Git history remain listed." : self.viewModel.historyPath
+                    )
 
                     if self.viewModel.isLoadingHistory {
                         ProgressView("Reading history…")
                     } else if self.viewModel.history.isEmpty {
-                        DiffyEmptyState(symbol: "clock.arrow.circlepath", title: "Choose a file", message: "Its history will appear here. Each commit opens a read-only comparison.")
+                        DiffyEmptyState(symbol: "clock.arrow.circlepath", title: self.viewModel.historyPath.isEmpty ? "Choose a file" : "No Git history", message: self.viewModel.historyPath.isEmpty ? "Its history on \(self.viewModel.historyBranch) will appear here. Each commit opens a read-only comparison." : "This file has no commits on \(self.viewModel.historyBranch) yet.")
                     }
 
                     if let error = self.viewModel.patchError {
@@ -84,6 +88,20 @@ struct RepositoryHistoryView: View {
             .frame(minWidth: 300, maxWidth: .infinity)
 
         }
+
+    }
+
+}
+
+private extension RepositoryHistoryView {
+
+    var inventoryDetail: String {
+
+        if self.viewModel.browsingRevision(for: self.viewModel.historyBranch) == nil {
+            return "Git dates cover the latest 500 commits on this branch. Other files show disk modification time."
+        }
+
+        return "Files and Git dates come from this branch. Your working tree stays unchanged."
 
     }
 

@@ -81,16 +81,28 @@ struct RepositoryBranchesView: View {
 
                 HStack(spacing: 14) {
 
-                    Image(systemName: "arrow.triangle.branch").foregroundStyle(branch.isCurrent ? self.theme.accent : self.theme.secondaryText)
-                    VStack(alignment: .leading, spacing: 6) {
+                    Button { self.viewModel.inspectBranch(branch) } label: {
 
-                        Text(branch.name).font(.system(size: 13, weight: .medium)).textSelection(.enabled)
-                        Text(branch.upstreamName ?? String(branch.commitID.prefix(7)))
-                            .font(.system(size: 10, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
+                        HStack(spacing: 14) {
+
+                            Image(systemName: "arrow.triangle.branch")
+                                .foregroundStyle(branch.isCurrent ? self.theme.accent : self.theme.secondaryText)
+                            VStack(alignment: .leading, spacing: 6) {
+
+                                Text(branch.name).font(.system(size: 13, weight: .medium)).textSelection(.enabled)
+                                Text(branch.upstreamName ?? String(branch.commitID.prefix(7)))
+                                    .font(.system(size: 10, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
+
+                            }
+                            Spacer()
+                            if branch.isCurrent { DiffyBadge(title: "Current", color: self.theme.accent) }
+
+                        }
+                        .contentShape(Rectangle())
 
                     }
-                    Spacer()
-                    if branch.isCurrent { DiffyBadge(title: "Current", color: self.theme.accent) }
+                    .buttonStyle(.plain)
+                    .disabled(self.viewModel.isLoadingBranchReview)
                     Menu {
 
                         if !branch.isRemote && !branch.isCurrent {
@@ -103,6 +115,7 @@ struct RepositoryBranchesView: View {
                         Image(systemName: "ellipsis")
                     }
                     .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
                     .frame(width: 24)
                     .disabled(!self.viewModel.canMutate || branch.isCurrent)
                     .accessibilityLabel("Actions for \(branch.name)")

@@ -12,7 +12,7 @@ struct RepositoryPullRequestsView: View {
 
             VStack(alignment: .leading, spacing: 24) {
 
-                DiffyPageHeading(eyebrow: "GitHub", title: "Ready for another pair of eyes.", detail: self.viewModel.linkedRepository?.fullName ?? "Link a GitHub repository to see its open pull requests.")
+                DiffyPageHeading(eyebrow: "GitHub", title: "Ready for another pair of eyes.", detail: self.viewModel.linkedRepository?.fullName ?? "Link a GitHub repository to see its pull requests.")
 
                 if self.viewModel.availableAccounts.isEmpty || self.viewModel.linkedRepository == nil {
 
@@ -26,6 +26,11 @@ struct RepositoryPullRequestsView: View {
             }
             .padding(32)
 
+        }
+        .sheet(item: self.$viewModel.gitHubReview, onDismiss: {
+            Task { await self.viewModel.loadPullRequests() }
+        }) { review in
+            PullRequestReviewScreen(viewModel: review).diffyStyle()
         }
         .onChange(of: self.accounts.accounts) { _, _ in
 
@@ -42,10 +47,18 @@ struct RepositoryPullRequestsView: View {
 
             HStack {
 
-                Picker("Show", selection: self.$viewModel.pullRequestFilter) {
+                Picker("People", selection: self.$viewModel.pullRequestFilter) {
                     ForEach(PullRequestFilter.allCases) { Text($0.title).tag($0) }
                 }
-                .frame(maxWidth: 230)
+                .frame(maxWidth: 200)
+                Picker("Status", selection: self.$viewModel.pullRequestStatusFilter) {
+                    ForEach(PullRequestStatusFilter.allCases) { Text($0.title).tag($0) }
+                }
+                .frame(maxWidth: 215)
+                Picker("Checks", selection: self.$viewModel.pullRequestCheckFilter) {
+                    ForEach(PullRequestCheckFilter.allCases) { Text($0.title).tag($0) }
+                }
+                .frame(maxWidth: 180)
                 Spacer()
                 Picker("Account", selection: self.$viewModel.selectedAccountID) {
                     ForEach(self.viewModel.availableAccounts) { Text($0.handle).tag($0.id) }
@@ -64,7 +77,12 @@ struct RepositoryPullRequestsView: View {
             if self.viewModel.isLoadingPullRequests {
                 ProgressView("Loading pull requests…")
             } else if self.viewModel.visiblePullRequests.isEmpty {
-                DiffyEmptyState(symbol: "tray", title: "Nothing waiting here", message: "No open pull requests match this filter. Refresh to check again.")
+                DiffyEmptyState(symbol: "tray", title: "Nothing waiting here", message: "No unmerged pull requests match these filters. Refresh to check again.")
+            }
+
+            if self.viewModel.isLoadingChecks {
+                ProgressView("Loading check status…")
+                    .font(.system(size: 11))
             }
 
             LazyVStack(spacing: 0) {
@@ -90,13 +108,20 @@ struct RepositoryPullRequestsView: View {
 
                         }
                         Spacer()
-                        if request.isDraft { DiffyBadge(title: "Draft", color: self.theme.secondaryText) }
-                        Button("Fetch & compare") { self.viewModel.inspectPullRequest(request) }
-                            .disabled(!self.viewModel.canMutate || self.viewModel.linkedRepository?.remoteName == nil)
-                            .help("Fetch the pull request's commits and inspect the patch without checking out a branch.")
-                        Link(destination: request.webURL) { Image(systemName: "arrow.up.right") }
-                            .accessibilityLabel("Open pull request \(request.number) on GitHub")
+                        VStack(alignment: .trailing, spacing: 6) {
+                            DiffyBadge(title: request.statusTitle, color: request.isDraft || request.lifecycle == .closedUnmerged ? self.theme.secondaryText : self.theme.added)
+                            Label(request.checks?.state.title ?? "Checks not loaded", systemImage: request.checks?.state.symbol ?? "questionmark.circle")
+                                .font(.system(size: 10))
+                                .foregroundStyle(request.checks?.state == .failure ? self.theme.removed : self.theme.secondaryText)
+                        }
+                        PullRequestActions(webURL: request.webURL) {
+                            self.viewModel.reviewPullRequest(request)
+                        }
 
+                    }
+                    .contextMenu {
+                        Button("Fetch & compare locally") { self.viewModel.inspectPullRequest(request) }
+                            .disabled(!self.viewModel.canMutate || self.viewModel.linkedRepository?.remoteName == nil)
                     }
                     .padding(20)
                     .background(self.theme.surface)

@@ -91,6 +91,9 @@ struct SettingsScreen: View {
                 Picker("Inline highlighting", selection: self.$viewModel.editor.highlightLevel) {
                     ForEach(["Line", "Word", "Character"], id: \.self) { Text($0).tag($0) }
                 }
+                Text("Word and Character emphasize changed text within paired lines. Added and removed lines keep their full-line shading.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
             }
 
@@ -107,7 +110,7 @@ struct SettingsScreen: View {
             Section("Prototype display rules") {
 
                 Toggle("Hide comment-only rows", isOn: self.$viewModel.editor.ignoreComments)
-                Text("Word and character highlighting use supplied sample spans. Comment hiding affects rows in the preview; it is not a language-aware comparison algorithm.")
+                Text("Comment hiding affects rows in the preview; it is not a language-aware comparison algorithm.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

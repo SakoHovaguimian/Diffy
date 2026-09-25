@@ -5,6 +5,7 @@ struct LiveDiffEditor: NSViewRepresentable {
 
     @Binding var text: String
     let lineStatuses: [FileChangeStatus]
+    let lineComparisons: [String?]
     let focusLine: Int?
     @EnvironmentObject private var settings: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
@@ -181,16 +182,58 @@ struct LiveDiffEditor: NSViewRepresentable {
 
         while location < source.length, lineIndex < self.lineStatuses.count {
 
-            let lineRange = source.lineRange(for: NSRange(location: location, length: 0))
+            var lineStart = 0
+            var lineEnd = 0
+            var contentEnd = 0
+            source.getLineStart(
+                &lineStart,
+                end: &lineEnd,
+                contentsEnd: &contentEnd,
+                for: NSRange(location: location, length: 0)
+            )
+
+            let lineRange = NSRange(location: lineStart, length: lineEnd - lineStart)
+            let contentRange = NSRange(location: lineStart, length: contentEnd - lineStart)
             let status = self.lineStatuses[lineIndex]
 
-            if let color = backgroundColor(for: status) {
+            if status == .modified,
+               self.settings.editor.highlightLevel != "Line",
+               lineIndex < self.lineComparisons.count,
+               let comparison = self.lineComparisons[lineIndex] {
+
+                applyInlineDiffColors(
+                    source: source.substring(with: contentRange),
+                    comparison: comparison,
+                    location: lineStart,
+                    storage: storage
+                )
+
+            } else if let color = backgroundColor(for: status) {
                 storage.addAttribute(.backgroundColor, value: color, range: lineRange)
             }
 
-            location = NSMaxRange(lineRange)
+            location = lineEnd
             lineIndex += 1
 
+        }
+
+    }
+
+    private func applyInlineDiffColors(source: String, comparison: String, location: Int, storage: NSTextStorage) {
+
+        let ranges = SyntaxHighlightService().changedRanges(
+            in: source,
+            comparedWith: comparison,
+            level: self.settings.editor.highlightLevel
+        )
+        let color = NSColor(self.theme.added).withAlphaComponent(self.theme.isDark ? 0.36 : 0.22)
+
+        for range in ranges {
+            storage.addAttribute(
+                .backgroundColor,
+                value: color,
+                range: NSRange(location: location + range.location, length: range.length)
+            )
         }
 
     }

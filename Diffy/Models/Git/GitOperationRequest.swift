@@ -5,8 +5,10 @@ enum GitOperationRequest: Hashable, Sendable {
     case commit(message: String)
     case createBranch(name: String)
     case fetch(remote: String?)
+    case addRemote(name: String, url: String)
     case push(GitPushOptions)
     case pull(GitPullStrategy)
+    case setUpstream(branch: String)
     case startRebase(onto: String)
     case continueRebase
     case abortRebase
@@ -26,8 +28,10 @@ enum GitOperationRequest: Hashable, Sendable {
         case .commit: "Commit"
         case .createBranch: "Create Branch"
         case .fetch: "Fetch"
+        case .addRemote: "Add Remote"
         case let .push(options): options.forceWithLease ? "Force Push with Lease" : (options.setsUpstream ? "Set Upstream and Push" : "Push")
         case let .pull(strategy): "Pull · \(strategy.title)"
+        case .setUpstream: "Set Upstream"
         case .startRebase: "Rebase"
         case .continueRebase: "Continue Rebase"
         case .abortRebase: "Abort Rebase"

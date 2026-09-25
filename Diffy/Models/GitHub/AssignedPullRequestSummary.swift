@@ -8,6 +8,7 @@ struct AssignedPullRequestSummary: Hashable, Identifiable, Sendable {
     let repositoryFullName: String
     let updatedAt: Date
     let webURL: URL
+    var accountID: String?
 
     var id: String {
         self.webURL.absoluteString

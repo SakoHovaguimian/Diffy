@@ -43,6 +43,7 @@ final class WorkspaceViewModel: ViewModel {
     @Published var pendingMergeConflict: Int?
     @Published var pendingDiffNavigation: PendingDiffNavigation?
     @Published var notice: String?
+    @Published var pendingPullProjectID: String?
     @Published private(set) var contentSizeScale = 1.0
 
     init(
@@ -196,13 +197,26 @@ final class WorkspaceViewModel: ViewModel {
     func selectProject(_ project: RepositoryProject) {
 
         guard !self.repositoryViewModel.isOperating else { return }
-        requestNavigation(.project(projectID: project.id, opensWorkingTree: false))
+        requestNavigation(.project(projectID: project.id, tab: .current))
+    }
+
+    func openProjectOverview(_ project: RepositoryProject) {
+
+        guard !self.repositoryViewModel.isOperating else { return }
+        requestNavigation(.project(projectID: project.id, tab: .overview))
     }
 
     func openWorkingTree(for project: RepositoryProject) {
 
         guard !self.repositoryViewModel.isOperating else { return }
-        requestNavigation(.project(projectID: project.id, opensWorkingTree: true))
+        requestNavigation(.project(projectID: project.id, tab: .workingTree))
+    }
+
+    func pullFromOverview(for project: RepositoryProject) {
+
+        self.pendingPullProjectID = project.id
+        selectProject(project)
+
     }
 
     func selectFile(_ file: DiffFile, mode: ComparisonMode = .workingTree) {
@@ -301,8 +315,15 @@ final class WorkspaceViewModel: ViewModel {
         case let .mode(mode):
             return !self.showsOverview && !self.showsDashboard && self.mode == mode
 
-        case let .project(projectID, opensWorkingTree):
-            return !self.showsOverview && self.selectedProjectID == projectID && (opensWorkingTree ? !self.showsDashboard && self.mode == .workingTree : self.showsDashboard)
+        case let .project(projectID, tab):
+
+            guard !self.showsOverview && self.selectedProjectID == projectID else { return false }
+
+            return switch tab {
+            case .current: true
+            case .overview: self.showsDashboard
+            case .workingTree: !self.showsDashboard && self.mode == .workingTree
+            }
 
         case .annotation:
             return false
@@ -329,8 +350,8 @@ final class WorkspaceViewModel: ViewModel {
         case let .mode(mode):
             navigateToMode(mode)
 
-        case let .project(projectID, opensWorkingTree):
-            navigateToProject(projectID: projectID, opensWorkingTree: opensWorkingTree)
+        case let .project(projectID, tab):
+            navigateToProject(projectID: projectID, tab: tab)
 
         case let .annotation(annotation):
             reveal(annotation)
@@ -339,18 +360,32 @@ final class WorkspaceViewModel: ViewModel {
 
     }
 
-    private func navigateToProject(projectID: String, opensWorkingTree: Bool) {
+    private func navigateToProject(projectID: String, tab: ProjectNavigationTab) {
 
         guard let project = self.projects.first(where: { $0.id == projectID }) else {
             return
         }
 
+        let wasShowingOverview = self.showsOverview
         self.selectedProjectID = project.id
         self.showsOverview = false
         self.fileNavigatorViewModel.restore(projectID: project.id)
         self.selectedFileID = project.files.first?.id
-        self.mode = .workingTree
-        self.showsDashboard = !opensWorkingTree
+
+        switch tab {
+
+        case .current:
+            if wasShowingOverview { self.showsDashboard = true }
+
+        case .overview:
+            self.showsDashboard = true
+
+        case .workingTree:
+            self.mode = .workingTree
+            self.showsDashboard = false
+
+        }
+
         self.recentProjectIDs.removeAll { $0 == project.id }
         self.recentProjectIDs.insert(project.id, at: 0)
 
@@ -437,7 +472,7 @@ final class WorkspaceViewModel: ViewModel {
 
             self.selectedProjectID = self.projects.last?.id ?? ""
             self.showsOverview = self.showsOverview || self.projects.isEmpty
-            self.showsDashboard = !self.showsOverview
+            if self.showsOverview { self.showsDashboard = false }
 
         }
 

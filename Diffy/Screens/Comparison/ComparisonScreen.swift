@@ -3,7 +3,8 @@ import SwiftUI
 struct ComparisonScreen: View {
 
     @ObservedObject var workspace: WorkspaceViewModel
-    @Environment(\.diffyTheme) private var theme
+    @State private var navigatorWidth: CGFloat = 245
+    @State private var navigatorDragStartWidth: CGFloat?
 
     var body: some View {
 
@@ -13,10 +14,12 @@ struct ComparisonScreen: View {
                 ComparisonSourceBar(workspace: self.workspace)
             }
 
-            HSplitView {
+            HStack(spacing: 0) {
 
                 FileNavigatorScreen(workspace: self.workspace, viewModel: self.workspace.fileNavigatorViewModel)
-                    .frame(minWidth: 205, idealWidth: 245, maxWidth: 380)
+                    .frame(width: self.navigatorWidth)
+
+                HorizontalResizeHandle(label: "Drag to resize changed files", resizeGesture: navigatorResizeGesture())
 
                 comparisonContent()
                     .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
@@ -24,6 +27,25 @@ struct ComparisonScreen: View {
             }
 
         }
+
+    }
+
+    private func navigatorResizeGesture() -> some Gesture {
+
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { value in
+
+                if self.navigatorDragStartWidth == nil {
+                    self.navigatorDragStartWidth = self.navigatorWidth
+                }
+
+                let startingWidth = self.navigatorDragStartWidth ?? self.navigatorWidth
+                self.navigatorWidth = min(380, max(205, startingWidth + value.translation.width))
+
+            }
+            .onEnded { _ in
+                self.navigatorDragStartWidth = nil
+            }
 
     }
 

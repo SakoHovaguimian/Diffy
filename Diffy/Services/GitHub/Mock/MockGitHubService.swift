@@ -28,7 +28,11 @@ struct MockGitHubService: GitHubServiceProtocol {
         AssignedPullRequestListing(requests: [], hasMore: false)
     }
 
-    func openPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, validators: GitHubResourceValidators) async throws -> GitHubFetchResult<[PullRequestSummary]> {
+    func reviewRequestedPullRequests(for account: GitHubAccount) async throws -> AssignedPullRequestListing {
+        AssignedPullRequestListing(requests: [], hasMore: false)
+    }
+
+    func unmergedPullRequests(for link: GitHubRepositoryLink, account: GitHubAccount, validators: GitHubResourceValidators) async throws -> GitHubFetchResult<[PullRequestSummary]> {
         GitHubFetchResult(value: [], validators: .none)
     }
 
@@ -38,6 +42,22 @@ struct MockGitHubService: GitHubServiceProtocol {
 
     func checksSummary(for pullRequest: PullRequestSummary, link: GitHubRepositoryLink, account: GitHubAccount) async -> PullRequestChecksSummary {
         .unavailable
+    }
+
+    func reviewDetails(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> PullRequestReviewDetails {
+        throw GitHubError.reviewUnavailable("GitHub reviews are available in Diffy Live.")
+    }
+
+    func reviewConversation(for request: PullRequestReviewRequest, account: GitHubAccount) async throws -> [PullRequestConversationEntry] {
+        []
+    }
+
+    func submitReview(_ submission: PullRequestReviewSubmission, for request: PullRequestReviewRequest, account: GitHubAccount) async throws {
+        throw GitHubError.reviewUnavailable("The Mock app cannot publish GitHub reviews.")
+    }
+
+    func postPullRequestComment(_ body: String, replyingTo commentID: Int?, for request: PullRequestReviewRequest, account: GitHubAccount) async throws {
+        throw GitHubError.reviewUnavailable("The Mock app cannot publish GitHub comments.")
     }
 
 }

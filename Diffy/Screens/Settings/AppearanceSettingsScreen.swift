@@ -31,7 +31,7 @@ struct AppearanceSettingsScreen: View {
 
                 HStack(spacing: 16) {
 
-                    themePreview(.porcelain, background: "F6F8FA", sidebar: "E9ECF2", line: "BAA5DC")
+                    themePreview(.porcelain, background: "F4F6F8", sidebar: "E9EEF2", line: "647482")
                     themePreview(.safira, background: "161D26", sidebar: "0F1922", line: "968DCB")
 
                 }

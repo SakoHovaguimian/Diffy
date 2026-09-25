@@ -12,7 +12,9 @@ final class RepositoryViewModel: ViewModel {
     let comparison: RepositoryComparisonViewModel
     let reviewDiffBuilder: TextDiffBuilding
     private var refreshID = UUID()
+    var pathInventoryRequestID = UUID()
     var historyRequestID = UUID()
+    var commitsRequestID = UUID()
     var pullRequestsRequestID = UUID()
     var patchTask: Task<Void, Never>?
     private var operationTask: Task<Void, Never>?
@@ -20,15 +22,19 @@ final class RepositoryViewModel: ViewModel {
 
     @Published private(set) var project: RepositoryProject?
     @Published private(set) var snapshot: GitRepositorySnapshot?
+    @Published private(set) var unstagedLineCounts: DiffLineCounts?
     @Published private(set) var isRefreshing = false
     @Published private(set) var isOperating = false
     @Published private(set) var operationTitle = ""
-    @Published private(set) var errorMessage: String?
+    @Published var errorMessage: String?
     @Published private(set) var notice: String?
     @Published var pendingAction: GitActionConfirmation?
     @Published var commitMessage = ""
     @Published var newBranchName = ""
     @Published var selectedRemote = ""
+    @Published var showsAddRemote = false
+    @Published var newRemoteName = "origin"
+    @Published var newRemoteURL = ""
     @Published var pullStrategy: GitPullStrategy = .fastForwardOnly
     @Published var branchBase = ""
     @Published var branchTarget = ""
@@ -41,17 +47,38 @@ final class RepositoryViewModel: ViewModel {
     @Published var patchTitle = ""
     @Published var patchError: String?
     @Published var isLoadingPatch = false
+    @Published var isLoadingBranchReview = false
     @Published var selectedPath: String?
     @Published var selectedCommit: RepositoryCommit?
     @Published var trackedPaths: [String] = []
+    @Published var pathEntries: [RepositoryPathEntry] = []
+    @Published var historyLayout: RepositoryFileLayout = .flat
+    @Published var historySort: RepositoryFileSort = .name
+    @Published var historyExpandedFolders: Set<String> = []
+    @Published var historyBranch = ""
+    @Published var isLoadingHistoryFiles = false
+    @Published var historyFilesError: String?
+    @Published var folderEntries: [RepositoryPathEntry] = []
+    @Published var folderLayout: RepositoryFileLayout = .tree
+    @Published var folderSort: RepositoryFileSort = .name
+    @Published var folderExpandedFolders: Set<String> = []
+    @Published var selectedFolderPath: String?
     @Published var history: [RepositoryCommit] = []
     @Published var historyPath = ""
     @Published var historyLimit = 50
     @Published var isLoadingHistory = false
+    @Published var commitsBranch = ""
+    @Published var branchCommits: [RepositoryCommit] = []
+    @Published var isLoadingCommits = false
+    @Published var commitsError: String?
+    @Published var gitHubReview: PullRequestReviewViewModel?
     @Published var pullRequests: [PullRequestSummary] = []
-    @Published var pullRequestFilter: PullRequestFilter = .allOpen
+    @Published var pullRequestFilter: PullRequestFilter = .all
+    @Published var pullRequestStatusFilter: PullRequestStatusFilter = .unmerged
+    @Published var pullRequestCheckFilter: PullRequestCheckFilter = .any
     @Published var selectedAccountID = ""
     @Published var isLoadingPullRequests = false
+    @Published var isLoadingChecks = false
     @Published var pullRequestError: String?
     @Published var leftFolder: URL?
     @Published var rightFolder: URL?
@@ -100,7 +127,11 @@ final class RepositoryViewModel: ViewModel {
     var visiblePullRequests: [PullRequestSummary] {
 
         let login = self.availableAccounts.first { $0.id == self.selectedAccountID }?.login ?? ""
-        return self.pullRequests.filter { self.pullRequestFilter.matches($0, viewerLogin: login) }
+        return self.pullRequests.filter {
+            self.pullRequestFilter.matches($0, viewerLogin: login)
+                && self.pullRequestStatusFilter.matches($0)
+                && self.pullRequestCheckFilter.matches($0)
+        }
 
     }
 
@@ -135,6 +166,7 @@ final class RepositoryViewModel: ViewModel {
         self.refreshID = UUID()
         self.project = project
         self.snapshot = nil
+        self.unstagedLineCounts = nil
         self.commitMessage = self.drafts[project.id] ?? ""
         self.search = ""
         self.visibleLimit = 50
@@ -144,14 +176,31 @@ final class RepositoryViewModel: ViewModel {
         self.patchError = nil
         self.patchTitle = ""
         self.history = []
+        self.branchCommits = []
+        self.pathInventoryRequestID = UUID()
         self.historyRequestID = UUID()
+        self.commitsRequestID = UUID()
         self.pullRequestsRequestID = UUID()
         self.isLoadingHistory = false
+        self.isLoadingHistoryFiles = false
+        self.isLoadingCommits = false
         self.isLoadingPullRequests = false
+        self.isLoadingChecks = false
         self.isLoadingPatch = false
+        self.isLoadingBranchReview = false
         self.historyPath = ""
+        self.historyBranch = ""
+        self.historyFilesError = nil
+        self.commitsBranch = ""
+        self.commitsError = nil
         self.pullRequests = []
         self.trackedPaths = []
+        self.pathEntries = []
+        self.folderEntries = []
+        self.historyExpandedFolders = []
+        self.historyLayout = .flat
+        self.folderExpandedFolders = []
+        self.selectedFolderPath = nil
         self.leftFolder = nil
         self.rightFolder = nil
         self.notice = nil
@@ -174,9 +223,24 @@ final class RepositoryViewModel: ViewModel {
             try Task.checkCancellation()
             guard self.refreshID == request else { return }
             self.snapshot = snapshot
+            self.unstagedLineCounts = snapshot.unstagedChanges.isEmpty ? DiffLineCounts(additions: 0, deletions: 0) : nil
+            if !snapshot.unstagedChanges.isEmpty, snapshot.unstagedChanges.filter(\.isUntracked).count <= 100 {
+                Task { [git] in
+                    let patch = try? await git.patch(in: reference, selection: .workingTree)
+                    guard self.reference == reference, self.refreshID == request else { return }
+                    self.unstagedLineCounts = patch.flatMap { $0.contains("Binary files ") ? nil : GitPatchParser.lineCounts($0) }
+                }
+            }
             self.selectedRemote = snapshot.remotes.contains { $0.name == self.selectedRemote } ? self.selectedRemote : snapshot.remotes.first?.name ?? ""
             self.branchBase = snapshot.localBranches.contains { $0.name == self.branchBase } ? self.branchBase : snapshot.localBranches.first(where: { !$0.isCurrent })?.name ?? snapshot.head.branchName ?? ""
             self.branchTarget = snapshot.head.branchName ?? "HEAD"
+            let defaultBranch = snapshot.head.branchName ?? (snapshot.head.commitID == nil ? "" : "HEAD")
+            let branchNames = Set(snapshot.branches.map(\.name))
+            self.historyBranch = branchNames.contains(self.historyBranch) ? self.historyBranch : defaultBranch
+            self.commitsBranch = branchNames.contains(self.commitsBranch) ? self.commitsBranch : defaultBranch
+            if self.commitsBranch == defaultBranch {
+                self.branchCommits = snapshot.recentCommits
+            }
             self.selectedAccountID = self.availableAccounts.contains { $0.id == self.selectedAccountID } ? self.selectedAccountID : self.project?.gitHubAccountID ?? self.availableAccounts.first?.id ?? ""
 
             if !self.showsPatch, self.comparisonReview == nil, [.workingTree, .staged].contains(self.currentMode) {
@@ -217,8 +281,13 @@ final class RepositoryViewModel: ViewModel {
         case .workingTree, .staged:
             inspectChanges(path: nil)
 
-        case .history, .folders:
+        case .history:
+            self.historyLayout = .flat
+            self.historyExpandedFolders = []
             Task { await loadPaths() }
+
+        case .commits:
+            Task { await loadCommits() }
 
         case .pullRequests:
             Task { await loadPullRequests() }
@@ -255,10 +324,49 @@ final class RepositoryViewModel: ViewModel {
 
     }
 
+    func selectHistoryBranch(_ branch: String) {
+
+        guard self.historyBranch != branch else { return }
+        self.historyBranch = branch
+        self.historyExpandedFolders = []
+        self.pathEntries = []
+        self.trackedPaths = []
+        self.history = []
+        self.isLoadingHistory = !self.historyPath.isEmpty
+        self.isLoadingHistoryFiles = true
+        self.historyFilesError = nil
+        self.patchError = nil
+        Task { await loadPaths() }
+
+    }
+
+    func selectCommitsBranch(_ branch: String) {
+
+        guard self.commitsBranch != branch else { return }
+        self.commitsBranch = branch
+        self.branchCommits = []
+        self.commitsError = nil
+        Task { await loadCommits() }
+
+    }
+
+    func browsingRevision(for branch: String) -> String? {
+
+        guard !branch.isEmpty else { return nil }
+
+        if branch == self.snapshot?.head.branchName
+            || (branch == "HEAD" && self.snapshot?.head.isDetached == true) {
+            return nil
+        }
+
+        return branch
+
+    }
+
     func compareBranches() {
 
-        let selection = ComparisonSelection(left: .revision(self.branchBase), right: .revision(self.branchTarget))
-        showComparisonReview(selection, title: "Compare branches", detail: "\(self.branchBase) → \(self.branchTarget)", mode: .branches)
+        let selection = ComparisonSelection(left: .revision(self.branchBase), right: .revision(self.branchTarget), usesMergeBase: true)
+        showComparisonReview(selection, title: "Compare branches", detail: "\(self.branchTarget) relative to merge base with \(self.branchBase)", mode: .branches, startsExpanded: false)
 
     }
 

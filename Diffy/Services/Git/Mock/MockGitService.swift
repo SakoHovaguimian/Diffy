@@ -53,8 +53,15 @@ struct MockGitService: GitServiceProtocol {
         Array(MockWorkspaceFixtures.commits.prefix(limit))
     }
 
-    func fileHistory(in repository: GitRepositoryReference, path: String, limit: Int) async throws -> [RepositoryCommit] {
+    func fileHistory(
+        in repository: GitRepositoryReference,
+        revision: String?,
+        path: String,
+        limit: Int
+    ) async throws -> [RepositoryCommit] {
+
         Array(MockWorkspaceFixtures.commits.prefix(limit))
+
     }
 
     func conflictDocument(in repository: GitRepositoryReference, path: String) async throws -> GitConflictDocument {
@@ -63,6 +70,14 @@ struct MockGitService: GitServiceProtocol {
 
     func suggestedPullStrategy(in repository: GitRepositoryReference) async -> GitPullStrategy {
         .fastForwardOnly
+    }
+
+    func branchReview(in repository: GitRepositoryReference, branch: RepositoryBranch, base: String) async throws -> GitBranchReview {
+        GitBranchReview(
+            selection: ComparisonSelection(left: .revision(base), right: .revision(branch.name), usesMergeBase: true),
+            detail: "Changes on \(branch.name) since its merge base with \(base)",
+            emptyMessage: "No distinct changes were found."
+        )
     }
 
     func folderComparisonFiles(left: URL, right: URL) async throws -> [DiffFile] {
@@ -99,7 +114,22 @@ struct MockGitService: GitServiceProtocol {
         MockWorkspaceFixtures.files(for: repository.projectID).map(\.path)
     }
 
+    func fileInventory(
+        in repository: GitRepositoryReference,
+        revision: String?
+    ) async throws -> [RepositoryPathEntry] {
+
+        MockWorkspaceFixtures.files(for: repository.projectID).map {
+            RepositoryPathEntry(path: $0.path, gitUpdatedAt: nil, diskUpdatedAt: $0.lastEditedAt, isTracked: true, prefersDiskTime: $0.status != .identical)
+        }
+
+    }
+
     func folderPatch(left: URL, right: URL) async throws -> String {
+        "Choose Diffy Live to compare folders on this Mac."
+    }
+
+    func folderFilePatch(left: URL, right: URL, path: String) async throws -> String {
         "Choose Diffy Live to compare folders on this Mac."
     }
 

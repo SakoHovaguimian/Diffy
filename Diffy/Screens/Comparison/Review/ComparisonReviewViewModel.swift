@@ -51,6 +51,10 @@ final class ComparisonReviewViewModel: ViewModel {
         DiffLineCounts(additions: self.files.reduce(0) { $0 + $1.counts.additions }, deletions: self.files.reduce(0) { $0 + $1.counts.deletions })
     }
 
+    var hasUnavailableLineCounts: Bool {
+        self.files.contains { $0.file.lineCounts == nil }
+    }
+
     func expandShown() {
         self.visibleFiles.forEach { $0.isExpanded = true }
     }

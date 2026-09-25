@@ -14,6 +14,7 @@ struct GitRepositorySnapshot: Codable, Hashable, Sendable {
     let recentCommits: [RepositoryCommit]
     let capturedAt: Date
     var referencesCapturedAt: Date?
+    var lastFetchAt: Date?
 
     // MARK: - Changes
 
@@ -76,7 +77,8 @@ struct GitRepositorySnapshot: Codable, Hashable, Sendable {
             tags: self.tags,
             recentCommits: self.recentCommits,
             capturedAt: status.capturedAt,
-            referencesCapturedAt: self.referencesCapturedAt
+            referencesCapturedAt: self.referencesCapturedAt,
+            lastFetchAt: status.lastFetchAt ?? self.lastFetchAt
         )
 
     }
