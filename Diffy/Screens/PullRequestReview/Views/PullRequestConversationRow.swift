@@ -19,14 +19,14 @@ struct PullRequestConversationRow: View {
                     Text(date.formatted(date: .abbreviated, time: .shortened)).foregroundStyle(self.theme.secondaryText)
                 }
                 if let url = self.entry.webURL {
-                    Link(destination: url) { Image(systemName: "arrow.up.right") }.help("Open discussion on GitHub")
+                    Link(destination: url) { Image(systemName: "arrow.up.right") }.help("Open Discussion On GitHub")
                 }
 
             }
             .font(.system(size: 11))
             if let path = self.entry.path {
 
-                Text("\(path)\(self.entry.line.map { " · \(self.entry.side == "LEFT" ? "old" : "new") line \($0)" } ?? " · Outdated")\(self.entry.replyToID == nil ? "" : " · Reply")")
+                Text("\(path)\(self.entry.line.map { " · \(self.entry.side == "LEFT" ? "Old" : "New") Line \($0)" } ?? " · Outdated")\(self.entry.replyToID == nil ? "" : " · Reply")")
                     .font(.system(size: 10, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
 
             }

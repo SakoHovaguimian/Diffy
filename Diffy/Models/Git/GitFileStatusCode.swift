@@ -19,7 +19,7 @@ enum GitFileStatusCode: String, Codable, Hashable, Sendable {
 
         case .unmodified: "Unchanged"
         case .modified: "Modified"
-        case .fileTypeChanged: "Type changed"
+        case .fileTypeChanged: "Type Changed"
         case .added: "Added"
         case .deleted: "Deleted"
         case .renamed: "Renamed"

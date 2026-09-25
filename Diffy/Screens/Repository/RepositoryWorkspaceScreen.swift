@@ -20,7 +20,7 @@ struct RepositoryWorkspaceScreen: View {
             }
 
             if self.viewModel.snapshot == nil && self.viewModel.isRefreshing {
-                ProgressView("Opening repository…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                ProgressView("Opening Repository…").frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if !self.workspace.showsDashboard && self.workspace.mode == .folders {
                 RepositoryFoldersView(viewModel: self.viewModel)
             } else if self.viewModel.snapshot == nil {
@@ -49,7 +49,7 @@ struct RepositoryWorkspaceScreen: View {
             if phase == .active { Task { await self.viewModel.refresh() } }
 
         }
-        .confirmationDialog(self.viewModel.pendingAction.map { "\($0.request.title) in \($0.projectName)?" } ?? "Git action", isPresented: Binding(
+        .confirmationDialog(self.viewModel.pendingAction.map { "\($0.request.title) In \($0.projectName)?" } ?? "Git Action", isPresented: Binding(
             get: { self.viewModel.pendingAction != nil },
             set: { if !$0 { self.viewModel.pendingAction = nil } }
         ), titleVisibility: .visible) {
@@ -118,16 +118,16 @@ struct RepositoryWorkspaceScreen: View {
 
         VStack(spacing: 16) {
 
-            DiffyEmptyState(symbol: "folder", title: "A place for your project", message: "Git pages require a local checkout. Choose the repository's folder, or clone it from Settings → Accounts.")
+            DiffyEmptyState(symbol: "folder", title: "A Place For Your Project", message: "Git pages require a local checkout. Choose the repository's folder, or clone it from Settings → Accounts.")
             HStack {
 
-                Button("Locate folder…") {
+                Button("Locate Folder…") {
 
                     guard let directory = ProjectDirectoryController().chooseDirectory() else { return }
                     self.workspace.relocateSelectedProject(to: directory)
 
                 }
-                SettingsLink { Text("Accounts settings") }
+                SettingsLink { Text("Accounts Settings") }
                 Button("Retry") { Task { await self.viewModel.refresh() } }
 
             }

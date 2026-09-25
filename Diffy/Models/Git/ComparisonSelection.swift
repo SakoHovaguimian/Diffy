@@ -17,6 +17,14 @@ struct ComparisonSelection: Codable, Hashable, Sendable {
         ComparisonSelection(left: .parent(of: commitID), right: .revision(commitID))
     }
 
+    var displayTitle: String {
+
+        let separator = self.usesMergeBase ? " ⋯ " : " → "
+        return self.left.displayLabel + separator + self.right.displayLabel
+
+    }
+
+    /// Retain the original spelling used to match saved annotations.
     var title: String {
 
         let separator = self.usesMergeBase ? " ⋯ " : " → "

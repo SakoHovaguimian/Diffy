@@ -10,7 +10,7 @@ struct PullRequestActions: View {
         HStack(spacing: 8) {
 
             Link(destination: self.webURL) {
-                Label("Open in GitHub", systemImage: "arrow.up.right")
+                Label("Open In GitHub", systemImage: "arrow.up.right")
             }
             .buttonStyle(.bordered)
 

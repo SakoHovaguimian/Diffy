@@ -90,6 +90,7 @@ class ProjectWriter:
         self.objects = []
         self.swift_sources = []
         self.font_folder = None
+        self.file_icon_folder = None
         self.references = {}
 
     # MARK: - Objects
@@ -115,6 +116,10 @@ class ProjectWriter:
                 reference = self.add(relative, f'isa = PBXFileReference; lastKnownFileType = folder; path = {quote(path.name)}; sourceTree = "<group>";')
                 self.font_folder = reference
                 children.append(reference)
+            elif path == APP / 'Resources' / 'FileIcons':
+                reference = self.add(relative, f'isa = PBXFileReference; lastKnownFileType = folder; path = {quote(path.name)}; sourceTree = "<group>";')
+                self.file_icon_folder = reference
+                children.append(reference)
             elif path.is_dir():
                 children.append(self.group(path))
             elif path.suffix in FILE_KINDS:
@@ -135,6 +140,8 @@ class ProjectWriter:
         sources = self.target_sources(target)
         source_builds = [self.add(f'build:{key}:{path}', f'isa = PBXBuildFile; fileRef = {self.references[path]};') for path in sources]
         resource_builds = [self.add(f'build:{key}:fonts', f'isa = PBXBuildFile; fileRef = {self.font_folder};')] if self.font_folder else []
+        if self.file_icon_folder:
+            resource_builds.append(self.add(f'build:{key}:file-icons', f'isa = PBXBuildFile; fileRef = {self.file_icon_folder};'))
 
         return (
             self.add(f'sources:{key}', f'isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ({", ".join(source_builds)}); runOnlyForDeploymentPostprocessing = 0;'),

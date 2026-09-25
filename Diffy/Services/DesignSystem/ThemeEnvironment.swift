@@ -2,7 +2,7 @@ import SwiftUI
 
 private struct DiffyThemeKey: EnvironmentKey {
 
-    static let defaultValue = DiffyTheme.resolve(.porcelain, system: .light, accentHex: "7862D9")
+    static let defaultValue = DiffyTheme.resolve(.light, system: .light, accentHex: "7862D9")
 
 }
 

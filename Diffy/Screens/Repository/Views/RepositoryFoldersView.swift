@@ -11,7 +11,7 @@ struct RepositoryFoldersView: View {
 
             VStack(alignment: .leading, spacing: 26) {
 
-                DiffyPageHeading(eyebrow: "Folder comparison", title: "Two folders. One clear picture.", detail: "Choose an original and an updated folder to inspect a read-only comparison, including files outside Git.")
+                DiffyPageHeading(eyebrow: "Folder Comparison", title: "Two Folders. One Clear Picture.", detail: "Choose an original and an updated folder to inspect a read-only comparison, including files outside Git.")
                 HStack(spacing: 16) {
 
                     folderPicker(title: "Original", url: self.viewModel.leftFolder) {
@@ -28,13 +28,13 @@ struct RepositoryFoldersView: View {
                     Text("Compares every file under the selected folders, including hidden files. Choose source folders to exclude repository internals or build output.")
                         .font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
                     Spacer()
-                    Button("Compare folders") { self.viewModel.compareFolders() }
+                    Button("Compare Folders") { self.viewModel.compareFolders() }
                         .buttonStyle(.borderedProminent)
                         .disabled(!self.viewModel.runtime.isLive || self.viewModel.leftFolder == nil || self.viewModel.rightFolder == nil || self.viewModel.isLoadingPatch)
 
                 }
                 Divider()
-                Text("Selected folder contents · \(self.viewModel.folderEntries.count) files")
+                Text("Selected Folder Contents · \(self.viewModel.folderEntries.count) Files")
                     .font(.system(size: 16, weight: .semibold))
                 if self.viewModel.folderEntries.isEmpty {
                     Text("Compare two folders to browse every file in their combined contents.")
@@ -74,7 +74,7 @@ struct RepositoryFoldersView: View {
 
                 }
                 Text(title).font(.system(size: 12, weight: .semibold))
-                Text(url?.path ?? "Choose a folder…")
+                Text(url?.path ?? "Choose A Folder…")
                     .font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
                     .lineLimit(2).truncationMode(.middle)
 

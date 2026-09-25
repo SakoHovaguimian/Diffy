@@ -10,7 +10,7 @@ struct EditAnnotationScreen: View {
 
         VStack(alignment: .leading, spacing: 18) {
 
-            Text("Edit annotation").font(.title2.weight(.semibold))
+            Text("Edit Annotation").font(.title2.weight(.semibold))
             Text(self.annotation.filePath).font(.caption).foregroundStyle(.secondary)
             TextEditor(text: self.$annotation.comment)
                 .font(.body)

@@ -16,10 +16,10 @@ enum PullRequestFilter: String, CaseIterable, Codable, Hashable, Identifiable, S
         switch self {
 
         case .all: "Anyone"
-        case .authoredByMe: "Authored by me"
-        case .assignedToMe: "Assigned to me"
-        case .reviewRequested: "Review requested"
-        case .notAssignedToMe: "Not assigned to me"
+        case .authoredByMe: "Authored By Me"
+        case .assignedToMe: "Assigned To Me"
+        case .reviewRequested: "Review Requested"
+        case .notAssignedToMe: "Not Assigned To Me"
 
         }
 

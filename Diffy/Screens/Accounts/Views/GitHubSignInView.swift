@@ -18,7 +18,7 @@ struct GitHubSignInView: View {
                     Button {
                         self.viewModel.signIn()
                     } label: {
-                        Label("Sign in with GitHub", systemImage: "person.crop.circle.badge.plus")
+                        Label("Sign In With GitHub", systemImage: "person.crop.circle.badge.plus")
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(!self.viewModel.runtime.isLive || self.viewModel.isSigningIn)
@@ -57,8 +57,8 @@ struct GitHubSignInView: View {
 
         VStack(alignment: .leading, spacing: 14) {
 
-            Text("Sign in through \(authorization.providerName)").font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
-            Text("Enter this code on GitHub").font(.system(size: 14, weight: .semibold)).foregroundStyle(self.theme.text)
+            Text("Sign In Through \(authorization.providerName)").font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
+            Text("Enter This Code On GitHub").font(.system(size: 14, weight: .semibold)).foregroundStyle(self.theme.text)
             HStack(spacing: 16) {
 
                 Text(authorization.userCode)
@@ -66,7 +66,7 @@ struct GitHubSignInView: View {
                     .tracking(2)
                     .textSelection(.enabled)
                     .foregroundStyle(self.theme.text)
-                Button("Copy code") { ExternalLinkController().copy(authorization.userCode) }
+                Button("Copy Code") { ExternalLinkController().copy(authorization.userCode) }
                 Spacer()
 
             }
@@ -77,7 +77,7 @@ struct GitHubSignInView: View {
                 Button("Cancel") { self.viewModel.cancelSignIn() }
                 Spacer()
                 ProgressView().controlSize(.small)
-                Text("Waiting for approval…")
+                Text("Waiting For Approval…")
 
             }
             Text("Code expires at \(authorization.expiresAt.formatted(date: .omitted, time: .shortened)).")
@@ -90,20 +90,20 @@ struct GitHubSignInView: View {
 
     private func tokenEntry() -> some View {
 
-        DisclosureGroup("Connect with a personal access token") {
+        DisclosureGroup("Connect With A Personal Access Token") {
 
             VStack(alignment: .leading, spacing: 12) {
 
-                Text("Use a fine-grained token with access to the repositories you want to view. Enable Contents and Pull requests read permissions. Credentials are stored in the macOS Keychain.")
+                Text("Use a fine-grained token with access to the repositories you want to view. Enable Contents and Pull Requests read permissions. Credentials are stored in the macOS Keychain.")
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
 
                     Group {
 
                         if self.viewModel.showsToken {
-                            TextField("Personal access token", text: self.$viewModel.personalAccessToken)
+                            TextField("Personal Access Token", text: self.$viewModel.personalAccessToken)
                         } else {
-                            SecureField("Personal access token", text: self.$viewModel.personalAccessToken)
+                            SecureField("Personal Access Token", text: self.$viewModel.personalAccessToken)
                         }
 
                     }
@@ -114,13 +114,13 @@ struct GitHubSignInView: View {
                     } label: {
                         Image(systemName: self.viewModel.showsToken ? "eye.slash" : "eye")
                     }
-                    .accessibilityLabel(self.viewModel.showsToken ? "Hide token" : "Show token")
+                    .accessibilityLabel(self.viewModel.showsToken ? "Hide Token" : "Show Token")
                     Button("Connect") { self.viewModel.connectToken() }
                         .disabled(self.viewModel.personalAccessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || self.viewModel.isSigningIn)
 
                 }
                 if let url = URL(string: "https://\(self.viewModel.accountService.configuration.host)/settings/personal-access-tokens/new") {
-                    Link("Create a token on GitHub ↗", destination: url)
+                    Link("Create A Token On GitHub ↗", destination: url)
                 }
 
             }

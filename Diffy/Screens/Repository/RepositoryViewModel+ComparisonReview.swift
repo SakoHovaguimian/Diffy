@@ -55,7 +55,7 @@ extension RepositoryViewModel {
             repository: reference,
             selection: selection,
             title: title,
-            detail: detail ?? selection.title,
+            detail: detail ?? selection.displayTitle,
             startsExpanded: startsExpanded,
             mode: mode
         )
@@ -73,7 +73,7 @@ extension RepositoryViewModel {
             mode: .commits,
             emptyMessage: comparison.emptyMessage,
             warning: comparison.warning,
-            successMessage: comparison.title == "Pull complete"
+            successMessage: comparison.title == "Pull Complete"
                 ? (comparison.warning == nil ? "Pull completed. Review the result below." : "Pull completed, but its change summary could not be read.")
                 : nil
         )

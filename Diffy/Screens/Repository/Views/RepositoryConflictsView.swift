@@ -11,14 +11,14 @@ struct RepositoryConflictsView: View {
 
             VStack(alignment: .leading, spacing: 26) {
 
-                DiffyPageHeading(eyebrow: "Conflict resolution", title: "Bring both sides together.", detail: "Resolve files in your editor, then stage them here. You can also choose one side for an entire file.")
+                DiffyPageHeading(eyebrow: "Conflict Resolution", title: "Bring Both Sides Together.", detail: "Resolve files in your editor, then stage them here. You can also choose one side for an entire file.")
 
                 if let snapshot = self.viewModel.snapshot {
 
                     operationStatus(snapshot)
 
                     if snapshot.conflicts.isEmpty {
-                        DiffyEmptyState(symbol: "checkmark.circle", title: "No unresolved files", message: snapshot.operation.isInProgress ? "All conflicted paths have been staged. Continue the operation when you're ready." : "Conflicts will appear here when a merge, rebase, or pull needs your input.")
+                        DiffyEmptyState(symbol: "checkmark.circle", title: "No Unresolved Files", message: snapshot.operation.isInProgress ? "All conflicted paths have been staged. Continue the operation when you're ready." : "Conflicts will appear here when a merge, rebase, or pull needs your input.")
                     } else {
 
                         LazyVStack(spacing: 12) {
@@ -46,7 +46,7 @@ struct RepositoryConflictsView: View {
             VStack(alignment: .leading, spacing: 6) {
 
                 Text(snapshot.operation.title).font(.system(size: 15, weight: .semibold))
-                Text("\(snapshot.conflicts.count) unresolved files").font(.system(size: 12)).foregroundStyle(self.theme.secondaryText)
+                Text("\(snapshot.conflicts.count) Unresolved Files").font(.system(size: 12)).foregroundStyle(self.theme.secondaryText)
 
             }
             Spacer()
@@ -83,16 +83,16 @@ struct RepositoryConflictsView: View {
             }
             HStack {
 
-                Button("Show file") { ExternalLinkController().reveal(snapshot.location.rootPath + "/" + conflict.path) }
-                Menu("Choose whole file") {
+                Button("Show File") { ExternalLinkController().reveal(snapshot.location.rootPath + "/" + conflict.path) }
+                Menu("Choose Whole File") {
 
-                    Button("Use your changes…") { self.viewModel.request(.resolveConflict(path: conflict.path, choice: .yours, stagesResult: true)) }
-                    Button("Use incoming changes…") { self.viewModel.request(.resolveConflict(path: conflict.path, choice: .theirs, stagesResult: true)) }
+                    Button("Use Your Changes…") { self.viewModel.request(.resolveConflict(path: conflict.path, choice: .yours, stagesResult: true)) }
+                    Button("Use Incoming Changes…") { self.viewModel.request(.resolveConflict(path: conflict.path, choice: .theirs, stagesResult: true)) }
 
                 }
                 .disabled(!self.viewModel.canMutate)
                 Spacer()
-                Button("Stage resolved file") { self.viewModel.request(.stage(paths: [conflict.path])) }
+                Button("Stage Resolved File") { self.viewModel.request(.stage(paths: [conflict.path])) }
                     .buttonStyle(.borderedProminent)
                     .disabled(!self.viewModel.canMutate)
 

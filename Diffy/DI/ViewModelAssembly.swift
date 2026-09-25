@@ -18,7 +18,10 @@ final class ViewModelAssembly {
             git: services.gitService,
             workspace: services.workspaceService
         )
-        self.settingsViewModel = SettingsViewModel(preferencesService: services.preferencesService)
+        self.settingsViewModel = SettingsViewModel(
+            preferencesService: services.preferencesService,
+            fileIconService: services.fileIconService
+        )
         self.reviewViewModel = ReviewViewModel(
             annotationService: services.annotationService,
             exportService: services.exportService

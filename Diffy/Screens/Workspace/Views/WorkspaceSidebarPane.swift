@@ -16,7 +16,7 @@ struct WorkspaceSidebarPane: View {
                 .disabled(self.isOperating)
                 .frame(width: self.widthDuringDrag ?? max(214, self.settings.appearance.sidebarWidth))
 
-            HorizontalResizeHandle(label: "Drag to resize sidebar", resizeGesture: resizeGesture())
+            HorizontalResizeHandle(label: "Drag To Resize Sidebar", resizeGesture: resizeGesture())
 
         }
 

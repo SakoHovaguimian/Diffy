@@ -23,10 +23,10 @@ struct GitHeadState: Codable, Hashable, Sendable {
         }
 
         if let shortCommitID = self.shortCommitID {
-            return "Detached at \(shortCommitID)"
+            return "Detached At \(shortCommitID)"
         }
 
-        return "No commits yet"
+        return "No Commits Yet"
 
     }
 }

@@ -26,7 +26,7 @@ struct DiffyPatchTextView: NSViewRepresentable {
         editor.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         editor.autoresizingMask = [.width]
-        editor.setAccessibilityLabel("Git comparison. Read-only patch.")
+        editor.setAccessibilityLabel("Git Comparison. Read-only patch.")
         scroll.documentView = editor
         return scroll
 

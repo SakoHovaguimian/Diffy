@@ -30,8 +30,8 @@ struct RepositoryActionBar: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
-            .help("Refresh repository")
-            .accessibilityLabel("Refresh repository")
+            .help("Refresh Repository")
+            .accessibilityLabel("Refresh Repository")
             .disabled(self.viewModel.isRefreshing || self.viewModel.isOperating)
 
         }
@@ -42,12 +42,12 @@ struct RepositoryActionBar: View {
         .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
         .sheet(isPresented: self.$viewModel.showsAddRemote) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Add Git remote").font(.headline)
+                Text("Add Git Remote").font(.headline)
                 Text("Add a remote, fetch its branches, then choose one as this branch’s upstream.")
                     .font(.system(size: 12))
                     .foregroundStyle(self.theme.secondaryText)
-                TextField("Remote name", text: self.$viewModel.newRemoteName)
-                TextField("HTTPS or SSH URL", text: self.$viewModel.newRemoteURL)
+                TextField("Remote Name", text: self.$viewModel.newRemoteName)
+                TextField("HTTPS Or SSH URL", text: self.$viewModel.newRemoteURL)
                 HStack {
                     Spacer()
                     Button("Cancel") { self.viewModel.showsAddRemote = false }
@@ -79,15 +79,15 @@ struct RepositoryActionBar: View {
                         Button(strategy.title) { self.viewModel.request(.pull(strategy)) }
                     }
                 } else {
-                    Text("Choose a tracking branch")
+                    Text("Choose A Tracking Branch")
                     ForEach(self.viewModel.snapshot?.remoteBranches ?? []) { branch in
                         Button(branch.name) { self.viewModel.request(.setUpstream(branch: branch.name)) }
                     }
                     if self.viewModel.snapshot?.remoteBranches.isEmpty ?? true {
                         if self.viewModel.snapshot?.remotes.isEmpty ?? true {
-                            Button("Add a remote…") { self.viewModel.showsAddRemote = true }
+                            Button("Add A Remote…") { self.viewModel.showsAddRemote = true }
                         } else {
-                            Button("Fetch remote branches") { self.viewModel.request(.fetch(remote: nil)) }
+                            Button("Fetch Remote Branches") { self.viewModel.request(.fetch(remote: nil)) }
                             Text("You can also publish this branch with Push.")
                         }
                     }
@@ -101,7 +101,7 @@ struct RepositoryActionBar: View {
 
                 Button("Push") { self.viewModel.request(.push(GitPushOptions())) }
                     .disabled(self.viewModel.snapshot?.upstream == nil)
-                Menu("Publish branch to") {
+                Menu("Publish Branch To") {
 
                     ForEach(self.viewModel.snapshot?.remotes ?? []) { remote in
                         Button(remote.name) { self.viewModel.request(.push(GitPushOptions(remote: remote.name, setsUpstream: true))) }
@@ -109,7 +109,7 @@ struct RepositoryActionBar: View {
 
                 }
                 Divider()
-                Button("Force push with lease…") { self.viewModel.request(.push(GitPushOptions(forceWithLease: true))) }
+                Button("Force Push With Lease…") { self.viewModel.request(.push(GitPushOptions(forceWithLease: true))) }
                     .disabled(self.viewModel.snapshot?.upstream == nil)
 
             } label: {

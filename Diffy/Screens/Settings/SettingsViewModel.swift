@@ -6,6 +6,7 @@ final class SettingsViewModel: ViewModel {
 
     let loggerName = "SETTINGS_VIEW_MODEL"
     private let preferencesService: PreferencesServiceProtocol
+    let fileIconService: FileIconServiceProtocol
 
     @Published var editor: EditorPreferences {
         didSet { self.preferencesService.save(self.editor, key: "editor.v1") }
@@ -15,13 +16,22 @@ final class SettingsViewModel: ViewModel {
         didSet { self.preferencesService.save(self.appearance, key: "appearance.v1") }
     }
 
+    @Published var fileIconTheme: FileIconTheme {
+        didSet { self.preferencesService.save(self.fileIconTheme, key: "fileIcons.theme.v1") }
+    }
+
     @Published var diffVisualization: DiffVisualizationPreferences {
         didSet { self.preferencesService.save(self.diffVisualization, key: "diffVisualization.v1") }
     }
 
-    init(preferencesService: PreferencesServiceProtocol) {
+    init(
+        preferencesService: PreferencesServiceProtocol,
+        fileIconService: FileIconServiceProtocol
+    ) {
 
         self.preferencesService = preferencesService
+        self.fileIconService = fileIconService
+        self.fileIconTheme = preferencesService.load(FileIconTheme.self, key: "fileIcons.theme.v1") ?? .material
         self.editor = preferencesService.load(EditorPreferences.self, key: "editor.v1") ?? EditorPreferences()
         var appearance = preferencesService.load(AppearancePreferences.self, key: "appearance.v1") ?? AppearancePreferences()
         appearance.sidebarWidth = max(214, appearance.sidebarWidth)
@@ -33,7 +43,10 @@ final class SettingsViewModel: ViewModel {
     // MARK: - Defaults
 
     func resetAppearance() {
+
         self.appearance = AppearancePreferences()
+        self.fileIconTheme = .material
+
     }
 
     func resetEditor() {

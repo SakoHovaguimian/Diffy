@@ -14,7 +14,7 @@ enum GitPullStrategy: String, Codable, CaseIterable, Hashable, Identifiable, Sen
 
         switch self {
 
-        case .fastForwardOnly: "Fast-forward only"
+        case .fastForwardOnly: "Fast-Forward Only"
         case .rebase: "Rebase"
         case .merge: "Merge"
 

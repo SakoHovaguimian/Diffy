@@ -34,7 +34,7 @@ struct BucketEditorScreen: View {
 
         VStack(alignment: .leading, spacing: 22) {
 
-            Text("Make it yours.")
+            Text("Make It Yours.")
                 .font(.system(size: 26, weight: .semibold))
                 .tracking(-0.6)
             Text("A little identity for the work that belongs together.")
@@ -58,7 +58,7 @@ struct BucketEditorScreen: View {
 
                 }
 
-                Button("Reset style") {
+                Button("Reset Style") {
 
                     self.bucket.accentHex = "7862D9"
                     self.bucket.symbol = "folder"
@@ -101,7 +101,7 @@ struct BucketEditorScreen: View {
 
         VStack(alignment: .leading, spacing: 16) {
 
-            TextField("Bucket name", text: self.$bucket.title)
+            TextField("Bucket Name", text: self.$bucket.title)
 
             HStack(spacing: 8) {
 
@@ -140,7 +140,7 @@ struct BucketEditorScreen: View {
             }
             .padding(.vertical, 5)
 
-            ColorPicker("Custom color", selection: self.customColor, supportsOpacity: false)
+            ColorPicker("Custom Color", selection: self.customColor, supportsOpacity: false)
 
         }
         .font(.system(size: 12))
@@ -164,8 +164,8 @@ struct BucketEditorScreen: View {
                 Image(systemName: self.bucket.symbol).font(.system(size: 24)).foregroundStyle(accent)
                 Text(self.bucket.title).font(.system(size: 20, weight: .semibold))
                 Divider()
-                Label("Your projects", systemImage: "folder").font(.system(size: 12))
-                Label("Another good idea", systemImage: "sparkles").font(.system(size: 12))
+                Label("Your Projects", systemImage: "folder").font(.system(size: 12))
+                Label("Another Good Idea", systemImage: "sparkles").font(.system(size: 12))
 
             }
             .padding(20)

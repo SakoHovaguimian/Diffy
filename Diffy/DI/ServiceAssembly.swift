@@ -12,6 +12,7 @@ final class ServiceAssembly {
     let annotationService: AnnotationServiceProtocol
     let exportService: ReviewExportServiceProtocol
     let textDiffBuilder: TextDiffBuilding
+    let fileIconService: FileIconServiceProtocol
 
     init(runtime: AppRuntime = .current) {
 
@@ -21,6 +22,7 @@ final class ServiceAssembly {
 
         self.runtime = runtime
         self.preferencesService = preferencesService
+        self.fileIconService = FileIconService()
 
         #if DIFFY_LIVE
         if runtime == .live {

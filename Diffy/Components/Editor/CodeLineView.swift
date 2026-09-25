@@ -87,7 +87,7 @@ struct CodeLineView: View {
             .fixedSize(horizontal: !self.settings.editor.wrapLines, vertical: true)
             .contentShape(Rectangle())
             .onTapGesture(perform: sourceAction)
-            .help(self.edit == nil ? "Select this line" : "Click to edit the working copy")
+            .help(self.edit == nil ? "Select This Line" : "Click To Edit The Working Copy")
 
         }
         .frame(maxWidth: .infinity, minHeight: self.contentSize.scaled(self.settings.editor.lineHeight), alignment: .leading)
@@ -97,16 +97,16 @@ struct CodeLineView: View {
 
             if self.number != nil {
 
-                Button("Annotate this line", action: self.annotate)
-                Button("Copy line") { ExportController.copy(self.source ?? "") }
+                Button("Annotate This Line", action: self.annotate)
+                Button("Copy Line") { ExportController.copy(self.source ?? "") }
 
             }
 
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(self.side.rawValue), line \(self.number.map(String.init) ?? "empty"), \(self.source ?? "")")
+        .accessibilityLabel("\(self.side.rawValue), Line \(self.number.map(String.init) ?? "Empty"), \(self.source ?? "")")
         .accessibilityAction(named: "Annotate", self.annotate)
-        .accessibilityAction(named: "Edit working copy") { self.edit?() }
+        .accessibilityAction(named: "Edit Working Copy") { self.edit?() }
 
     }
 

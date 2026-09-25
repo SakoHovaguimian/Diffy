@@ -16,18 +16,18 @@ struct RepositoryPathEntry: Identifiable, Hashable, Sendable {
     var updateLabel: String {
 
         if self.prefersDiskTime, let diskUpdatedAt {
-            return "\(self.isTracked ? "Disk modified" : "No Git history · disk modified") \(diskUpdatedAt.formatted(date: .abbreviated, time: .omitted))"
+            return "\(self.isTracked ? "Disk Modified" : "No Git History · Disk Modified") \(diskUpdatedAt.formatted(date: .abbreviated, time: .omitted))"
         }
 
         if let gitUpdatedAt {
-            return "Git updated \(gitUpdatedAt.formatted(date: .abbreviated, time: .omitted))"
+            return "Git Updated \(gitUpdatedAt.formatted(date: .abbreviated, time: .omitted))"
         }
 
         if let diskUpdatedAt {
-            return "\(self.isTracked ? "Git recency unavailable" : "No Git history") · disk modified \(diskUpdatedAt.formatted(date: .abbreviated, time: .omitted))"
+            return "\(self.isTracked ? "Git Recency Unavailable" : "No Git History") · Disk Modified \(diskUpdatedAt.formatted(date: .abbreviated, time: .omitted))"
         }
 
-        return self.isTracked ? "Git recency unavailable" : "No Git history"
+        return self.isTracked ? "Git Recency Unavailable" : "No Git History"
 
     }
 }

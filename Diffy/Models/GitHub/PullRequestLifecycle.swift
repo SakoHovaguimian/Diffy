@@ -10,7 +10,7 @@ enum PullRequestLifecycle: String, Codable, Hashable, Sendable {
         switch self {
 
         case .open: "Open"
-        case .closedUnmerged: "Closed · unmerged"
+        case .closedUnmerged: "Closed · Unmerged"
         case .merged: "Merged"
 
         }

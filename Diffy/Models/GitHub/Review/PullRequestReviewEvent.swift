@@ -13,7 +13,7 @@ enum PullRequestReviewEvent: String, CaseIterable, Identifiable, Encodable, Send
 
         case .comment: "Comment"
         case .approve: "Approve"
-        case .requestChanges: "Request changes"
+        case .requestChanges: "Request Changes"
 
         }
 

@@ -58,7 +58,7 @@ struct ComparisonReviewScreen: View {
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.cancelAction)
-            .help("Close comparison · Escape")
+            .help("Close Comparison · Escape")
 
         }
         .padding(24)
@@ -72,7 +72,7 @@ struct ComparisonReviewScreen: View {
 
             HStack(spacing: 16) {
 
-                Label("\(self.viewModel.files.count.formatted()) changed files", systemImage: "doc.on.doc")
+                Label("\(self.viewModel.files.count.formatted()) Changed Files", systemImage: "doc.on.doc")
                     .font(.system(size: 12, weight: .medium))
                 DiffChangeSummary(counts: self.viewModel.counts)
                 if self.viewModel.hasUnavailableLineCounts {
@@ -81,11 +81,11 @@ struct ComparisonReviewScreen: View {
                         .foregroundStyle(self.theme.secondaryText)
                 }
                 Spacer()
-                Text("\(self.viewModel.viewedCount) of \(self.viewModel.files.count) viewed")
+                Text("\(self.viewModel.viewedCount) Of \(self.viewModel.files.count) Viewed")
                     .font(.system(size: 11))
                     .foregroundStyle(self.theme.secondaryText)
 
-                Picker("Diff layout", selection: self.$settings.editor.unified) {
+                Picker("Diff Layout", selection: self.$settings.editor.unified) {
 
                     Text("Split").tag(false)
                     Text("Unified").tag(true)
@@ -101,7 +101,7 @@ struct ComparisonReviewScreen: View {
                 HStack(spacing: 8) {
 
                     Image(systemName: "magnifyingglass").foregroundStyle(self.theme.secondaryText)
-                    TextField("Filter changed files…", text: self.$viewModel.query)
+                    TextField("Filter Changed Files…", text: self.$viewModel.query)
                         .textFieldStyle(.plain)
                         .focused(self.$searchFocused)
 
@@ -116,7 +116,7 @@ struct ComparisonReviewScreen: View {
                             Image(systemName: "xmark.circle.fill")
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Clear file filter")
+                        .accessibilityLabel("Clear File Filter")
 
                     }
 
@@ -124,11 +124,11 @@ struct ComparisonReviewScreen: View {
                 .padding(8)
                 .frame(maxWidth: 350)
                 .background(self.theme.elevated, in: RoundedRectangle(cornerRadius: 6))
-                Toggle("Unviewed only", isOn: self.$viewModel.onlyUnviewed)
+                Toggle("Unviewed Only", isOn: self.$viewModel.onlyUnviewed)
                     .toggleStyle(.checkbox)
                 Spacer()
-                Button("Expand shown") { self.viewModel.expandShown() }
-                Button("Collapse all") { self.viewModel.collapseAll() }
+                Button("Expand Shown") { self.viewModel.expandShown() }
+                Button("Collapse All") { self.viewModel.collapseAll() }
 
             }
             .font(.system(size: 11))
@@ -147,28 +147,28 @@ struct ComparisonReviewScreen: View {
     private func reviewContent() -> some View {
 
         if self.viewModel.isLoading {
-            ProgressView("Reading changed files…")
+            ProgressView("Reading Changed Files…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let error = self.viewModel.error ?? self.viewModel.request.warning {
 
             VStack(spacing: 16) {
 
-                DiffyEmptyState(symbol: "exclamationmark.circle", title: "Change summary unavailable", message: error)
+                DiffyEmptyState(symbol: "exclamationmark.circle", title: "Change Summary Unavailable", message: error)
                 if self.viewModel.error != nil {
-                    Button("Retry comparison") { Task { await self.viewModel.load() } }
+                    Button("Retry Comparison") { Task { await self.viewModel.load() } }
                         .padding(.bottom, 30)
                 }
 
             }
 
         } else if self.viewModel.files.isEmpty {
-            DiffyEmptyState(symbol: "checkmark.circle", title: "No file changes", message: self.viewModel.request.emptyMessage)
+            DiffyEmptyState(symbol: "checkmark.circle", title: "No File Changes", message: self.viewModel.request.emptyMessage)
         } else if self.viewModel.matchingFiles.isEmpty {
 
             VStack(spacing: 16) {
 
-                DiffyEmptyState(symbol: "line.3.horizontal.decrease.circle", title: "No matching files", message: "Clear the file filter or show viewed files to continue reviewing.")
-                Button("Clear filters") { self.viewModel.clearFilters() }
+                DiffyEmptyState(symbol: "line.3.horizontal.decrease.circle", title: "No Matching Files", message: "Clear the file filter or show viewed files to continue reviewing.")
+                Button("Clear Filters") { self.viewModel.clearFilters() }
                     .padding(.bottom, 30)
 
             }
@@ -205,7 +205,7 @@ struct ComparisonReviewScreen: View {
                     }
 
                     if self.viewModel.matchingFiles.count > self.viewModel.visibleLimit {
-                        Button("Show more files") { self.viewModel.visibleLimit += 50 }
+                        Button("Show More Files") { self.viewModel.visibleLimit += 50 }
                             .padding(16)
                     }
 
@@ -220,7 +220,7 @@ struct ComparisonReviewScreen: View {
 
 }
 
-#Preview("Branch review") {
+#Preview("Branch Review") {
 
     let workspace = mockResolve(WorkspaceViewModel.self)
     ComparisonReviewScreen(
@@ -232,7 +232,7 @@ struct ComparisonReviewScreen: View {
 
 }
 
-#Preview("Pull summary") {
+#Preview("Pull Summary") {
 
     let workspace = mockResolve(WorkspaceViewModel.self)
     ComparisonReviewScreen(

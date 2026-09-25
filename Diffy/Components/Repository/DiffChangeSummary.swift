@@ -27,7 +27,7 @@ struct DiffChangeSummary: View {
         .font(.system(size: 11, weight: .medium, design: .monospaced))
         .fixedSize()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(self.counts.additions) additions, \(self.counts.deletions) deletions")
+        .accessibilityLabel("\(self.counts.additions) Additions, \(self.counts.deletions) Deletions")
 
     }
 

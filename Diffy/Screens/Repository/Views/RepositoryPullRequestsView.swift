@@ -12,12 +12,12 @@ struct RepositoryPullRequestsView: View {
 
             VStack(alignment: .leading, spacing: 24) {
 
-                DiffyPageHeading(eyebrow: "GitHub", title: "Ready for another pair of eyes.", detail: self.viewModel.linkedRepository?.fullName ?? "Link a GitHub repository to see its pull requests.")
+                DiffyPageHeading(eyebrow: "GitHub", title: "Ready For Another Pair Of Eyes.", detail: self.viewModel.linkedRepository?.fullName ?? "Link a GitHub repository to see its pull requests.")
 
                 if self.viewModel.availableAccounts.isEmpty || self.viewModel.linkedRepository == nil {
 
-                    DiffyEmptyState(symbol: "person.crop.circle.badge.plus", title: "Connect your repository", message: "Sign in through Settings → Accounts, then link this checkout. Existing GitHub remotes are detected automatically.")
-                    SettingsLink { Text("Open settings") }.buttonStyle(.borderedProminent)
+                    DiffyEmptyState(symbol: "person.crop.circle.badge.plus", title: "Connect Your Repository", message: "Sign in through Settings → Accounts, then link this checkout. Existing GitHub remotes are detected automatically.")
+                    SettingsLink { Text("Open Settings") }.buttonStyle(.borderedProminent)
 
                 } else {
                     requests()
@@ -75,13 +75,13 @@ struct RepositoryPullRequestsView: View {
             }
 
             if self.viewModel.isLoadingPullRequests {
-                ProgressView("Loading pull requests…")
+                ProgressView("Loading Pull Requests…")
             } else if self.viewModel.visiblePullRequests.isEmpty {
-                DiffyEmptyState(symbol: "tray", title: "Nothing waiting here", message: "No unmerged pull requests match these filters. Refresh to check again.")
+                DiffyEmptyState(symbol: "tray", title: "Nothing Waiting Here", message: "No unmerged pull requests match these filters. Refresh to check again.")
             }
 
             if self.viewModel.isLoadingChecks {
-                ProgressView("Loading check status…")
+                ProgressView("Loading Check Status…")
                     .font(.system(size: 11))
             }
 
@@ -103,14 +103,14 @@ struct RepositoryPullRequestsView: View {
                             Label("\(request.headRef) → \(request.baseRef)", systemImage: "arrow.triangle.branch")
                                 .font(.system(size: 10, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
                             if !request.requestedTeams.isEmpty {
-                                Text("Team review: \(request.requestedTeams.map(\.name).joined(separator: ", "))").font(.system(size: 10))
+                                Text("Team Review: \(request.requestedTeams.map(\.name).joined(separator: ", "))").font(.system(size: 10))
                             }
 
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 6) {
                             DiffyBadge(title: request.statusTitle, color: request.isDraft || request.lifecycle == .closedUnmerged ? self.theme.secondaryText : self.theme.added)
-                            Label(request.checks?.state.title ?? "Checks not loaded", systemImage: request.checks?.state.symbol ?? "questionmark.circle")
+                            Label(request.checks?.state.title ?? "Checks Not Loaded", systemImage: request.checks?.state.symbol ?? "questionmark.circle")
                                 .font(.system(size: 10))
                                 .foregroundStyle(request.checks?.state == .failure ? self.theme.removed : self.theme.secondaryText)
                         }
@@ -120,7 +120,7 @@ struct RepositoryPullRequestsView: View {
 
                     }
                     .contextMenu {
-                        Button("Fetch & compare locally") { self.viewModel.inspectPullRequest(request) }
+                        Button("Fetch & Compare Locally") { self.viewModel.inspectPullRequest(request) }
                             .disabled(!self.viewModel.canMutate || self.viewModel.linkedRepository?.remoteName == nil)
                     }
                     .padding(20)

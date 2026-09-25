@@ -18,19 +18,19 @@ struct FileNavigatorScreen: View {
 
             if self.workspace.runtime.isLive && self.workspace.repositoryViewModel.comparison.isLoadingFiles {
 
-                ProgressView("Reading changed files…")
+                ProgressView("Reading Changed Files…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             } else if self.workspace.files.isEmpty {
 
-                DiffyEmptyState(symbol: "checkmark.circle", title: "No changed files", message: "Changes for this comparison will appear here.")
+                DiffyEmptyState(symbol: "checkmark.circle", title: "No Changed Files", message: "Changes for this comparison will appear here.")
 
             } else if self.viewModel.entries(self.workspace.files, mode: self.workspace.mode).isEmpty {
 
                 VStack(spacing: self.contentSize.scaled(12)) {
 
-                    DiffyEmptyState(symbol: "line.3.horizontal.decrease.circle", title: "No matching files", message: "Try a different name or clear the active filters.")
-                    Button("Clear filters") { self.viewModel.clearFilters() }
+                    DiffyEmptyState(symbol: "line.3.horizontal.decrease.circle", title: "No Matching Files", message: "Try a different name or clear the active filters.")
+                    Button("Clear Filters") { self.viewModel.clearFilters() }
                         .padding(.bottom, self.contentSize.scaled(24))
 
                 }
@@ -88,7 +88,7 @@ struct FileNavigatorScreen: View {
 
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(self.theme.secondaryText)
-            TextField("Find a file…", text: self.$viewModel.query)
+            TextField("Find A File…", text: self.$viewModel.query)
                 .textFieldStyle(.plain)
 
             if !self.viewModel.query.isEmpty {
@@ -97,8 +97,8 @@ struct FileNavigatorScreen: View {
                     Image(systemName: "xmark.circle.fill")
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Clear file search")
-                .help("Clear file search")
+                .accessibilityLabel("Clear File Search")
+                .help("Clear File Search")
 
             }
 
@@ -118,38 +118,38 @@ struct FileNavigatorScreen: View {
             Menu {
 
                 Picker("Layout", selection: self.$viewModel.layout) {
-                    ForEach(FileListLayout.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(FileListLayout.allCases) { Text($0.displayName).tag($0) }
                 }
 
                 Divider()
-                Button("Expand all") { self.viewModel.collapsedGroups.removeAll() }
-                Button("Collapse all") {
+                Button("Expand All") { self.viewModel.collapsedGroups.removeAll() }
+                Button("Collapse All") {
 
                     self.viewModel.collapsedGroups = Set(self.viewModel.entries(self.workspace.files, mode: self.workspace.mode).filter { $0.file == nil }.map(\.id))
 
                 }
 
             } label: {
-                Label(self.viewModel.layout == .tree ? "Tree" : self.viewModel.layout.rawValue, systemImage: "list.bullet.indent")
+                Label(self.viewModel.layout == .tree ? "Tree" : self.viewModel.layout.displayName, systemImage: "list.bullet.indent")
             }
-            .help("Choose file layout and expand folders")
+            .help("Choose File Layout & Expand Folders")
 
             Menu {
 
-                Picker("Sort by", selection: self.$viewModel.sort) {
-                    ForEach(FileSortOrder.allCases) { Text($0.rawValue).tag($0) }
+                Picker("Sort By", selection: self.$viewModel.sort) {
+                    ForEach(FileSortOrder.allCases) { Text($0.displayName).tag($0) }
                 }
 
-                Toggle("Reverse order", isOn: Binding(get: { !self.viewModel.ascending }, set: { self.viewModel.ascending = !$0 }))
+                Toggle("Reverse Order", isOn: Binding(get: { !self.viewModel.ascending }, set: { self.viewModel.ascending = !$0 }))
 
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
             }
-            .help("Sort files")
+            .help("Sort Files")
 
             Menu {
 
-                Button("All changes") { self.viewModel.filter = nil }
+                Button("All Changes") { self.viewModel.filter = nil }
 
                 ForEach(FileChangeStatus.allCases) { status in
                     Button(status.rawValue) { self.viewModel.filter = status }
@@ -158,7 +158,7 @@ struct FileNavigatorScreen: View {
             } label: {
                 Image(systemName: self.viewModel.filter == nil ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
             }
-            .help("Filter files by change status")
+            .help("Filter Files By Change Status")
 
         }
         .menuStyle(.borderlessButton)
@@ -225,9 +225,9 @@ struct FileNavigatorScreen: View {
             .accessibilityLabel("\(file.path), \(file.status.rawValue)")
             .contextMenu {
 
-                Button("Open comparison") { self.workspace.selectFile(file, mode: self.workspace.mode) }
-                Button("Copy relative path") { ExportController.copy(file.path) }
-                Button("Show file history") {
+                Button("Open Comparison") { self.workspace.selectFile(file, mode: self.workspace.mode) }
+                Button("Copy Relative Path") { ExportController.copy(file.path) }
+                Button("Show File History") {
                     self.workspace.showFileHistory(file)
 
                 }
@@ -245,9 +245,11 @@ struct FileNavigatorScreen: View {
                     Image(systemName: self.viewModel.collapsedGroups.contains(entry.id) ? "chevron.right" : "chevron.down")
                         .font(self.contentSize.font(size: 8, weight: .semibold))
                         .frame(width: self.contentSize.scaled(12))
-                    Image(systemName: "folder.fill")
-                        .font(self.contentSize.font(size: 12))
-                        .foregroundStyle(self.theme.accent.opacity(0.8))
+                    DiffyPathIcon(
+                        path: entry.title,
+                        isFolder: true,
+                        isExpanded: !self.viewModel.collapsedGroups.contains(entry.id)
+                    )
                     Text(entry.title)
                         .font(self.contentSize.font(size: 11, weight: .semibold))
                     Spacer()
@@ -277,7 +279,7 @@ struct FileNavigatorScreen: View {
 
         VStack(alignment: .leading, spacing: self.contentSize.scaled(6)) {
 
-            Label(self.viewModel.sort.rawValue, systemImage: "arrow.up.arrow.down")
+            Label(self.viewModel.sort.displayName, systemImage: "arrow.up.arrow.down")
 
             if let filter = self.viewModel.filter {
                 Text("Showing \(filter.rawValue.lowercased()) files")

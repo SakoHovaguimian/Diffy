@@ -36,7 +36,7 @@ struct WorkspaceScreen: View {
 
                 if self.viewModel.showsReview {
 
-                    HorizontalResizeHandle(label: "Drag to resize review notes", resizeGesture: reviewResizeGesture())
+                    HorizontalResizeHandle(label: "Drag To Resize Review Notes", resizeGesture: reviewResizeGesture())
                         .transition(.opacity)
 
                     ReviewScreen(workspace: self.viewModel)
@@ -113,7 +113,7 @@ struct WorkspaceScreen: View {
 
         }
         .confirmationDialog(
-            "Apply changes before leaving?",
+            "Apply Changes Before Leaving?",
             isPresented: Binding(
                 get: { self.viewModel.pendingDiffNavigation != nil },
                 set: { if !$0, self.viewModel.pendingDiffNavigation != nil { self.viewModel.resolvePendingDiffNavigation(.cancel) } }
@@ -136,7 +136,7 @@ struct WorkspaceScreen: View {
         } message: {
             Text("The current draft has unapplied edits. Apply them to Diffy's in-memory working copy, discard them, or stay on this comparison.")
         }
-        .alert("Review storage", isPresented: Binding(
+        .alert("Review Storage", isPresented: Binding(
             get: { self.review.errorMessage != nil },
             set: { if !$0 { self.review.errorMessage = nil } }
         )) {
@@ -194,7 +194,7 @@ struct WorkspaceScreen: View {
 
                             DiffyStatusBanner(message: notice)
                             Button { self.viewModel.notice = nil } label: { Image(systemName: "xmark") }
-                                .accessibilityLabel("Dismiss workspace notice")
+                                .accessibilityLabel("Dismiss Workspace Notice")
 
                         }
                         .padding(.horizontal, 16)
@@ -234,33 +234,23 @@ struct WorkspaceScreen: View {
             } label: {
                 Image(systemName: "sidebar.left")
             }
-            .help("Toggle sidebar")
+            .help("Toggle Sidebar")
 
         }
 
         ToolbarItem(placement: .principal) {
 
             if self.viewModel.showsOverview {
-                Text("Workspace overview")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(self.theme.secondaryText)
+                navigationContextPill("Workspace Overview", symbol: "square.grid.2x2")
             } else if self.viewModel.selectedProject != nil {
 
-                HStack(spacing: 8) {
-
-                    Image(systemName: "arrow.triangle.branch")
-                    Text(self.repository.snapshot?.head.displayName ?? "Local project")
-                        .lineLimit(1)
-
-                }
-                .padding(.horizontal, 6)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(self.theme.secondaryText)
+                navigationContextPill(
+                    self.repository.snapshot?.head.displayName ?? "Local Project",
+                    symbol: "arrow.triangle.branch"
+                )
 
             } else {
-                Text("No project selected")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(self.theme.secondaryText)
+                navigationContextPill("No Project Selected", symbol: "folder")
 
             }
 
@@ -273,7 +263,7 @@ struct WorkspaceScreen: View {
             } label: {
                 Label("Commands", systemImage: "command")
             }
-            .help("Command palette · ⌘K")
+            .help("Command Palette · ⌘K")
             .disabled(self.viewModel.projects.isEmpty)
 
             Button {
@@ -283,16 +273,41 @@ struct WorkspaceScreen: View {
                 }
 
             } label: {
-                Label("Review notes", systemImage: "text.bubble")
+                Label("Review Notes", systemImage: "text.bubble")
             }
-            .help("Review notes · ⇧⌘R")
+            .help("Review Notes · ⇧⌘R")
             .disabled(self.viewModel.projects.isEmpty)
 
             SettingsLink {
                 Label("Settings", systemImage: "slider.horizontal.3")
             }
-            .help("Open settings")
+            .help("Open Settings")
 
+        }
+
+    }
+
+    private func navigationContextPill(_ title: String, symbol: String) -> some View {
+
+        HStack(spacing: 6) {
+
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(self.theme.accent)
+                .accessibilityHidden(true)
+
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(self.theme.secondaryText)
+                .lineLimit(1)
+
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 2)
+        .background(self.theme.elevated, in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(self.theme.border.opacity(self.theme.isDark ? 0.85 : 0.8), lineWidth: 0.75)
         }
 
     }

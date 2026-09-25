@@ -14,14 +14,14 @@ struct RepositoryOverviewView: View {
 
                 VStack(alignment: .leading, spacing: 30) {
 
-                    DiffyPageHeading(eyebrow: snapshot.isClean ? "Up to date locally" : "In progress", title: snapshot.isClean ? "Room for your next idea." : "Your next commit starts here.", detail: snapshot.isClean ? "Your working tree is clean. Explore the history or fetch to check for remote updates." : "Review the working tree, choose what belongs together, and commit when you're ready.")
+                    DiffyPageHeading(eyebrow: snapshot.isClean ? "Up To Date Locally" : "In Progress", title: snapshot.isClean ? "Room For Your Next Idea." : "Your Next Commit Starts Here.", detail: snapshot.isClean ? "Your working tree is clean. Explore the history or fetch to check for remote updates." : "Review the working tree, choose what belongs together, and commit when you're ready.")
                     changeSummary(snapshot)
 
                     HStack(alignment: .top, spacing: 32) {
 
                         VStack(alignment: .leading, spacing: 18) {
 
-                            sectionTitle("Latest activity", detail: "The last \(min(5, snapshot.recentCommits.count)) commits")
+                            sectionTitle("Latest Activity", detail: "The last \(min(5, snapshot.recentCommits.count)) commits")
                             ForEach(Array(snapshot.recentCommits.prefix(5).enumerated()), id: \.element.id) { index, commit in
 
                                 RepositoryCommitRow(commit: commit, showsConnector: index < min(5, snapshot.recentCommits.count) - 1) {
@@ -49,7 +49,7 @@ struct RepositoryOverviewView: View {
                             .foregroundStyle(self.theme.secondaryText)
                             .textSelection(.enabled)
                         Spacer()
-                        Button("Show in Finder") { ExternalLinkController().reveal(snapshot.location.rootPath) }
+                        Button("Show In Finder") { ExternalLinkController().reveal(snapshot.location.rootPath) }
 
                     }
                     Text("Updated \(snapshot.capturedAt.formatted(date: .omitted, time: .standard)). Remote counts use locally fetched tracking refs; \(snapshot.lastFetchAt.map { "last fetch recorded \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown").")
@@ -70,9 +70,9 @@ struct RepositoryOverviewView: View {
 
         HStack(spacing: 1) {
 
-            metric("Unstaged", count: snapshot.unstagedChanges.count, detail: "Changes on disk", color: self.theme.accent, mode: .workingTree, lineCounts: self.viewModel.unstagedLineCounts)
-            metric("Staged", count: snapshot.stagedChanges.count, detail: "In your next commit", color: self.theme.added, mode: .staged)
-            metric("Conflicts", count: snapshot.conflicts.count, detail: "Decisions to make", color: self.theme.modified, mode: .merge)
+            metric("Unstaged", count: snapshot.unstagedChanges.count, detail: "Changes On Disk", color: self.theme.accent, mode: .workingTree, lineCounts: self.viewModel.unstagedLineCounts)
+            metric("Staged", count: snapshot.stagedChanges.count, detail: "In Your Next Commit", color: self.theme.added, mode: .staged)
+            metric("Conflicts", count: snapshot.conflicts.count, detail: "Decisions To Make", color: self.theme.modified, mode: .merge)
 
         }
         .background(self.theme.border)
@@ -103,7 +103,7 @@ struct RepositoryOverviewView: View {
                             Text("+\(lineCounts.additions)").foregroundStyle(self.theme.added)
                             Text("−\(lineCounts.deletions)").foregroundStyle(self.theme.removed)
                         } else {
-                            Text("Lines unavailable").foregroundStyle(self.theme.secondaryText)
+                            Text("Lines Unavailable").foregroundStyle(self.theme.secondaryText)
                         }
                     }
 
@@ -126,11 +126,11 @@ struct RepositoryOverviewView: View {
 
         VStack(alignment: .leading, spacing: 18) {
 
-            sectionTitle("Branch position", detail: snapshot.upstream.map { "\($0.name) · \(snapshot.lastFetchAt.map { "last fetched \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown")" } ?? "No upstream configured")
+            sectionTitle("Branch Position", detail: snapshot.upstream.map { "\($0.name) · \(snapshot.lastFetchAt.map { "last fetched \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown")" } ?? "No Upstream Configured")
             if let upstream = snapshot.upstream {
                 HStack(spacing: 24) {
-                    Label("\(upstream.ahead) ahead", systemImage: "arrow.up")
-                    Label("\(upstream.behind) behind", systemImage: "arrow.down")
+                    Label("\(upstream.ahead) Ahead", systemImage: "arrow.up")
+                    Label("\(upstream.behind) Behind", systemImage: "arrow.down")
                 }
                 .font(.system(size: 12, weight: .medium))
             } else {

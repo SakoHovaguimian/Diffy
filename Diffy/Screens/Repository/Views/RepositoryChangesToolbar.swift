@@ -20,11 +20,11 @@ struct RepositoryChangesToolbar: View {
 
         HStack(spacing: self.contentSize.scaled(12)) {
 
-            Text(self.isStaged ? "Staged changes" : "Working tree")
+            Text(self.isStaged ? "Staged Changes" : "Working Tree")
                 .fontWeight(.medium)
             Spacer()
 
-            Button(self.isStaged ? "Unstage file" : "Stage file") {
+            Button(self.isStaged ? "Unstage File" : "Stage File") {
 
                 guard let file = self.workspace.file else { return }
                 self.viewModel.request(self.isStaged ? .unstage(paths: [file.path]) : .stage(paths: [file.path]))
@@ -34,7 +34,7 @@ struct RepositoryChangesToolbar: View {
 
             Menu {
 
-                Button(self.isStaged ? "Unstage shown files" : "Stage shown files") {
+                Button(self.isStaged ? "Unstage Shown Files" : "Stage Shown Files") {
                     self.viewModel.request(self.isStaged ? .unstage(paths: self.visiblePaths) : .stage(paths: self.visiblePaths))
                 }
                 .disabled(self.visiblePaths.isEmpty)
@@ -42,7 +42,7 @@ struct RepositoryChangesToolbar: View {
                 if !self.isStaged, let file = self.workspace.file {
 
                     Divider()
-                    Button("Discard unstaged changes…", role: .destructive) {
+                    Button("Discard Unstaged Changes…", role: .destructive) {
                         self.viewModel.request(.restore(paths: [file.path]))
                     }
                     .disabled(file.status == .added || file.status == .conflicted)
@@ -54,7 +54,7 @@ struct RepositoryChangesToolbar: View {
             }
             .menuStyle(.borderlessButton)
             .frame(width: self.contentSize.scaled(20))
-            .help("Git file actions")
+            .help("Git File Actions")
             .disabled(!self.viewModel.canMutate)
 
             Button("Commit…") { self.viewModel.showsCommitComposer = true }

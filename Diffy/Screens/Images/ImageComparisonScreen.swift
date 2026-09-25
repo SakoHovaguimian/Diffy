@@ -13,7 +13,7 @@ struct ImageComparisonScreen: View {
     @State private var offset = CGSize.zero
     @State private var dragStart = CGSize.zero
     @State private var blinkUpdated = false
-    @State private var pixelDescription = "Hover over the image to inspect a pixel"
+    @State private var pixelDescription = "Hover Over The Image To Inspect A Pixel"
     private let original: NSImage?
     private let updated: NSImage?
     private let timer = Timer.publish(every: 0.8, on: .main, in: .common).autoconnect()
@@ -89,7 +89,7 @@ struct ImageComparisonScreen: View {
 
             }
 
-            Picker("Image comparison mode", selection: self.$mode) {
+            Picker("Image Comparison Mode", selection: self.$mode) {
                 ForEach(ImageComparisonMode.allCases) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented)
@@ -125,7 +125,7 @@ struct ImageComparisonScreen: View {
 
                     guard self.mode != .sideBySide else {
 
-                        self.pixelDescription = "Choose a single-canvas mode to inspect source pixels"
+                        self.pixelDescription = "Choose A Single-Canvas Mode To Inspect Source Pixels"
                         return
 
                     }
@@ -256,7 +256,7 @@ struct ImageComparisonScreen: View {
         if let image {
             Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
         } else {
-            DiffyEmptyState(symbol: "photo", title: "No image", message: "This side has no displayable image.")
+            DiffyEmptyState(symbol: "photo", title: "No Image", message: "This side has no displayable image.")
         }
 
     }
@@ -275,17 +275,17 @@ struct ImageComparisonScreen: View {
                 }
 
                 if self.mode == .blink && self.reduceMotion {
-                    Button("Toggle frame") { self.blinkUpdated.toggle() }
+                    Button("Toggle Frame") { self.blinkUpdated.toggle() }
                 }
 
                 Spacer()
                 Button { updateZoom(self.zoom - 0.25) } label: { Image(systemName: "minus.magnifyingglass") }
-                    .help("Zoom out")
+                    .help("Zoom Out")
                 Text("\(Int(self.zoom * 100))%")
                     .monospacedDigit()
                     .frame(width: self.contentSize.scaled(40))
                 Button { updateZoom(self.zoom + 0.25) } label: { Image(systemName: "plus.magnifyingglass") }
-                    .help("Zoom in")
+                    .help("Zoom In")
                 Button("Fit") {
 
                     withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.24)) {

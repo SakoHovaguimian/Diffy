@@ -58,7 +58,7 @@ struct OverviewProjectRow: View {
 
                         HStack(spacing: 12) {
 
-                            Text("\(self.change.changedFileCount) changed files")
+                            Text("\(self.change.changedFileCount) Changed Files")
                                 .foregroundStyle(self.theme.secondaryText)
 
                             if let counts = self.change.lineCounts {
@@ -67,7 +67,7 @@ struct OverviewProjectRow: View {
                                 Text("−\(counts.deletions)").foregroundStyle(self.theme.removed)
 
                             } else {
-                                Text("Line counts unavailable").foregroundStyle(self.theme.secondaryText)
+                                Text("Line Counts Unavailable").foregroundStyle(self.theme.secondaryText)
                             }
 
                             if self.change.hasConflicts {
@@ -92,7 +92,7 @@ struct OverviewProjectRow: View {
 
             }
             .buttonStyle(.plain)
-            .help("Open working tree for \(self.change.project.displayName)")
+            .help("Open Working Tree For \(self.change.project.displayName)")
             .accessibilityLabel(self.accessibilitySummary)
 
             if let pull = self.pull, (self.change.upstream?.behind ?? 0) > 0 {
@@ -100,7 +100,7 @@ struct OverviewProjectRow: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                     .padding(.trailing, 18)
-                    .help("Pull \(self.change.upstream?.name ?? "tracked upstream") and review changes")
+                    .help("Pull \(self.change.upstream?.name ?? "Tracked Upstream") & Review Changes")
             }
 
         }

@@ -11,11 +11,11 @@ enum PullRequestChecksState: String, Codable, Hashable, Sendable {
 
         switch self {
 
-        case .success: "Checks passed"
-        case .failure: "Checks failed"
-        case .pending: "Checks running"
-        case .neutral: "No check runs"
-        case .unavailable: "Checks unavailable"
+        case .success: "Checks Passed"
+        case .failure: "Checks Failed"
+        case .pending: "Checks Running"
+        case .neutral: "No Check Runs"
+        case .unavailable: "Checks Unavailable"
 
         }
 

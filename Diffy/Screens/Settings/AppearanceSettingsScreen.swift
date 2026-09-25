@@ -27,21 +27,18 @@ struct AppearanceSettingsScreen: View {
 
         Form {
 
-            Section("A workspace that feels like you") {
+            Section("A Workspace That Feels Like You") {
 
-                HStack(spacing: 16) {
+                themePreview
+                    .padding(.vertical, 10)
 
-                    themePreview(.porcelain, background: "F4F6F8", sidebar: "E9EEF2", line: "647482")
-                    themePreview(.safira, background: "161D26", sidebar: "0F1922", line: "968DCB")
-
-                }
-                .padding(.vertical, 10)
-
-                Picker("Appearance", selection: self.$viewModel.appearance.theme) {
-                    ForEach(ThemeSelection.allCases) { Text($0.rawValue).tag($0) }
+                Picker("Theme", selection: self.$viewModel.appearance.theme) {
+                    ForEach(ThemeSelection.allCases) { Text($0.displayName).tag($0) }
                 }
 
             }
+
+            FileIconSettingsSection()
 
             Section("Accent") {
 
@@ -74,14 +71,14 @@ struct AppearanceSettingsScreen: View {
                 }
                 .padding(.vertical, 5)
 
-                ColorPicker("Custom color", selection: self.customAccentColor, supportsOpacity: false)
+                ColorPicker("Custom Color", selection: self.customAccentColor, supportsOpacity: false)
 
             }
 
             Section("Workspace") {
 
                 Slider(value: self.$viewModel.appearance.sidebarWidth, in: 214...320, step: 1) {
-                    Text("Sidebar width · \(Int(self.viewModel.appearance.sidebarWidth))")
+                    Text("Sidebar Width · \(Int(self.viewModel.appearance.sidebarWidth))")
                 }
 
                 Text("Changes apply to the current workspace immediately. Minimum width: 214 pt.")
@@ -90,7 +87,7 @@ struct AppearanceSettingsScreen: View {
 
             }
 
-            Button("Reset appearance") { self.viewModel.resetAppearance() }
+            Button("Reset Appearance") { self.viewModel.resetAppearance() }
 
         }
         .formStyle(.grouped)
@@ -98,43 +95,50 @@ struct AppearanceSettingsScreen: View {
 
     }
 
-    private func themePreview(_ selection: ThemeSelection, background: String, sidebar: String, line: String) -> some View {
+    private var themePreview: some View {
 
-        Button { self.viewModel.appearance.theme = selection } label: {
+        VStack(alignment: .leading, spacing: 8) {
 
-            VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 0) {
 
-                HStack(spacing: 0) {
+                self.theme.sidebar.frame(width: 46)
 
-                    Color(hex: sidebar).frame(width: 42)
+                VStack(alignment: .leading, spacing: 8) {
 
-                    VStack(alignment: .leading, spacing: 7) {
-
-                        ForEach(0..<5) { index in
-
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color(hex: line).opacity(index == 2 ? 0.8 : 0.35))
-                                .frame(width: CGFloat([84, 104, 68, 96, 54][index]), height: 4)
-
-                        }
-
+                    HStack(spacing: 0) {
+                        Text("let ").foregroundStyle(self.theme.keyword)
+                        Text("result").foregroundStyle(self.theme.type)
+                        Text(" = ").foregroundStyle(self.theme.text)
+                        Text("\"Diffy\"").foregroundStyle(self.theme.string)
                     }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 0) {
+                        Text("+ ").foregroundStyle(self.theme.added)
+                        Text("Clear, readable changes").foregroundStyle(self.theme.text)
+                    }
+
+                    HStack(spacing: 0) {
+                        Text("− ").foregroundStyle(self.theme.removed)
+                        Text("Easy to scan diffs").foregroundStyle(self.theme.text)
+                    }
 
                 }
-                .frame(height: 100)
-                .background(Color(hex: background))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(self.viewModel.appearance.theme == selection ? self.theme.accent : self.theme.border, lineWidth: 2))
-
-                Text(selection.rawValue).font(.system(size: 11, weight: .medium))
+                .font(.system(size: 12, design: .monospaced))
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
             }
-            .frame(maxWidth: .infinity)
+            .frame(height: 104)
+            .background(self.theme.background)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(self.theme.border, lineWidth: 1))
+
+            Text("Preview · \(self.viewModel.appearance.theme.displayName)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(self.theme.secondaryText)
 
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
 
     }
 

@@ -12,7 +12,7 @@ struct PullRequestFileNavigator: View {
 
             searchField()
             options()
-            Text("\(self.viewModel.viewedPaths.count) / \(self.viewModel.details?.files.count ?? 0) viewed locally")
+            Text("\(self.viewModel.viewedPaths.count) / \(self.viewModel.details?.files.count ?? 0) Viewed Locally")
                 .font(.system(size: 11))
                 .foregroundStyle(self.theme.secondaryText)
                 .padding(.horizontal, 12)
@@ -31,8 +31,8 @@ struct PullRequestFileNavigator: View {
                     }
                     if self.viewModel.visibleFiles.isEmpty {
 
-                        Text("No matching files").font(.system(size: 12))
-                        Button("Clear filters") { self.navigator.clearFilters() }
+                        Text("No Matching Files").font(.system(size: 12))
+                        Button("Clear Filters") { self.navigator.clearFilters() }
 
                     }
 
@@ -51,7 +51,7 @@ struct PullRequestFileNavigator: View {
 
         HStack(spacing: 6) {
 
-            TextField("Filter files", text: self.$navigator.query)
+            TextField("Filter Files", text: self.$navigator.query)
                 .textFieldStyle(.roundedBorder)
             if !self.navigator.query.isEmpty {
 
@@ -59,7 +59,7 @@ struct PullRequestFileNavigator: View {
                     Image(systemName: "xmark.circle.fill")
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Clear file search")
+                .accessibilityLabel("Clear File Search")
 
             }
 
@@ -75,11 +75,11 @@ struct PullRequestFileNavigator: View {
             Menu {
 
                 Picker("Layout", selection: self.$navigator.layout) {
-                    ForEach(FileListLayout.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(FileListLayout.allCases) { Text($0.displayName).tag($0) }
                 }
                 Divider()
-                Button("Expand all") { self.navigator.collapsedGroups.removeAll() }
-                Button("Collapse all") {
+                Button("Expand All") { self.navigator.collapsedGroups.removeAll() }
+                Button("Collapse All") {
 
                     self.navigator.collapsedGroups.removeAll()
                     self.navigator.collapsedGroups = Set(self.navigator.entries(self.viewModel.navigationFiles, mode: .pullRequests).filter { $0.file == nil }.map(\.id))
@@ -87,27 +87,27 @@ struct PullRequestFileNavigator: View {
                 }
 
             } label: {
-                Label(self.navigator.layout == .tree ? "Tree" : self.navigator.layout.rawValue, systemImage: "list.bullet.indent")
+                Label(self.navigator.layout == .tree ? "Tree" : self.navigator.layout.displayName, systemImage: "list.bullet.indent")
             }
-            .help("Choose file layout and expand folders")
+            .help("Choose File Layout & Expand Folders")
             Menu {
 
-                Picker("Sort by", selection: self.$navigator.sort) {
+                Picker("Sort By", selection: self.$navigator.sort) {
 
                     ForEach(FileSortOrder.allCases) { order in
-                        Text(order.rawValue).tag(order).disabled(order == .updated || order == .size)
+                        Text(order.displayName).tag(order).disabled(order == .updated || order == .size)
                     }
 
                 }
-                Toggle("Reverse order", isOn: Binding(get: { !self.navigator.ascending }, set: { self.navigator.ascending = !$0 }))
+                Toggle("Reverse Order", isOn: Binding(get: { !self.navigator.ascending }, set: { self.navigator.ascending = !$0 }))
                 Divider()
                 Text("Disk edit times and file sizes are unavailable for GitHub patches.")
 
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
             }
-            .accessibilityLabel("Sort files")
-            .help("Sort files · \(self.navigator.sort.rawValue)")
+            .accessibilityLabel("Sort Files")
+            .help("Sort Files · \(self.navigator.sort.displayName)")
 
         }
         .controlSize(.small)
@@ -123,7 +123,11 @@ struct PullRequestFileNavigator: View {
 
                 Image(systemName: self.navigator.collapsedGroups.contains(entry.id) ? "chevron.right" : "chevron.down")
                     .font(.system(size: 9))
-                Image(systemName: "folder")
+                DiffyPathIcon(
+                    path: entry.title,
+                    isFolder: true,
+                    isExpanded: !self.navigator.collapsedGroups.contains(entry.id)
+                )
                 Text(entry.title).lineLimit(1)
                 Spacer(minLength: 0)
                 Text(entry.count.formatted()).foregroundStyle(self.theme.secondaryText)
@@ -137,7 +141,7 @@ struct PullRequestFileNavigator: View {
 
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(entry.title), \(entry.count) files")
+        .accessibilityLabel("\(entry.title), \(entry.count) Files")
         .accessibilityValue(self.navigator.collapsedGroups.contains(entry.id) ? "Collapsed" : "Expanded")
         .help(entry.id)
 
@@ -151,8 +155,7 @@ struct PullRequestFileNavigator: View {
 
             HStack(alignment: .top, spacing: 8) {
 
-                Image(systemName: self.viewModel.viewedPaths.contains(file.id) ? "checkmark.circle.fill" : "doc")
-                    .foregroundStyle(self.viewModel.viewedPaths.contains(file.id) ? self.theme.added : self.theme.secondaryText)
+                DiffFileIcon(file: file)
                 VStack(alignment: .leading, spacing: 5) {
 
                     Text(file.name).font(.system(size: 11, weight: .medium)).lineLimit(1)
@@ -170,6 +173,11 @@ struct PullRequestFileNavigator: View {
 
                 }
                 Spacer(minLength: 0)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(self.theme.added)
+                    .opacity(self.viewModel.viewedPaths.contains(file.id) ? 1 : 0)
+                    .accessibilityHidden(true)
 
             }
             .padding(.vertical, 10)
@@ -183,6 +191,7 @@ struct PullRequestFileNavigator: View {
         .buttonStyle(.plain)
         .help(file.path)
         .accessibilityLabel(file.path)
+        .accessibilityValue(self.viewModel.viewedPaths.contains(file.id) ? "Viewed" : "Not Viewed")
         .accessibilityAddTraits(self.viewModel.selectedFileID == file.id ? .isSelected : [])
 
     }

@@ -36,7 +36,7 @@ struct DiffyCommands: Commands {
 
             ForEach(ComparisonMode.allCases) { mode in
 
-                Button(mode.rawValue) {
+                Button(mode.displayName) {
                     self.workspace?.selectMode(mode)
                 }
                 .disabled(self.workspace?.projects.isEmpty ?? true)

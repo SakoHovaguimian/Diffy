@@ -29,10 +29,10 @@ struct PullRequestConversationEntry: Identifiable, Sendable {
         switch self.state {
 
         case "APPROVED": "Approved"
-        case "CHANGES_REQUESTED": "Requested changes"
-        case "DISMISSED": "Review dismissed"
-        case "PENDING": "Pending review on GitHub"
-        default: self.kind == .inline ? "Inline comment" : "Commented"
+        case "CHANGES_REQUESTED": "Requested Changes"
+        case "DISMISSED": "Review Dismissed"
+        case "PENDING": "Pending Review On GitHub"
+        default: self.kind == .inline ? "Inline Comment" : "Commented"
 
         }
 

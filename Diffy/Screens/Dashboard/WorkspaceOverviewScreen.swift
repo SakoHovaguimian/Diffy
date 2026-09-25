@@ -26,7 +26,7 @@ struct WorkspaceOverviewScreen: View {
                     if !self.accounts.accounts.isEmpty {
 
                         if self.viewModel.isLoadingPullRequests {
-                            ProgressView("Refreshing pull requests…")
+                            ProgressView("Refreshing Pull Requests…")
                                 .font(.system(size: 11))
                         }
 
@@ -59,7 +59,7 @@ struct WorkspaceOverviewScreen: View {
 
             DiffyPageHeading(
                 eyebrow: "Workspace",
-                title: self.workspace.projects.isEmpty ? "Connect your work." : "Where things stand.",
+                title: self.workspace.projects.isEmpty ? "Connect Your Work." : "Where Things Stand.",
                 detail: self.workspace.projects.isEmpty
                     ? "Add a local project and connect GitHub to bring your work into one place."
                     : "Local changes, tracked branches, and pull requests for your connected accounts."
@@ -70,10 +70,10 @@ struct WorkspaceOverviewScreen: View {
                 Button {
                     self.refreshGeneration += 1
                 } label: {
-                    Label("Refresh overview", systemImage: "arrow.clockwise")
+                    Label("Refresh Overview", systemImage: "arrow.clockwise")
                 }
                 .disabled(self.viewModel.isRefreshing)
-                .help("Refresh local changes and pull requests")
+                .help("Refresh Local Changes & Pull Requests")
 
             }
 
@@ -86,7 +86,7 @@ struct WorkspaceOverviewScreen: View {
         VStack(alignment: .leading, spacing: 18) {
 
             if self.viewModel.isLoadingProjects || self.viewModel.isLoadingPullRequests {
-                ProgressView("Refreshing \(self.viewModel.isLoadingProjects ? "projects" : "pull requests")…")
+                ProgressView("Refreshing \(self.viewModel.isLoadingProjects ? "Projects" : "Pull Requests")…")
                     .font(.system(size: 11))
             }
 
@@ -121,10 +121,10 @@ struct WorkspaceOverviewScreen: View {
 
         VStack(alignment: .leading, spacing: 0) {
 
-            sectionHeading("Projects needing attention", count: self.viewModel.activeProjects.count, symbol: "square.stack.3d.up", isLoading: self.viewModel.isLoadingProjects)
+            sectionHeading("Projects Needing Attention", count: self.viewModel.activeProjects.count, symbol: "square.stack.3d.up", isLoading: self.viewModel.isLoadingProjects)
 
             if self.viewModel.activeProjects.isEmpty, self.viewModel.isLoadingProjects {
-                ProgressView("Reading local projects…").padding(18)
+                ProgressView("Reading Local Projects…").padding(18)
             }
 
             if let error = self.viewModel.projectError {
@@ -134,9 +134,9 @@ struct WorkspaceOverviewScreen: View {
             if self.viewModel.activeProjects.isEmpty, self.viewModel.hasLoadedProjects, self.viewModel.projectError == nil {
 
                 if self.workspace.runtime.isLive && !self.workspace.projects.contains(where: { $0.repositoryReference != nil }) {
-                    sectionEmpty(symbol: "folder.badge.plus", title: "No local checkouts", detail: "Add a local Git folder to see its changes here.")
+                    sectionEmpty(symbol: "folder.badge.plus", title: "No Local Checkouts", detail: "Add a local Git folder to see its changes here.")
                 } else {
-                    sectionEmpty(symbol: "checkmark.circle", title: "Nothing pending", detail: "No local changes or branches behind their last fetched upstream.")
+                    sectionEmpty(symbol: "checkmark.circle", title: "Nothing Pending", detail: "No local changes or branches behind their last fetched upstream.")
                 }
 
             } else {
@@ -170,7 +170,10 @@ struct WorkspaceOverviewScreen: View {
 
     private func pullRequestsSection(reviewRequested: Bool = false) -> some View {
 
-        let requests = reviewRequested ? self.viewModel.reviewRequestedPullRequests : self.viewModel.assignedPullRequests
+        let requests = reviewRequested ? self.viewModel.sortedReviewRequestedPullRequests : self.viewModel.sortedAssignedPullRequests
+        let sortOrder = reviewRequested ? self.viewModel.reviewRequestedSortOrder : self.viewModel.assignedSortOrder
+        let sortSelection = reviewRequested ? self.$viewModel.reviewRequestedSortOrder : self.$viewModel.assignedSortOrder
+        let collapsedGroups = reviewRequested ? self.$viewModel.collapsedReviewRequestedGroups : self.$viewModel.collapsedAssignedGroups
         let hasMore = reviewRequested ? self.viewModel.hasMoreReviewRequestedPullRequests : self.viewModel.hasMoreAssignedPullRequests
         let isLoading = reviewRequested ? self.viewModel.isLoadingReviewRequested : self.viewModel.isLoadingAssigned
         let hasLoaded = reviewRequested ? self.viewModel.hasLoadedReviewRequested : self.viewModel.hasLoadedAssigned
@@ -179,15 +182,16 @@ struct WorkspaceOverviewScreen: View {
         return VStack(alignment: .leading, spacing: 0) {
 
             sectionHeading(
-                reviewRequested ? "Review requested from me" : "Assigned pull requests",
+                reviewRequested ? "Reviews Requested By Me" : "Assigned Pull Requests",
                 count: requests.count,
                 symbol: "arrow.triangle.pull",
                 hasMore: hasMore,
-                isLoading: isLoading
+                isLoading: isLoading,
+                sortSelection: sortSelection
             )
 
             if requests.isEmpty, isLoading {
-                ProgressView("Loading pull requests…").padding(18)
+                ProgressView("Loading Pull Requests…").padding(18)
             }
 
             if let error {
@@ -197,7 +201,7 @@ struct WorkspaceOverviewScreen: View {
             if requests.isEmpty, hasLoaded, error == nil {
 
                 if !self.workspace.runtime.isLive {
-                    sectionEmpty(symbol: "person.crop.circle", title: "GitHub is in Diffy Live", detail: "Open Diffy Live to connect an account and see assigned pull requests.")
+                    sectionEmpty(symbol: "person.crop.circle", title: "GitHub Is In Diffy Live", detail: "Open Diffy Live to connect an account and see assigned pull requests.")
                 } else if self.accounts.accounts.isEmpty {
 
                     sectionEmpty(symbol: "person.crop.circle.badge.plus", title: "Connect GitHub", detail: "Connect an account to see your pull requests.")
@@ -213,25 +217,13 @@ struct WorkspaceOverviewScreen: View {
                         .padding([.horizontal, .bottom], 18)
 
                 } else {
-                    sectionEmpty(symbol: "tray", title: reviewRequested ? "No review requests" : "Nothing assigned", detail: reviewRequested ? "No open pull requests request your review directly." : "No open pull requests are assigned to your connected accounts.")
+                    sectionEmpty(symbol: "tray", title: reviewRequested ? "No Review Requests" : "Nothing Assigned", detail: reviewRequested ? "No open pull requests request your review directly." : "No open pull requests are assigned to your connected accounts.")
                 }
 
             } else {
 
-                LazyVStack(spacing: 0) {
-
-                    ForEach(requests) { item in
-
-                        OverviewPullRequestRow(request: item) {
-                            self.viewModel.reviewPullRequest(item, accounts: self.accounts.accounts)
-                        }
-
-                        if item.id != requests.last?.id {
-                            self.theme.border.frame(height: 1).padding(.leading, 18)
-                        }
-
-                    }
-
+                OverviewPullRequestList(requests: requests, sortOrder: sortOrder, hasFooter: hasMore, collapsedGroups: collapsedGroups) { request in
+                    self.viewModel.reviewPullRequest(request, accounts: self.accounts.accounts)
                 }
 
                 if hasMore {
@@ -245,7 +237,7 @@ struct WorkspaceOverviewScreen: View {
                         ForEach(self.accounts.accounts.filter { $0.status == .connected }) { account in
 
                             if let url = pullRequestsURL(for: account, reviewRequested: reviewRequested) {
-                                Link("View all for \(account.handle) on GitHub", destination: url)
+                                Link("View All For \(account.handle) On GitHub", destination: url)
                                     .font(.system(size: 10, weight: .medium))
                             }
 
@@ -259,12 +251,19 @@ struct WorkspaceOverviewScreen: View {
             }
 
         }
-        .background(self.theme.surface, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(self.theme.border))
+        .background(self.theme.surface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(self.theme.border))
 
     }
 
-    private func sectionHeading(_ title: String, count: Int, symbol: String, hasMore: Bool = false, isLoading: Bool = false) -> some View {
+    private func sectionHeading(
+        _ title: String,
+        count: Int,
+        symbol: String,
+        hasMore: Bool = false,
+        isLoading: Bool = false,
+        sortSelection: Binding<OverviewPullRequestSortOrder>? = nil
+    ) -> some View {
 
         HStack(alignment: .firstTextBaseline, spacing: 10) {
 
@@ -276,6 +275,30 @@ struct WorkspaceOverviewScreen: View {
                 .font(.system(size: 15, weight: .semibold))
 
             Spacer(minLength: 8)
+
+            if let sortSelection {
+
+                Menu {
+
+                    Picker("Sort By", selection: sortSelection) {
+                        ForEach(OverviewPullRequestSortOrder.allCases) { order in
+                            Text(order.rawValue).tag(order)
+                        }
+                    }
+
+                    if hasMore {
+                        Divider()
+                        Text("Sorting applies to the requests shown here.")
+                    }
+
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .controlSize(.small)
+                .accessibilityLabel("Sort \(title)")
+                .help("Sort By \(sortSelection.wrappedValue.rawValue)")
+
+            }
 
             if isLoading {
                 ProgressView().controlSize(.small)
@@ -338,7 +361,7 @@ struct WorkspaceOverviewScreen: View {
 
         if !self.workspace.runtime.isLive {
 
-            title = "GitHub in Diffy Live"
+            title = "GitHub In Diffy Live"
             detail = "Open Diffy Live to link an account and see assigned pull requests."
 
         } else if self.accounts.accounts.isEmpty {
@@ -348,7 +371,7 @@ struct WorkspaceOverviewScreen: View {
 
         } else {
 
-            title = "GitHub connected"
+            title = "GitHub Connected"
             detail = "Browse your repositories in Accounts to link or clone one."
 
         }
@@ -360,7 +383,7 @@ struct WorkspaceOverviewScreen: View {
         ) {
 
             if self.workspace.runtime.isLive {
-                SettingsLink { Text(self.accounts.accounts.isEmpty ? "Connect GitHub" : "Browse repositories") }
+                SettingsLink { Text(self.accounts.accounts.isEmpty ? "Connect GitHub" : "Browse Repositories") }
                     .buttonStyle(.bordered)
             }
 
@@ -372,7 +395,7 @@ struct WorkspaceOverviewScreen: View {
 
         welcomeStep(
             symbol: "folder.badge.plus",
-            title: "Add your first project",
+            title: "Add Your First Project",
             detail: "Choose a local Git folder. Diffy will show its changes here, with or without GitHub."
         ) {
 

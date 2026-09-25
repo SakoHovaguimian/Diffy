@@ -8,6 +8,11 @@ enum ComparisonSource: Codable, Hashable, Sendable {
     case revision(String)
     case parent(of: String)
 
+    var displayLabel: String {
+        self == .workingTree ? "Working Tree" : self.label
+    }
+
+    /// Retain the original spelling used by annotation matching and cache keys.
     var label: String {
 
         switch self {

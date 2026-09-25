@@ -16,7 +16,7 @@ struct AnnotationEditorScreen: View {
 
             HStack {
 
-                Label("A note for this change", systemImage: "text.bubble")
+                Label("A Note For This Change", systemImage: "text.bubble")
                     .font(.system(size: 19, weight: .semibold))
                 Spacer()
                 DiffyBadge(title: "LOCAL ONLY", color: self.theme.accent)
@@ -27,7 +27,7 @@ struct AnnotationEditorScreen: View {
 
                 Text(self.draft.file.path)
                     .font(.system(size: 12, weight: .medium))
-                Text("\(self.draft.side.rawValue) source · lines \(self.draft.startLine)–\(self.draft.endLine)")
+                Text("\(self.draft.side.rawValue) Source · Lines \(self.draft.startLine)–\(self.draft.endLine)")
                     .font(.system(size: 11))
                     .foregroundStyle(self.theme.secondaryText)
 
@@ -71,7 +71,7 @@ struct AnnotationEditorScreen: View {
 
                 Spacer()
                 Button("Cancel") { self.dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Save annotation", action: save)
+                Button("Save Annotation", action: save)
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

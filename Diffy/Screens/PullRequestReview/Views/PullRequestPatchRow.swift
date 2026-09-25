@@ -67,7 +67,7 @@ struct PullRequestPatchRow: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.theme.accent)
             .disabled(!self.canComment || number == nil)
-            .accessibilityLabel("Comment on \(side == "LEFT" ? "old" : "new") line \(number ?? 0)")
+            .accessibilityLabel("Comment On \(side == "LEFT" ? "Old" : "New") Line \(number ?? 0)")
             Text(number.map(String.init) ?? "").foregroundStyle(self.theme.secondaryText).frame(width: 42, alignment: .trailing)
             Text(number == nil ? " " : marker).foregroundStyle(self.theme.secondaryText).frame(width: 10)
             Text(text.isEmpty ? " " : text).fixedSize(horizontal: true, vertical: true)

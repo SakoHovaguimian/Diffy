@@ -9,7 +9,7 @@ enum GitHubAccountStatus: String, Codable, Hashable, Sendable {
         switch self {
 
         case .connected: "Connected"
-        case .reauthorizationRequired: "Reconnect required"
+        case .reauthorizationRequired: "Reconnect Required"
 
         }
 

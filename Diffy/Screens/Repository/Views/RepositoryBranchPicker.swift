@@ -7,7 +7,7 @@ struct RepositoryBranchPicker: View {
 
     var body: some View {
 
-        Picker("Browse branch", selection: self.$selection) {
+        Picker("Browse Branch", selection: self.$selection) {
 
             if self.showsSelectedReference {
                 Text(self.selection).tag(self.selection)
@@ -18,7 +18,7 @@ struct RepositoryBranchPicker: View {
                 Section("Local") {
 
                     ForEach(self.localBranches) { branch in
-                        Text(branch.isCurrent ? "\(branch.name) · current" : branch.name)
+                        Text(branch.isCurrent ? "\(branch.name) · Current" : branch.name)
                             .tag(branch.name)
                     }
 
@@ -41,7 +41,7 @@ struct RepositoryBranchPicker: View {
         }
         .pickerStyle(.menu)
         .disabled(self.branches.isEmpty)
-        .help("Browse this branch without checking it out")
+        .help("Browse This Branch Without Checking It Out")
 
     }
 

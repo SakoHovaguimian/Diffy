@@ -15,6 +15,7 @@ The current integration work is authorized by the September 24, 2026 request to 
 | Git actions | GitServiceProtocol / RepositoryViewModel | User-triggered mutation; serialized by common Git directory; refresh after success, error, or cancellation |
 | Confirmation | SwiftUI confirmationDialog | Named project, operation, and consequences for rebase, merge, discard, abort, whole-file resolution, force-with-lease, and disconnect |
 | File selection | ProjectDirectoryController | Native macOS folder panel; link and clone save the resulting project |
+| File icons | DiffyPathIcon / FileIconService / SettingsViewModel | One persisted theme for PR Review, comparison navigators, repository/folder browsers, and review headers; bundled offline catalogs; native picker with immediate preview; filenames and separate status indicators remain accessible |
 | Project presentation | ProjectEditorScreen / WorkspaceViewModel | Add and edit share display-name and icon fields; edits apply to assigned, unassigned, and GitHub-linked projects; failed saves preserve the draft |
 | Workspace overview | WorkspaceOverviewScreen / WorkspaceOverviewViewModel | Launches as the landing page; shows active local diffs and account-wide assigned pull requests; first-run actions connect GitHub or add a local folder; refresh remains read-only |
 

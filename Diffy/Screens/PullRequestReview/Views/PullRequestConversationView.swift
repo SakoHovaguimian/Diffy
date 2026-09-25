@@ -36,11 +36,11 @@ struct PullRequestConversationView: View {
 
                 HStack {
 
-                    Text(self.viewModel.replyingTo.map { "Reply to \($0.author) · \($0.path ?? "")" } ?? "Add to the conversation")
+                    Text(self.viewModel.replyingTo.map { "Reply To \($0.author) · \($0.path ?? "")" } ?? "Add To The Conversation")
                         .font(.system(size: 12, weight: .semibold))
                     Spacer()
                     if self.viewModel.replyingTo != nil {
-                        Button("Cancel reply") { self.viewModel.replyingTo = nil }
+                        Button("Cancel Reply") { self.viewModel.replyingTo = nil }
                     }
                     Text(self.viewModel.account?.handle ?? "").font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
 
@@ -48,12 +48,12 @@ struct PullRequestConversationView: View {
                 TextEditor(text: self.$viewModel.conversationBody)
                     .font(.system(size: 12)).frame(height: 75)
                     .overlay(RoundedRectangle(cornerRadius: 4).stroke(self.theme.border))
-                    .accessibilityLabel("Comment text. Markdown supported.")
+                    .accessibilityLabel("Comment Text. Markdown supported.")
                 HStack {
 
                     Text("Markdown supported · Posts immediately to GitHub").font(.system(size: 10)).foregroundStyle(self.theme.secondaryText)
                     Spacer()
-                    Button(self.viewModel.replyingTo == nil ? "Post comment" : "Post reply") {
+                    Button(self.viewModel.replyingTo == nil ? "Post Comment" : "Post Reply") {
                         Task { await self.viewModel.postConversationComment() }
                     }
                     .buttonStyle(.borderedProminent)

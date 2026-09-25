@@ -29,7 +29,7 @@ enum GitOperationRequest: Hashable, Sendable {
         case .createBranch: "Create Branch"
         case .fetch: "Fetch"
         case .addRemote: "Add Remote"
-        case let .push(options): options.forceWithLease ? "Force Push with Lease" : (options.setsUpstream ? "Set Upstream and Push" : "Push")
+        case let .push(options): options.forceWithLease ? "Force Push With Lease" : (options.setsUpstream ? "Set Upstream & Push" : "Push")
         case let .pull(strategy): "Pull · \(strategy.title)"
         case .setUpstream: "Set Upstream"
         case .startRebase: "Rebase"

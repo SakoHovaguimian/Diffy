@@ -25,11 +25,11 @@ struct RepositoryPatchView: View {
             Divider()
 
             if self.viewModel.isLoadingPatch {
-                ProgressView("Reading comparison…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                ProgressView("Reading Comparison…").frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = self.viewModel.patchError {
-                DiffyEmptyState(symbol: "exclamationmark.circle", title: "Comparison unavailable", message: error)
+                DiffyEmptyState(symbol: "exclamationmark.circle", title: "Comparison Unavailable", message: error)
             } else if self.viewModel.patchText.isEmpty {
-                DiffyEmptyState(symbol: "checkmark.circle", title: self.viewModel.patchTitle.isEmpty ? "Choose a change" : "No differences", message: "Select a file, commit, or branch comparison to inspect its patch.")
+                DiffyEmptyState(symbol: "checkmark.circle", title: self.viewModel.patchTitle.isEmpty ? "Choose A Change" : "No Differences", message: "Select a file, commit, or branch comparison to inspect its patch.")
             } else {
 
                 DiffyPatchTextView(text: self.viewModel.patchText, theme: self.theme, fontSize: self.settings.editor.fontSize)

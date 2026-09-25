@@ -26,7 +26,7 @@ struct ReviewExportScreen: View {
 
                 VStack(alignment: .leading, spacing: 5) {
 
-                    Text("Your review, ready to share.")
+                    Text("Your Review, Ready To Share.")
                         .font(.system(size: 24, weight: .semibold))
                     Text("Code, context, and your exact words. Formatted for an LLM.")
                         .font(.system(size: 12))
@@ -35,7 +35,7 @@ struct ReviewExportScreen: View {
                 }
 
                 Spacer()
-                DiffyIconButton(symbol: "xmark", label: "Close export") { self.dismiss() }
+                DiffyIconButton(symbol: "xmark", label: "Close Export") { self.dismiss() }
 
             }
 
@@ -44,7 +44,7 @@ struct ReviewExportScreen: View {
                 DiffyBadge(title: "\(self.exportAnnotations.count) ANNOTATIONS", color: self.theme.accent)
                 Text(self.scope).font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
                 Spacer()
-                Toggle("Open notes only", isOn: self.$openOnly).font(.system(size: 11))
+                Toggle("Open Notes Only", isOn: self.$openOnly).font(.system(size: 11))
 
             }
 
@@ -74,7 +74,7 @@ struct ReviewExportScreen: View {
                 Button {
                     self.feedback = ExportController.copy(self.markdown) ? "Copied all \(self.exportAnnotations.count) annotations." : "Could not access the clipboard."
                 } label: {
-                    Label("Copy for LLM", systemImage: "doc.on.doc")
+                    Label("Copy For LLM", systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)

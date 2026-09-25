@@ -13,6 +13,8 @@ struct DiffyThemeModifier: ViewModifier {
 
         content
             .environment(\.diffyTheme, theme)
+            .environment(\.fileIconTheme, self.settings.fileIconTheme)
+            .environment(\.fileIconService, self.settings.fileIconService)
             .foregroundStyle(theme.text)
             .tint(theme.accent)
             .preferredColorScheme(scheme)
@@ -24,7 +26,7 @@ struct DiffyThemeModifier: ViewModifier {
 
 #Preview {
 
-    Text("Diffy theme")
+    Text("Diffy Theme")
     .padding(24)
     .withMockPreviews()
 

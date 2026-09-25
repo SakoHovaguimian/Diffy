@@ -13,18 +13,18 @@ struct RepositoryComparisonContent: View {
 
                 VStack(spacing: 12) {
 
-                    DiffyEmptyState(symbol: "exclamationmark.circle", title: "Comparison unavailable", message: error)
+                    DiffyEmptyState(symbol: "exclamationmark.circle", title: "Comparison Unavailable", message: error)
                     Button("Retry") { self.viewModel.retry() }
                         .padding(.bottom, 24)
 
                 }
 
             } else if self.viewModel.isLoadingFiles || self.viewModel.isLoadingFile {
-                ProgressView("Reading comparison…")
+                ProgressView("Reading Comparison…")
             } else if let file = self.viewModel.selectedFile {
                 fileContent(file)
             } else {
-                DiffyEmptyState(symbol: "checkmark.circle", title: "No differences", message: "This comparison has no changed files.")
+                DiffyEmptyState(symbol: "checkmark.circle", title: "No Differences", message: "This comparison has no changed files.")
             }
 
         }
@@ -46,7 +46,7 @@ struct RepositoryComparisonContent: View {
                 .id(file.id)
 
         case .binary:
-            DiffyEmptyState(symbol: "doc.zipper", title: "Binary file", message: "\(file.path) has no text representation to compare.")
+            DiffyEmptyState(symbol: "doc.zipper", title: "Binary File", message: "\(file.path) has no text representation to compare.")
 
         }
 

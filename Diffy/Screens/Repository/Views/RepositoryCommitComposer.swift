@@ -11,19 +11,19 @@ struct RepositoryCommitComposer: View {
 
             HStack {
 
-                Text("Next commit").font(.system(size: 13, weight: .semibold))
+                Text("Next Commit").font(.system(size: 13, weight: .semibold))
                 Spacer()
-                Text("\(self.viewModel.snapshot?.stagedChanges.count ?? 0) staged").font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
+                Text("\(self.viewModel.snapshot?.stagedChanges.count ?? 0) Staged").font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
 
             }
-            TextField("Summarize your changes", text: self.$viewModel.commitMessage, axis: .vertical)
+            TextField("Summarize Your Changes", text: self.$viewModel.commitMessage, axis: .vertical)
                 .lineLimit(3...6)
                 .textFieldStyle(.roundedBorder)
                 .disabled(self.viewModel.isOperating)
             Button {
                 self.viewModel.request(.commit(message: self.viewModel.commitMessage))
             } label: {
-                Label("Commit staged changes", systemImage: "checkmark.circle")
+                Label("Commit Staged Changes", systemImage: "checkmark.circle")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)

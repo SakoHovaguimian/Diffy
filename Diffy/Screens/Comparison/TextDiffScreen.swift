@@ -76,7 +76,7 @@ struct TextDiffScreen: View {
 
             if self.settings.editor.collapseUnchanged, !self.viewModel.isEditing {
 
-                Button("Showing changed regions · Show whole file") {
+                Button("Showing Changed Regions · Show Whole File") {
                     self.settings.editor.collapseUnchanged = false
                 }
                 .font(self.contentSize.font(size: 10))
@@ -142,7 +142,7 @@ struct TextDiffScreen: View {
 
                 if self.comparisonFile.hasNoOriginalSource {
 
-                    sourceLabel(self.viewModel.isEditing ? "Editing new file" : "New file", detail: rightLabel(), dot: self.theme.added)
+                    sourceLabel(self.viewModel.isEditing ? "Editing New File" : "New File", detail: rightLabel(), dot: self.theme.added)
                         .frame(width: geometry.size.width)
 
                 } else {
@@ -157,7 +157,7 @@ struct TextDiffScreen: View {
                     if !self.settings.editor.unified {
 
                         self.theme.background.frame(width: self.gutterWidth)
-                        sourceLabel(self.viewModel.isEditing ? "Editing updated source" : "Updated", detail: rightLabel(), dot: self.theme.added)
+                        sourceLabel(self.viewModel.isEditing ? "Editing Updated Source" : "Updated", detail: rightLabel(), dot: self.theme.added)
                             .frame(width: contentWidth * (1 - self.viewModel.paneRatio))
 
                     }
@@ -191,10 +191,10 @@ struct TextDiffScreen: View {
 
     private func leftLabel() -> String {
 
-        if let presentation { return presentation.selection.left.label }
+        if let presentation { return presentation.selection.left.displayLabel }
 
         if self.workspace.runtime.isLive {
-            return self.workspace.repositoryViewModel.comparison.selection.left.label
+            return self.workspace.repositoryViewModel.comparison.selection.left.displayLabel
         }
 
         if [.branches, .commits, .history].contains(self.workspace.mode) {
@@ -208,7 +208,7 @@ struct TextDiffScreen: View {
     private func leftSourceTitle() -> String {
 
         if self.settings.editor.unified {
-            return self.viewModel.isEditing ? "Editing updated source" : "Unified comparison"
+            return self.viewModel.isEditing ? "Editing Updated Source" : "Unified Comparison"
         }
 
         return "Original"
@@ -221,17 +221,17 @@ struct TextDiffScreen: View {
 
     private func rightLabel() -> String {
 
-        if let presentation { return presentation.selection.right.label }
+        if let presentation { return presentation.selection.right.displayLabel }
 
         if self.workspace.runtime.isLive {
-            return self.workspace.repositoryViewModel.comparison.selection.right.label
+            return self.workspace.repositoryViewModel.comparison.selection.right.displayLabel
         }
 
         if [.branches, .commits, .history].contains(self.workspace.mode) {
             return self.workspace.comparisonRight
         }
 
-        return self.workspace.mode == .staged ? "Index" : "Working tree"
+        return self.workspace.mode == .staged ? "Index" : "Working Tree"
 
     }
 
@@ -257,7 +257,7 @@ struct TextDiffScreen: View {
                             .overlay(alignment: .trailing) { self.theme.border.frame(width: self.contentSize.scaled(1)) }
                             .contentShape(Rectangle())
                             .gesture(paneResizeGesture(contentWidth: contentWidth))
-                            .help("Drag to resize comparison panes")
+                            .help("Drag To Resize Comparison Panes")
 
                     }
 
@@ -345,7 +345,7 @@ struct TextDiffScreen: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .keyboardShortcut(.return, modifiers: .command)
-        .help("Apply this draft · ⌘Return")
+        .help("Apply This Draft · ⌘Return")
         .shadow(
             color: Color.black.opacity(0.2),
             radius: self.contentSize.scaled(12),
@@ -364,7 +364,7 @@ struct TextDiffScreen: View {
 
             DiffyEmptyState(
                 symbol: "checkmark.circle",
-                title: "No visible differences",
+                title: "No Visible Differences",
                 message: "No lines match the current display options. Choose File to show the entire source."
             )
 
@@ -452,14 +452,14 @@ struct TextDiffScreen: View {
 
                     if totalLines > self.viewModel.reviewLineLimit {
 
-                        Button("Show more lines (\(totalLines - self.viewModel.reviewLineLimit) remaining)") {
+                        Button("Show More Lines (\(totalLines - self.viewModel.reviewLineLimit) Remaining)") {
                             self.viewModel.reviewLineLimit += 400
                         }
                         .padding(self.contentSize.scaled(14))
 
                     } else if regions.isEmpty {
 
-                        Text("No visible text changes · choose File to show the source")
+                Text("No Visible Text Changes · Choose File To Show The Source")
                             .font(self.contentSize.font(size: 11))
                             .foregroundStyle(self.theme.secondaryText)
                             .padding(self.contentSize.scaled(24))
@@ -590,7 +590,7 @@ struct TextDiffScreen: View {
                     .overlay(alignment: .trailing) { self.theme.border.frame(width: self.contentSize.scaled(1)) }
                     .contentShape(Rectangle())
                     .gesture(paneResizeGesture(contentWidth: contentWidth))
-                    .help("Drag to resize comparison panes")
+                    .help("Drag To Resize Comparison Panes")
 
                 codeLine(line, side: .right, paneWidth: contentWidth * (1 - self.viewModel.paneRatio))
                     .frame(width: contentWidth * (1 - self.viewModel.paneRatio))
@@ -709,11 +709,11 @@ struct TextDiffScreen: View {
         HStack {
 
             Image(systemName: "magnifyingglass")
-            TextField("Find in comparison", text: self.$viewModel.search)
+            TextField("Find In Comparison", text: self.$viewModel.search)
                 .textFieldStyle(.plain)
                 .onSubmit { self.viewModel.findNext(in: self.comparisonFile) }
             Button("Next") { self.viewModel.findNext(in: self.comparisonFile) }
-            DiffyIconButton(symbol: "xmark", label: "Close search") { self.viewModel.showsSearch = false }
+            DiffyIconButton(symbol: "xmark", label: "Close Search") { self.viewModel.showsSearch = false }
 
         }
         .font(self.contentSize.font(size: 11))
@@ -727,7 +727,7 @@ struct TextDiffScreen: View {
 
         HStack {
 
-            Text(self.comparisonFile.originalPath.map { "Previously: \($0)" } ?? "\(self.viewModel.changeStarts(self.comparisonFile).count) change regions")
+            Text(self.comparisonFile.originalPath.map { "Previously: \($0)" } ?? "\(self.viewModel.changeStarts(self.comparisonFile).count) Change Regions")
             Spacer()
             Text(layoutDescription())
             Text("\(Int(self.settings.editor.fontSize)) pt")
@@ -744,14 +744,14 @@ struct TextDiffScreen: View {
     private func layoutDescription() -> String {
 
         if self.viewModel.isEditing {
-            return "Editable draft · in memory"
+            return "Editable Draft · In Memory"
         }
 
         if self.comparisonFile.hasNoOriginalSource {
-            return "New file"
+            return "New File"
         }
 
-        return self.settings.editor.unified ? "Unified" : "Synchronized scrolling"
+        return self.settings.editor.unified ? "Unified" : "Synchronized Scrolling"
 
     }
 
@@ -769,7 +769,7 @@ struct TextDiffScreen: View {
 
 }
 
-#Preview("New file") {
+#Preview("New File") {
 
     TextDiffScreen(
         file: MockPreviewFixtures.addedTextFile,

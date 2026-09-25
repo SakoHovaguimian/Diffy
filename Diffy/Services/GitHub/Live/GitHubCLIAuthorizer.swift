@@ -45,7 +45,7 @@ struct GitHubCLIAuthorizer: Sendable {
         let candidates = ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/usr/bin/gh"]
 
         guard let path = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            throw GitHubError.forbidden("Install GitHub CLI from cli.github.com, then choose Sign in with GitHub again. You can also connect with a personal access token below.")
+            throw GitHubError.forbidden("Install GitHub CLI from cli.github.com, then choose Sign In With GitHub again. You can also connect with a personal access token below.")
         }
 
         return path

@@ -64,7 +64,7 @@ extension GitError: LocalizedError {
         case .checkoutUnavailable: "Choose Locate Folder to grant access again."
         case .authenticationRequired: "Confirm that this Mac can reach the remote with its existing SSH agent or credential helper, then try again."
         case .nonFastForward: "Pull first, or push with lease if you intentionally rewrote history."
-        case .missingUpstream: "Use Set Upstream and Push to publish this branch."
+        case .missingUpstream: "Use Set Upstream & Push to publish this branch."
         case .detachedHead: "Check out a branch before pulling or pushing."
         case .dirtyWorkingTree: "Stage and commit, or discard, your local changes first."
         case .unresolvedConflicts: "Resolve and stage every conflicted file, then continue."

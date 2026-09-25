@@ -13,9 +13,9 @@ enum PullRequestStatusFilter: String, CaseIterable, Identifiable {
         switch self {
 
         case .unmerged: "Unmerged"
-        case .open: "Open · ready"
+        case .open: "Open · Ready"
         case .draft: "Draft"
-        case .closedUnmerged: "Closed · unmerged"
+        case .closedUnmerged: "Closed · Unmerged"
 
         }
 

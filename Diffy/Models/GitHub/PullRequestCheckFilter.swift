@@ -13,7 +13,7 @@ enum PullRequestCheckFilter: String, CaseIterable, Identifiable {
 
         switch self {
 
-        case .any: "Any checks"
+        case .any: "Any Checks"
         case .passed: "Passed"
         case .failed: "Failed"
         case .running: "Running"

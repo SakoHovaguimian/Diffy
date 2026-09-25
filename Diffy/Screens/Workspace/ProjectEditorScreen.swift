@@ -35,10 +35,10 @@ struct ProjectEditorScreen: View {
                     .frame(width: 46, height: 46)
                     .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
 
-                TextField("Display name", text: self.$draft.displayName)
+                TextField("Display Name", text: self.$draft.displayName)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 14))
-                    .accessibilityLabel("Project display name")
+                    .accessibilityLabel("Project Display Name")
 
             }
 

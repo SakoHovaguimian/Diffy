@@ -214,8 +214,8 @@ struct WorkspaceSidebar: View {
                 Menu {
 
                     Button("Customize Bucket") { self.viewModel.selectedBucket = bucket }
-                    Button("Move up") { self.viewModel.moveBucket(bucket, direction: -1) }
-                    Button("Move down") { self.viewModel.moveBucket(bucket, direction: 1) }
+                    Button("Move Up") { self.viewModel.moveBucket(bucket, direction: -1) }
+                    Button("Move Down") { self.viewModel.moveBucket(bucket, direction: 1) }
                     Divider()
                     Button("Delete Bucket", role: .destructive) { self.bucketPendingDeletion = bucket }
                         .disabled(self.viewModel.replacementBucket(for: bucket) == nil)
@@ -229,7 +229,7 @@ struct WorkspaceSidebar: View {
                 .menuIndicator(.hidden)
                 .tint(color)
                 .frame(width: 28)
-                .help("Bucket actions for \(bucket.title)")
+                .help("Bucket Actions For \(bucket.title)")
 
             }
             .padding(.leading, 8)
@@ -265,8 +265,8 @@ struct WorkspaceSidebar: View {
         .contextMenu {
 
             Button("Customize Bucket") { self.viewModel.selectedBucket = bucket }
-            Button("Move up") { self.viewModel.moveBucket(bucket, direction: -1) }
-            Button("Move down") { self.viewModel.moveBucket(bucket, direction: 1) }
+            Button("Move Up") { self.viewModel.moveBucket(bucket, direction: -1) }
+            Button("Move Down") { self.viewModel.moveBucket(bucket, direction: 1) }
             Button("Delete Bucket", role: .destructive) { self.bucketPendingDeletion = bucket }
                 .disabled(self.viewModel.replacementBucket(for: bucket) == nil)
 
@@ -362,7 +362,7 @@ struct WorkspaceSidebar: View {
 
         }
         .buttonStyle(.plain)
-        .help("Choose a folder to add to \(bucket.title)")
+        .help("Choose A Folder To Add To \(bucket.title)")
 
     }
 
@@ -380,7 +380,7 @@ struct WorkspaceSidebar: View {
 
             if projects.isEmpty {
 
-                Text("Drop a project here to detach")
+                Text("Drop A Project Here To Detach")
                     .font(.system(size: 10))
                     .foregroundStyle(self.theme.secondaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -460,7 +460,7 @@ struct WorkspaceSidebar: View {
                 }
 
             }
-            .help("Drop on the upper half to insert before; lower half to insert after")
+            .help("Drop On The Upper Half To Insert Before; Lower Half To Insert After")
 
     }
 
@@ -516,11 +516,11 @@ struct WorkspaceSidebar: View {
         .draggable(project.id)
         .contextMenu {
 
-            Button("Open overview") { self.viewModel.openProjectOverview(project) }
+            Button("Open Overview") { self.viewModel.openProjectOverview(project) }
             Button("Edit Project…") { self.viewModel.editProject(project) }
-            Button("Toggle favorite") { self.viewModel.toggleFavorite(project) }
+            Button("Toggle Favorite") { self.viewModel.toggleFavorite(project) }
 
-            Menu("Move to Bucket") {
+            Menu("Move To Bucket") {
 
                 ForEach(self.viewModel.buckets) { bucket in
                     Button(bucket.title) { self.viewModel.moveProject(project.id, to: bucket.id) }
@@ -529,7 +529,7 @@ struct WorkspaceSidebar: View {
             }
 
             if self.viewModel.bucket(for: project) != nil {
-                Button("Detach from Bucket") { self.viewModel.detachProject(project.id) }
+                Button("Detach From Bucket") { self.viewModel.detachProject(project.id) }
             }
 
         }
@@ -551,7 +551,7 @@ struct WorkspaceSidebar: View {
 
                     } label: {
 
-                        Label(project.directoryPath == nil ? "\(project.displayName) · working tree" : "\(project.displayName) · local folder", systemImage: "clock")
+                        Label(project.directoryPath == nil ? "\(project.displayName) · Working Tree" : "\(project.displayName) · Local Folder", systemImage: "clock")
                             .font(.system(size: 10))
                             .foregroundStyle(self.theme.secondaryText)
                             .lineLimit(1)
@@ -589,29 +589,29 @@ struct WorkspaceSidebar: View {
                 self.viewModel.addBucket()
             } label: {
 
-                Label("New Bucket", systemImage: "plus")
+                Label("Bucket", systemImage: "plus")
                     .frame(maxWidth: .infinity)
 
             }
             .buttonStyle(SidebarCreationButtonStyle(theme: self.theme))
-            .help("Create a new Bucket")
+            .help("Create A New Bucket")
 
             Button {
                 addUnassignedProject()
             } label: {
 
-                Label("New Project", systemImage: "folder.badge.plus")
+                Label("Project", systemImage: "folder.badge.plus")
                     .frame(maxWidth: .infinity)
 
             }
             .buttonStyle(SidebarCreationButtonStyle(theme: self.theme))
-            .help("Choose a folder to add to Unassigned")
+            .help("Choose A Folder To Add To Unassigned")
 
             SettingsLink {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.plain)
-            .help("Open settings")
+            .help("Open Settings")
 
         }
         .font(.system(size: 10, weight: .semibold))

@@ -39,25 +39,25 @@ struct SettingsScreen: View {
 
             Section("Typography") {
 
-                Picker("Font family", selection: self.$viewModel.editor.fontName) {
+                Picker("Font Family", selection: self.$viewModel.editor.fontName) {
                     ForEach(["SF Mono", "Geist Mono", "Menlo", "Monaco", "Courier"], id: \.self) { Text($0).tag($0) }
                 }
 
                 Slider(value: self.$viewModel.editor.fontSize, in: 9...20, step: 1) {
-                    Text("Font size · \(Int(self.viewModel.editor.fontSize)) pt")
+                    Text("Font Size · \(Int(self.viewModel.editor.fontSize)) pt")
                 }
 
                 Slider(value: self.$viewModel.editor.lineHeight, in: 20...38, step: 1) {
-                    Text("Line height · \(Int(self.viewModel.editor.lineHeight)) pt")
+                    Text("Line Height · \(Int(self.viewModel.editor.lineHeight)) pt")
                 }
 
             }
 
             Section("Reading") {
 
-                Toggle("Wrap long lines", isOn: self.$viewModel.editor.wrapLines)
-                Toggle("Show line numbers", isOn: self.$viewModel.editor.showLineNumbers)
-                Toggle("Visualize spaces", isOn: self.$viewModel.editor.showWhitespace)
+                Toggle("Wrap Long Lines", isOn: self.$viewModel.editor.wrapLines)
+                Toggle("Show Line Numbers", isOn: self.$viewModel.editor.showLineNumbers)
+                Toggle("Visualize Spaces", isOn: self.$viewModel.editor.showWhitespace)
 
             }
 
@@ -71,7 +71,7 @@ struct SettingsScreen: View {
 
             }
 
-            Button("Reset editor settings") { self.viewModel.resetEditor() }
+            Button("Reset Editor Settings") { self.viewModel.resetEditor() }
 
         }
         .formStyle(.grouped)
@@ -84,11 +84,11 @@ struct SettingsScreen: View {
 
             Section("Presentation") {
 
-                Toggle("Use unified comparison", isOn: self.$viewModel.editor.unified)
-                Toggle("Collapse unchanged regions", isOn: self.$viewModel.editor.collapseUnchanged)
-                Stepper("Context lines: \(self.viewModel.editor.contextLines)", value: self.$viewModel.editor.contextLines, in: 0...12)
+                Toggle("Use Unified Comparison", isOn: self.$viewModel.editor.unified)
+                Toggle("Collapse Unchanged Regions", isOn: self.$viewModel.editor.collapseUnchanged)
+                Stepper("Context Lines: \(self.viewModel.editor.contextLines)", value: self.$viewModel.editor.contextLines, in: 0...12)
 
-                Picker("Inline highlighting", selection: self.$viewModel.editor.highlightLevel) {
+                Picker("Inline Highlighting", selection: self.$viewModel.editor.highlightLevel) {
                     ForEach(["Line", "Word", "Character"], id: \.self) { Text($0).tag($0) }
                 }
                 Text("Word and Character emphasize changed text within paired lines. Added and removed lines keep their full-line shading.")
@@ -97,29 +97,29 @@ struct SettingsScreen: View {
 
             }
 
-            Section("Diff visualization") {
+            Section("Diff Visualization") {
 
-                Toggle("Show diff trailing lines", isOn: self.$viewModel.diffVisualization.showsTrailingLines)
-                Toggle("Frame current diff regions", isOn: self.$viewModel.diffVisualization.framesCurrentRegion)
+                Toggle("Show Diff Trailing Lines", isOn: self.$viewModel.diffVisualization.showsTrailingLines)
+                Toggle("Frame Current Diff Regions", isOn: self.$viewModel.diffVisualization.framesCurrentRegion)
                 Text("In split view, red and green guides connect the previous source to each changed region. Guides adjust to each region's length and position.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
             }
 
-            Section("Prototype display rules") {
+            Section("Prototype Display Rules") {
 
-                Toggle("Hide comment-only rows", isOn: self.$viewModel.editor.ignoreComments)
+                Toggle("Hide Comment-Only Rows", isOn: self.$viewModel.editor.ignoreComments)
                 Text("Comment hiding affects rows in the preview; it is not a language-aware comparison algorithm.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
             }
 
-            Section("Engine controls · later milestones") {
+            Section("Engine Controls · Later Milestones") {
 
-                Label("Ignore whitespace, indentation and formatting", systemImage: "clock")
-                Label("Diff algorithms and moved-block detection", systemImage: "clock")
+                Label("Ignore Whitespace, Indentation & Formatting", systemImage: "clock")
+                Label("Diff Algorithms & Moved-Block Detection", systemImage: "clock")
                 Text("The prototype uses immutable, aligned comparison fixtures. These controls will become active when the corresponding engine is implemented.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -137,21 +137,21 @@ struct SettingsScreen: View {
 
             Section("Workspace") {
 
-                shortcut("Command palette", keys: "⌘ K")
-                shortcut("Review notes", keys: "⇧ ⌘ R")
+                shortcut("Command Palette", keys: "⌘ K")
+                shortcut("Review Notes", keys: "⇧ ⌘ R")
                 shortcut("New Bucket", keys: "⇧ ⌘ B")
-                shortcut("Toggle sidebar", keys: "⌃ ⌘ S")
+                shortcut("Toggle Sidebar", keys: "⌃ ⌘ S")
                 shortcut("Settings", keys: "⌘ ,")
-                shortcut("New window", keys: "⌘ N")
+                shortcut("New Window", keys: "⌘ N")
 
             }
 
             Section("Review") {
 
-                shortcut("Select a range", keys: "Shift + click")
-                shortcut("Annotate a line", keys: "Right-click → Annotate")
-                shortcut("Save annotation", keys: "Return")
-                shortcut("Dismiss a sheet", keys: "Esc")
+                shortcut("Select A Range", keys: "Shift + Click")
+                shortcut("Annotate A Line", keys: "Right-Click → Annotate")
+                shortcut("Save Annotation", keys: "Return")
+                shortcut("Dismiss A Sheet", keys: "Esc")
 
             }
 
@@ -180,7 +180,7 @@ struct SettingsScreen: View {
 
         Form {
 
-            Section("Local by design") {
+            Section("Local By Design") {
 
                 Label("Local repositories work without a GitHub account", systemImage: "folder")
                 Label("Review notes are saved on this Mac", systemImage: "internaldrive")
@@ -199,7 +199,7 @@ struct SettingsScreen: View {
 
             }
 
-            Section("Git and GitHub") {
+            Section("Git & GitHub") {
 
                 Text("Connect GitHub in Accounts. The Live app uses /usr/bin/git, your repository’s author identity, SSH agent, and credential helper. Install the Command Line Tools if Git is unavailable. The Mock app keeps its sample sources immutable.")
                     .font(.caption)

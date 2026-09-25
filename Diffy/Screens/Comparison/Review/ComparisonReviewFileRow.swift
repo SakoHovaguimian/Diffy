@@ -79,20 +79,20 @@ struct ComparisonReviewFileRow: View {
             .toggleStyle(.checkbox)
             .font(.system(size: 11))
             .fixedSize()
-            .help("Mark this file as reviewed")
+            .help("Mark This File As Reviewed")
             .accessibilityLabel("Viewed \(self.viewModel.file.path)")
 
             Menu {
 
-                Button("Copy relative path") { ExportController.copy(self.viewModel.file.path) }
-                Button(self.viewModel.isExpanded ? "Collapse file" : "Expand file") { self.viewModel.isExpanded.toggle() }
+                Button("Copy Relative Path") { ExportController.copy(self.viewModel.file.path) }
+                Button(self.viewModel.isExpanded ? "Collapse File" : "Expand File") { self.viewModel.isExpanded.toggle() }
 
             } label: {
                 Image(systemName: "ellipsis")
             }
             .menuStyle(.borderlessButton)
             .frame(width: 18)
-            .accessibilityLabel("Actions for \(self.viewModel.file.path)")
+            .accessibilityLabel("Actions For \(self.viewModel.file.path)")
 
         }
         .padding(.horizontal, 16)
@@ -112,13 +112,13 @@ struct ComparisonReviewFileRow: View {
             VStack(spacing: 12) {
 
                 DiffyStatusBanner(message: error, isError: true)
-                Button("Retry file") { Task { await self.viewModel.load() } }
+                Button("Retry File") { Task { await self.viewModel.load() } }
 
             }
             .padding(24)
 
         } else if self.viewModel.isLoading || !self.viewModel.file.isContentLoaded {
-            ProgressView("Reading file…")
+            ProgressView("Reading File…")
                 .frame(maxWidth: .infinity)
                 .frame(height: 150)
         } else {
@@ -140,7 +140,7 @@ struct ComparisonReviewFileRow: View {
                     .frame(height: 520)
 
             case .binary:
-                DiffyEmptyState(symbol: "doc.zipper", title: "Binary file", message: "This file changed, but has no text representation to compare.")
+                DiffyEmptyState(symbol: "doc.zipper", title: "Binary File", message: "This file changed, but has no text representation to compare.")
                     .frame(height: 160)
 
             }

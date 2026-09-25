@@ -11,7 +11,7 @@ struct GitHubAccountsScreen: View {
 
             VStack(alignment: .leading, spacing: 24) {
 
-                DiffyPageHeading(eyebrow: "Connections", title: "Your work, connected.", detail: "Connect GitHub, then link a checkout or clone a repository into your workspace.")
+                DiffyPageHeading(eyebrow: "Connections", title: "Your Work, Connected.", detail: "Connect GitHub, then link a checkout or clone a repository into your workspace.")
                 accountList()
                 GitHubSignInView(viewModel: self.viewModel)
 
@@ -35,7 +35,7 @@ struct GitHubAccountsScreen: View {
         .task(id: self.viewModel.selectedAccountID) {
             await self.viewModel.loadRepositories()
         }
-        .confirmationDialog("Disconnect GitHub account?", isPresented: Binding(
+        .confirmationDialog("Disconnect GitHub Account?", isPresented: Binding(
             get: { self.viewModel.accountToRemove != nil },
             set: { if !$0 { self.viewModel.accountToRemove = nil } }
         ), titleVisibility: .visible) {

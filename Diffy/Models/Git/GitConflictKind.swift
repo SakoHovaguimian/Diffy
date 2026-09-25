@@ -13,13 +13,13 @@ enum GitConflictKind: String, Codable, Hashable, Sendable {
 
         switch self {
 
-        case .bothModified: "Both modified"
-        case .bothAdded: "Both added"
-        case .bothDeleted: "Both deleted"
-        case .addedByUs: "Added by us"
-        case .addedByThem: "Added by them"
-        case .deletedByUs: "Deleted by us"
-        case .deletedByThem: "Deleted by them"
+        case .bothModified: "Both Modified"
+        case .bothAdded: "Both Added"
+        case .bothDeleted: "Both Deleted"
+        case .addedByUs: "Added By Us"
+        case .addedByThem: "Added By Them"
+        case .deletedByUs: "Deleted By Us"
+        case .deletedByThem: "Deleted By Them"
 
         }
 

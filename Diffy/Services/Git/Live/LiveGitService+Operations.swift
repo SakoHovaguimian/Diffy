@@ -319,7 +319,7 @@ extension LiveGitService {
         let selectedURL = try self.access.beginAccess(projectID: repository.projectID, checkout: repository.checkout)
         defer { self.access.endAccess(projectID: repository.projectID) }
         let url = try await repositoryRoot(at: selectedURL)
-        progress(GitOperationProgress(phase: "Fetching pull request #\(pullRequest.number)"))
+        progress(GitOperationProgress(phase: "Fetching Pull Request #\(pullRequest.number)"))
         _ = try await self.runner.run(["fetch", "--no-tags", "--", remoteName, "refs/pull/\(pullRequest.number)/head", pullRequest.baseSHA], directory: url, timeout: 600)
         return ComparisonSelection(left: .revision(pullRequest.baseSHA), right: .revision(pullRequest.headSHA), usesMergeBase: true)
 

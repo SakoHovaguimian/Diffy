@@ -3,12 +3,26 @@ import SwiftUI
 struct OverviewPullRequestRow: View {
 
     let request: AssignedPullRequestSummary
+    let showsRepository: Bool
+    let showsAuthor: Bool
+    let isGrouped: Bool
     let review: () -> Void
     @Environment(\.diffyTheme) private var theme
 
+    private var metadata: String {
+
+        var details: [String] = []
+        if self.showsRepository { details.append(self.request.repositoryFullName) }
+        details.append("#\(self.request.number)")
+        if self.showsAuthor { details.append(self.request.author.login) }
+
+        return details.joined(separator: " · ")
+
+    }
+
     var body: some View {
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: self.isGrouped ? 8 : 14) {
 
             HStack(alignment: .top, spacing: 12) {
 
@@ -17,14 +31,14 @@ struct OverviewPullRequestRow: View {
                     .foregroundStyle(self.theme.added)
                     .frame(width: 25)
 
-                VStack(alignment: .leading, spacing: 7) {
+                VStack(alignment: .leading, spacing: self.isGrouped ? 5 : 7) {
 
                     Text(self.request.title)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(self.theme.text)
                         .lineLimit(2)
 
-                    Text("\(self.request.repositoryFullName) · #\(self.request.number) · \(self.request.author.login)")
+                    Text(self.metadata)
                         .font(.system(size: 10))
                         .foregroundStyle(self.theme.secondaryText)
                         .lineLimit(1)
@@ -43,7 +57,8 @@ struct OverviewPullRequestRow: View {
                 .padding(.leading, 37)
 
         }
-        .padding(18)
+        .padding(.horizontal, 18)
+        .padding(.vertical, self.isGrouped ? 10 : 18)
 
     }
 

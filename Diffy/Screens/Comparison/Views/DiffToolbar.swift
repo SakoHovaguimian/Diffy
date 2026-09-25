@@ -40,7 +40,7 @@ struct DiffToolbar: View {
             layoutControls(compact: compact)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Picker("Visible content", selection: self.contentSelection) {
+            Picker("Visible Content", selection: self.contentSelection) {
 
                 Text("Changes").tag(true)
                 Text("File").tag(false)
@@ -51,7 +51,7 @@ struct DiffToolbar: View {
             .frame(width: self.contentSize.scaled(compact ? 108 : 132))
             .controlSize(.small)
             .disabled(self.viewModel.isEditing)
-            .help(self.viewModel.isEditing ? "Apply or discard the current draft to change visible content" : "Show changed regions or the whole file")
+            .help(self.viewModel.isEditing ? "Apply Or Discard The Current Draft To Change Visible Content" : "Show Changed Regions Or The Whole File")
 
             actionControls(compact: compact)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -74,7 +74,7 @@ struct DiffToolbar: View {
 
             }
 
-            Picker("Diff layout", selection: self.layoutSelection) {
+            Picker("Diff Layout", selection: self.layoutSelection) {
 
                 Text("Split").tag(false)
                 Text("Unified").tag(true)
@@ -97,33 +97,33 @@ struct DiffToolbar: View {
 
             if !compact {
 
-                DiffyIconButton(symbol: "chevron.up", label: "Previous change") { self.viewModel.navigate(-1, file: self.comparisonFile) }
-                DiffyIconButton(symbol: "chevron.down", label: "Next change") { self.viewModel.navigate(1, file: self.comparisonFile) }
+                DiffyIconButton(symbol: "chevron.up", label: "Previous Change") { self.viewModel.navigate(-1, file: self.comparisonFile) }
+                DiffyIconButton(symbol: "chevron.down", label: "Next Change") { self.viewModel.navigate(1, file: self.comparisonFile) }
 
-                DiffyIconButton(symbol: "text.word.spacing", label: "Wrap lines", isSelected: self.settings.editor.wrapLines) { self.settings.editor.wrapLines.toggle() }
+                DiffyIconButton(symbol: "text.word.spacing", label: "Wrap Lines", isSelected: self.settings.editor.wrapLines) { self.settings.editor.wrapLines.toggle() }
 
             }
 
             if !self.viewModel.isEditing {
-                DiffyIconButton(symbol: "magnifyingglass", label: "Find in comparison") { self.viewModel.showsSearch.toggle() }
+                DiffyIconButton(symbol: "magnifyingglass", label: "Find In Comparison") { self.viewModel.showsSearch.toggle() }
             }
 
             Menu {
 
-                Toggle("Wrap lines", isOn: self.$settings.editor.wrapLines)
-                Toggle("Show line numbers", isOn: self.$settings.editor.showLineNumbers)
-                Toggle("Show whitespace", isOn: self.$settings.editor.showWhitespace)
-                Toggle("Hide comment-only rows", isOn: self.$settings.editor.ignoreComments)
+                Toggle("Wrap Lines", isOn: self.$settings.editor.wrapLines)
+                Toggle("Show Line Numbers", isOn: self.$settings.editor.showLineNumbers)
+                Toggle("Show Whitespace", isOn: self.$settings.editor.showWhitespace)
+                Toggle("Hide Comment-Only Rows", isOn: self.$settings.editor.ignoreComments)
                 Divider()
-                Button("Larger text") { self.settings.editor.fontSize = min(20, self.settings.editor.fontSize + 1) }
-                Button("Smaller text") { self.settings.editor.fontSize = max(9, self.settings.editor.fontSize - 1) }
+                Button("Larger Text") { self.settings.editor.fontSize = min(20, self.settings.editor.fontSize + 1) }
+                Button("Smaller Text") { self.settings.editor.fontSize = max(9, self.settings.editor.fontSize - 1) }
 
                 if compact {
 
                     Divider()
-                    Button("Previous change") { self.viewModel.navigate(-1, file: self.comparisonFile) }
-                    Button("Next change") { self.viewModel.navigate(1, file: self.comparisonFile) }
-                    Button("Annotate selected lines", action: self.annotate)
+                    Button("Previous Change") { self.viewModel.navigate(-1, file: self.comparisonFile) }
+                    Button("Next Change") { self.viewModel.navigate(1, file: self.comparisonFile) }
+                    Button("Annotate Selected Lines", action: self.annotate)
                         .disabled(self.viewModel.selectionStart == nil || self.viewModel.isEditing)
 
                 }
@@ -131,7 +131,7 @@ struct DiffToolbar: View {
                 if self.viewModel.isDraftModified(file: self.file) {
 
                     Divider()
-                    Button("Discard unapplied changes") { self.viewModel.resetDraft(file: self.file) }
+                    Button("Discard Unapplied Changes") { self.viewModel.resetDraft(file: self.file) }
 
                 }
 
@@ -140,7 +140,7 @@ struct DiffToolbar: View {
             }
             .menuStyle(.borderlessButton)
             .frame(width: self.contentSize.scaled(20))
-            .help("Comparison options")
+            .help("Comparison Options")
 
             if !compact, !self.viewModel.isEditing {
 
@@ -150,7 +150,7 @@ struct DiffToolbar: View {
                 .font(self.contentSize.font(size: 10, weight: .medium))
                 .controlSize(.small)
                 .disabled(self.viewModel.selectionStart == nil)
-                .help("Annotate the selected line or range")
+                .help("Annotate The Selected Line Or Range")
 
             }
 
@@ -161,14 +161,14 @@ struct DiffToolbar: View {
     private func layoutHelp() -> String {
 
         if self.viewModel.isEditing {
-            return "Apply or discard the current draft to change the comparison layout"
+            return "Apply Or Discard The Current Draft To Change The Comparison Layout"
         }
 
         if self.file.hasNoOriginalSource {
             return "New files have no original version to compare"
         }
 
-        return "Choose side-by-side or unified code comparison"
+        return "Choose Side-By-Side Or Unified Code Comparison"
 
     }
 

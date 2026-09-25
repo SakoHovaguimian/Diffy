@@ -15,7 +15,7 @@ struct PullRequestReviewScreen: View {
             messages()
 
             if self.viewModel.isLoading {
-                ProgressView("Loading pull request and discussions…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                ProgressView("Loading Pull Request & Discussions…").frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.viewModel.details != nil {
 
                 if self.viewModel.showsConversation {
@@ -25,7 +25,7 @@ struct PullRequestReviewScreen: View {
                 }
 
             } else {
-                DiffyEmptyState(symbol: "arrow.triangle.pull", title: "Review on GitHub", message: "Choose a connected account and refresh to load this pull request.")
+                DiffyEmptyState(symbol: "arrow.triangle.pull", title: "Review On GitHub", message: "Choose a connected account and refresh to load this pull request.")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
@@ -41,23 +41,23 @@ struct PullRequestReviewScreen: View {
         .sheet(item: self.$viewModel.commentEditor) { draft in
             PullRequestCommentEditor(draft: draft, save: self.viewModel.saveComment).diffyStyle()
         }
-        .confirmationDialog("Discard unpublished comments and close?", isPresented: self.$viewModel.showsDiscardConfirmation, titleVisibility: .visible) {
+        .confirmationDialog("Discard Unpublished Comments & Close?", isPresented: self.$viewModel.showsDiscardConfirmation, titleVisibility: .visible) {
 
-            Button("Discard and close", role: .destructive) { self.dismiss() }
-            Button("Keep reviewing", role: .cancel) {}
+            Button("Discard & Close", role: .destructive) { self.dismiss() }
+            Button("Keep Reviewing", role: .cancel) {}
 
         } message: {
             Text("Draft comments are kept in this review page until you submit them. Closing will discard them.")
         }
-        .confirmationDialog("Discard drafts and refresh?", isPresented: self.$viewModel.showsReloadConfirmation, titleVisibility: .visible) {
+        .confirmationDialog("Discard Drafts & Refresh?", isPresented: self.$viewModel.showsReloadConfirmation, titleVisibility: .visible) {
 
-            Button("Discard drafts and refresh", role: .destructive) {
+            Button("Discard Drafts & Refresh", role: .destructive) {
 
                 self.viewModel.discardDrafts()
                 Task { await self.viewModel.load() }
 
             }
-            Button("Keep drafts", role: .cancel) {}
+            Button("Keep Drafts", role: .cancel) {}
 
         } message: {
             Text("Refreshing loads the current revision. Draft line comments cannot be moved safely to changed code.")
@@ -67,7 +67,7 @@ struct PullRequestReviewScreen: View {
 
     private func header() -> some View {
 
-        HStack(alignment: .top, spacing: 20) {
+        HStack(alignment: .center, spacing: 20) {
 
             VStack(alignment: .leading, spacing: 7) {
 
@@ -89,7 +89,7 @@ struct PullRequestReviewScreen: View {
 
             }
             Spacer(minLength: 8)
-            Link(destination: self.viewModel.request.webURL) { Label("Open in GitHub", systemImage: "arrow.up.right") }
+            Link(destination: self.viewModel.request.webURL) { Label("Open In GitHub", systemImage: "arrow.up.right") }
             Button("Close") {
 
                 if self.viewModel.hasDrafts { self.viewModel.showsDiscardConfirmation = true }
@@ -109,16 +109,16 @@ struct PullRequestReviewScreen: View {
 
         HStack(spacing: 16) {
 
-            Picker("Review tab", selection: self.$viewModel.showsConversation) {
+            Picker("Review Tab", selection: self.$viewModel.showsConversation) {
 
-                Text("Files changed (\(self.viewModel.details?.changedFileCount ?? 0))").tag(false)
+                Text("Files Changed (\(self.viewModel.details?.changedFileCount ?? 0))").tag(false)
                 Text("Conversation").tag(true)
 
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: 340)
             Spacer(minLength: 0)
-            Picker("Review as", selection: self.$viewModel.selectedAccountID) {
+            Picker("Review As", selection: self.$viewModel.selectedAccountID) {
                 ForEach(self.viewModel.accounts) { Text($0.handle).tag($0.id) }
             }
             .frame(maxWidth: 230)
@@ -134,9 +134,9 @@ struct PullRequestReviewScreen: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
-            .help("Refresh pull request")
+            .help("Refresh Pull Request")
             .disabled(self.viewModel.isBusy)
-            Button("Review changes\(self.viewModel.drafts.isEmpty ? "" : " (\(self.viewModel.drafts.count))")") {
+            Button("Review Changes\(self.viewModel.drafts.isEmpty ? "" : " (\(self.viewModel.drafts.count))")") {
                 self.viewModel.showsReviewComposer = true
             }
             .buttonStyle(.borderedProminent)

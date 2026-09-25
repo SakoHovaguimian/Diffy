@@ -13,6 +13,24 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
 
     var id: String { self.rawValue }
 
+    /// Presentation copy is separate from raw values stored in preferences and review data.
+    var displayName: String {
+
+        switch self {
+
+        case .workingTree: "Working Tree"
+        case .staged: "Staged Changes"
+        case .branches: "Branches"
+        case .commits: "Commits"
+        case .history: "File History"
+        case .pullRequests: "Pull Requests"
+        case .merge: "Merge"
+        case .folders: "Folders"
+
+        }
+
+    }
+
     var symbol: String {
 
         switch self {
@@ -34,12 +52,12 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
 
         switch self {
 
-        case .workingTree: "Working tree"
+        case .workingTree: "Working Tree"
         case .staged: "Staged"
         case .branches: "Branches"
         case .commits: "Commits"
         case .history: "History"
-        case .pullRequests: "Pull requests"
+        case .pullRequests: "Pull Requests"
         case .merge: "Conflicts"
         case .folders: "Folders"
 

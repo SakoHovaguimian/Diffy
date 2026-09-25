@@ -11,7 +11,7 @@ struct RepositoryCommitsView: View {
 
             VStack(alignment: .leading, spacing: 28) {
 
-                DiffyPageHeading(eyebrow: "Commit history", title: "Every change has a story.", detail: "Browse any branch without checking it out. Open a commit to inspect exactly what it introduced.")
+                DiffyPageHeading(eyebrow: "Commit History", title: "Every Change Has A Story.", detail: "Browse any branch without checking it out. Open a commit to inspect exactly what it introduced.")
                 HStack {
 
                     RepositoryBranchPicker(
@@ -22,7 +22,7 @@ struct RepositoryCommitsView: View {
                         )
                     )
                     Spacer()
-                    Text("Latest \(self.viewModel.branchCommits.count) commits")
+                    Text("Latest \(self.viewModel.branchCommits.count) Commits")
 
                 }
                 .font(.system(size: 12))
@@ -48,7 +48,7 @@ struct RepositoryCommitsView: View {
                     }
 
                 } else if self.viewModel.branchCommits.isEmpty {
-                    DiffyEmptyState(symbol: "clock", title: "No commits on this branch", message: "Choose another branch, or make the first commit from your staged changes.")
+                    DiffyEmptyState(symbol: "clock", title: "No Commits On This Branch", message: "Choose another branch, or make the first commit from your staged changes.")
                 }
 
             }

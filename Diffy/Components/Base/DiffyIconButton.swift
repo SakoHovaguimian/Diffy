@@ -32,7 +32,7 @@ struct DiffyIconButton: View {
 
     DiffyIconButton(
         symbol: "magnifyingglass",
-        label: "Find in comparison"
+        label: "Find In Comparison"
     ) {}
     .padding(24)
     .withMockPreviews()

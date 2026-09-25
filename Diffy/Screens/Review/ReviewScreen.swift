@@ -5,7 +5,7 @@ struct ReviewScreen: View {
     @ObservedObject var workspace: WorkspaceViewModel
     @EnvironmentObject private var review: ReviewViewModel
     @Environment(\.diffyTheme) private var theme
-    @State private var scope = "All projects"
+    @State private var scope = "All Projects"
     @State private var query = ""
     @State private var onlyOpen = false
     @State private var showsExport = false
@@ -62,7 +62,7 @@ struct ReviewScreen: View {
 
             if self.visibleAnnotations.isEmpty {
 
-                DiffyEmptyState(symbol: "text.bubble", title: "Room for your thoughts", message: "Select a line of code, then choose Annotate. Your review comes together here.")
+                DiffyEmptyState(symbol: "text.bubble", title: "Room For Your Thoughts", message: "Select a line of code, then choose Annotate. Your review comes together here.")
 
             } else {
 
@@ -89,7 +89,7 @@ struct ReviewScreen: View {
 
             ReviewExportScreen(
                 annotations: self.scopedAnnotations,
-                scope: self.scope == "All projects" ? "All projects" : "\(self.workspace.project.displayName) · \(self.scope.lowercased())"
+                scope: self.scope == "All Projects" ? "All Projects" : "\(self.workspace.project.displayName) · \(self.scope.lowercased())"
             )
             .diffyStyle()
 
@@ -98,14 +98,14 @@ struct ReviewScreen: View {
             EditAnnotationScreen(annotation: annotation).diffyStyle()
         }
         .confirmationDialog(
-            "Delete all notes for \(projectName(self.deletionProjectID ?? ""))?",
+            "Delete All Notes For \(projectName(self.deletionProjectID ?? ""))?",
             isPresented: Binding(
                 get: { self.deletionProjectID != nil },
                 set: { if !$0 { self.deletionProjectID = nil } }
             )
         ) {
 
-            Button("Delete all project notes", role: .destructive) {
+            Button("Delete All Project Notes", role: .destructive) {
 
                 if let projectID = self.deletionProjectID {
                     self.review.removeAll(projectID: projectID)
@@ -154,7 +154,7 @@ struct ReviewScreen: View {
 
                 }
                 .buttonStyle(.plain)
-                .help(isCollapsed ? "Expand project notes" : "Collapse project notes")
+                .help(isCollapsed ? "Expand Project Notes" : "Collapse Project Notes")
 
                 Spacer()
 
@@ -165,7 +165,7 @@ struct ReviewScreen: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.theme.secondaryText)
-                .help("Delete all notes for \(projectName(projectID))")
+                .help("Delete All Notes For \(projectName(projectID))")
 
             }
             .padding(.horizontal, 5)
@@ -188,23 +188,23 @@ struct ReviewScreen: View {
 
             HStack {
 
-                Text("Review notes").font(.system(size: 16, weight: .semibold))
+                Text("Review Notes").font(.system(size: 16, weight: .semibold))
                 Spacer()
-                DiffyIconButton(symbol: "xmark", label: "Close review notes") { self.workspace.showsReview = false }
+                DiffyIconButton(symbol: "xmark", label: "Close Review Notes") { self.workspace.showsReview = false }
 
             }
 
             Picker("Scope", selection: self.$scope) {
-                ForEach(["Comparison", "Project", "All projects"], id: \.self) { Text($0).tag($0) }
+                ForEach(["Comparison", "Project", "All Projects"], id: \.self) { Text($0).tag($0) }
             }
             .labelsHidden()
             .pickerStyle(.segmented)
             .controlSize(.small)
 
-            TextField("Search notes…", text: self.$query)
+            TextField("Search Notes…", text: self.$query)
                 .textFieldStyle(.roundedBorder)
 
-            Toggle("Open notes only", isOn: self.$onlyOpen)
+            Toggle("Open Notes Only", isOn: self.$onlyOpen)
                 .font(.system(size: 10))
 
         }
@@ -268,7 +268,7 @@ struct ReviewScreen: View {
                 Button { self.review.remove(annotation) } label: {
                     Image(systemName: "trash")
                 }
-                .accessibilityLabel("Delete annotation")
+                .accessibilityLabel("Delete Annotation")
 
             }
             .buttonStyle(.plain)
@@ -289,7 +289,7 @@ struct ReviewScreen: View {
 
             if self.review.canUndoDelete {
 
-                Button("Undo deleted note") { self.review.undoDelete() }
+                Button("Undo Deleted Note") { self.review.undoDelete() }
                     .font(.system(size: 10))
 
             }
@@ -298,7 +298,7 @@ struct ReviewScreen: View {
                 self.showsExport = true
             } label: {
 
-                Label("Export all \(self.scopedAnnotations.count) notes", systemImage: "square.and.arrow.up")
+                Label("Export All \(self.scopedAnnotations.count) Notes", systemImage: "square.and.arrow.up")
                     .font(.system(size: 11, weight: .medium))
                     .frame(maxWidth: .infinity)
 

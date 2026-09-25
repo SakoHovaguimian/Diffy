@@ -24,18 +24,18 @@ struct GitHubRepositoryBrowser: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
-                .accessibilityLabel("Refresh repositories")
+                .accessibilityLabel("Refresh Repositories")
                 .disabled(self.viewModel.isLoadingRepositories)
 
             }
             HStack {
 
-                TextField("Filter loaded repositories", text: self.$viewModel.search)
+                TextField("Filter Loaded Repositories", text: self.$viewModel.search)
                     .textFieldStyle(.roundedBorder)
                 if !self.viewModel.search.isEmpty {
                     Button("Clear") { self.viewModel.search = "" }
                 }
-                Picker("Clone using", selection: self.$viewModel.cloneTransport) {
+                Picker("Clone Using", selection: self.$viewModel.cloneTransport) {
                     ForEach(GitCloneTransport.allCases) { Text($0.title).tag($0) }
                 }
                 .frame(width: 175)
@@ -46,7 +46,7 @@ struct GitHubRepositoryBrowser: View {
                 .foregroundStyle(self.theme.secondaryText)
 
             if self.viewModel.isImporting {
-                ProgressView("Adding repository…").controlSize(.small)
+                ProgressView("Adding Repository…").controlSize(.small)
             }
 
             LazyVStack(spacing: 0) {
@@ -59,7 +59,7 @@ struct GitHubRepositoryBrowser: View {
             .background(self.theme.surface, in: RoundedRectangle(cornerRadius: 10))
 
             if self.viewModel.isLoadingRepositories {
-                ProgressView("Loading repositories…").controlSize(.small)
+                ProgressView("Loading Repositories…").controlSize(.small)
             } else if self.viewModel.visibleRepositories.isEmpty {
                 Text(self.viewModel.search.isEmpty ? "No repositories are visible to this account. Check the app installation or token's repository access, then refresh." : "No loaded repositories match this filter.")
                     .font(.system(size: 12))
@@ -67,12 +67,12 @@ struct GitHubRepositoryBrowser: View {
             }
 
             if self.viewModel.hasMoreRepositories {
-                Button("Load more repositories") { Task { await self.viewModel.loadRepositories(loadMore: true) } }
+                Button("Load More Repositories") { Task { await self.viewModel.loadRepositories(loadMore: true) } }
                     .disabled(self.viewModel.isLoadingRepositories)
             }
 
             if let url = self.viewModel.accountService.configuration.installationURL {
-                Link("Manage GitHub App repository access ↗", destination: url)
+                Link("Manage GitHub App Repository Access ↗", destination: url)
             }
 
         }
@@ -109,12 +109,12 @@ struct GitHubRepositoryBrowser: View {
             Button("Link") { chooseFolder(repository, clone: false) }
                 .fixedSize(horizontal: true, vertical: false)
                 .layoutPriority(1)
-                .accessibilityLabel("Link folder")
-                .help("Link an existing local folder")
+                .accessibilityLabel("Link Folder")
+                .help("Link An Existing Local Folder")
             Button("Clone") { chooseFolder(repository, clone: true) }
                 .fixedSize(horizontal: true, vertical: false)
                 .layoutPriority(1)
-                .help("Clone into a local folder")
+                .help("Clone Into A Local Folder")
 
         }
         .frame(width: 140, alignment: .trailing)

@@ -1,0 +1,30 @@
+{
+  "catppuccin": {
+    "extension": "catppuccin.catppuccin-vsc-icons-1.26.0",
+    "source": "https://github.com/catppuccin/vscode-icons",
+    "dark": "dist/mocha/theme.json",
+    "light": "dist/latte/theme.json",
+    "notices": ["LICENSE.txt"]
+  },
+  "catppuccinPerfect": {
+    "extension": "thang-nm.catppuccin-perfect-icons-0.21.33",
+    "source": "https://github.com/thang-nm/Catppuccin-Perfect-Icons",
+    "dark": "themes/mocha/theme.json",
+    "light": "themes/latte/theme.json",
+    "notices": ["LICENSE.txt"]
+  },
+  "catppuccinNoctis": {
+    "extension": "alexdauenhauer.catppuccin-noctis-icons-0.3.0",
+    "source": "https://github.com/alexdauenhauer/catppuccin-noctis-icons",
+    "dark": "src/catppuccin-noctis-icon-theme.modified.json",
+    "light": "src/catppuccin-noctis-icon-theme.modified.json",
+    "notices": ["LICENSE.txt"]
+  },
+  "newage": {
+    "extension": "bynyck.newage-icons-1.2.0",
+    "source": "https://github.com/bynyck/newage-icons",
+    "dark": "themes/newage-icon-theme.json",
+    "light": "themes/newage-icon-theme.json",
+    "notices": ["LICENSE.txt", "SETI_ATTRIBUTION.md", "TRADEMARKS.md"]
+  }
+}

@@ -41,15 +41,15 @@ struct WorkspaceHeader: View {
                 }
 
                 Spacer()
-                DiffyBadge(title: "\(self.repository.snapshot?.changes.count ?? self.viewModel.project.changeCount) changes", color: self.theme.modified)
+                DiffyBadge(title: "\(self.repository.snapshot?.changes.count ?? self.viewModel.project.changeCount) Changes", color: self.theme.modified)
 
-                DiffyIconButton(symbol: "pencil", label: "Edit project") {
+                DiffyIconButton(symbol: "pencil", label: "Edit Project") {
                     self.viewModel.editProject(self.viewModel.project)
                 }
 
                 DiffyIconButton(
                     symbol: self.viewModel.favorites.contains(self.viewModel.project.id) ? "star.fill" : "star",
-                    label: "Favorite project"
+                    label: "Favorite Project"
                 ) {
                     self.viewModel.toggleFavorite(self.viewModel.project)
                 }
@@ -62,7 +62,7 @@ struct WorkspaceHeader: View {
 
                     HStack(spacing: self.contentSize.scaled(20)) {
 
-                        navigationButton("Working tree", symbol: ComparisonMode.workingTree.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == .workingTree) {
+                        navigationButton("Working Tree", symbol: ComparisonMode.workingTree.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == .workingTree) {
                             self.viewModel.selectMode(.workingTree)
                         }
 

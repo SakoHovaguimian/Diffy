@@ -15,7 +15,7 @@ struct CommandPaletteScreen: View {
             HStack(spacing: 12) {
 
                 Image(systemName: "magnifyingglass").foregroundStyle(self.theme.accent)
-                TextField("Where would you like to go?", text: self.$query)
+                TextField("Where Would You Like To Go?", text: self.$query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 17))
                     .focused(self.$focused)
@@ -30,13 +30,13 @@ struct CommandPaletteScreen: View {
 
                 VStack(alignment: .leading, spacing: 3) {
 
-                    command("Open review notes", symbol: "text.bubble") { self.workspace.showsReview = true }
-                    command("Create a Bucket", symbol: "folder.badge.plus") { self.workspace.addBucket() }
-                    command("Workspace overview", symbol: "square.grid.2x2") { self.workspace.showOverview() }
-                    command("Project overview", symbol: "square.grid.2x2") { self.workspace.showDashboard() }
+                    command("Open Review Notes", symbol: "text.bubble") { self.workspace.showsReview = true }
+                    command("Create A Bucket", symbol: "folder.badge.plus") { self.workspace.addBucket() }
+                    command("Workspace Overview", symbol: "square.grid.2x2") { self.workspace.showOverview() }
+                    command("Project Overview", symbol: "square.grid.2x2") { self.workspace.showDashboard() }
 
                     ForEach(ComparisonMode.allCases) { mode in
-                        command("Compare · \(mode.rawValue)", symbol: mode.symbol) { self.workspace.selectMode(mode) }
+                        command("Compare · \(mode.displayName)", symbol: mode.symbol) { self.workspace.selectMode(mode) }
                     }
 
                     ForEach(self.workspace.files) { file in
@@ -51,7 +51,7 @@ struct CommandPaletteScreen: View {
 
             HStack {
 
-                Text("Navigate with Tab · Return to open")
+                Text("Navigate With Tab · Return To Open")
                 Spacer()
                 Text("\(self.workspace.project.displayName)")
 

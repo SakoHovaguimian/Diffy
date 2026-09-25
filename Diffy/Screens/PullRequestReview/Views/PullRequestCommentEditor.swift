@@ -11,20 +11,20 @@ struct PullRequestCommentEditor: View {
 
         VStack(alignment: .leading, spacing: 16) {
 
-            Text("Add review comment").font(.system(size: 20, weight: .semibold))
-            Text("\(self.draft.path) · \(self.draft.side == "LEFT" ? "old" : "new") line \(self.draft.line)")
+            Text("Add Review Comment").font(.system(size: 20, weight: .semibold))
+            Text("\(self.draft.path) · \(self.draft.side == "LEFT" ? "Old" : "New") Line \(self.draft.line)")
                 .font(.system(size: 11, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
             TextEditor(text: self.$draft.body)
                 .font(.system(size: 13)).frame(minHeight: 160)
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(self.theme.border))
-                .accessibilityLabel("Review comment. Markdown supported.")
+                .accessibilityLabel("Review Comment. Markdown supported.")
             Text("Markdown supported. This comment is sent when you submit your review.")
                 .font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
             HStack {
 
                 Button("Cancel", role: .cancel) { self.dismiss() }
                 Spacer()
-                Button("Add to review") {
+                Button("Add To Review") {
 
                     self.save(self.draft)
                     self.dismiss()

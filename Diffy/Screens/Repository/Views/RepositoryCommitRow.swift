@@ -45,7 +45,7 @@ struct RepositoryCommitRow: View {
 
         }
         .buttonStyle(.plain)
-        .help("Inspect commit \(self.commit.shortID)")
+        .help("Inspect Commit \(self.commit.shortID)")
         .accessibilityLabel("\(self.commit.title), by \(self.commit.authorName), \(self.commit.shortID)")
 
     }

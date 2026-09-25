@@ -17,7 +17,7 @@ struct RepositoryPathNavigation: View {
 
             HStack(spacing: 8) {
 
-                TextField("Find files", text: self.$query)
+                TextField("Find Files", text: self.$query)
                     .textFieldStyle(.roundedBorder)
                 if !self.query.isEmpty {
                     Button("Clear") { self.query = "" }
@@ -59,10 +59,21 @@ struct RepositoryPathNavigation: View {
 
                             HStack(alignment: .top, spacing: 8) {
 
-                                Image(systemName: row.isFolder ? ((self.expandedFolders.contains(row.path) || !self.query.isEmpty) ? "chevron.down" : "chevron.right") : "doc.text")
-                                    .font(.system(size: 10))
-                                    .frame(width: 13)
-                                    .foregroundStyle(self.theme.secondaryText)
+                                if self.layout == .tree {
+
+                                    Image(systemName: self.expandedFolders.contains(row.path) || !self.query.isEmpty ? "chevron.down" : "chevron.right")
+                                        .font(.system(size: 10))
+                                        .frame(width: 13)
+                                        .foregroundStyle(self.theme.secondaryText)
+                                        .opacity(row.isFolder ? 1 : 0)
+                                        .accessibilityHidden(true)
+
+                                }
+                                DiffyPathIcon(
+                                    path: row.path,
+                                    isFolder: row.isFolder,
+                                    isExpanded: self.expandedFolders.contains(row.path) || !self.query.isEmpty
+                                )
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(row.title)
                                         .font(.system(size: 11, weight: row.isFolder ? .semibold : .regular))

@@ -2,7 +2,7 @@ import Foundation
 
 enum ImageComparisonMode: String, CaseIterable, Identifiable {
 
-    case sideBySide = "Side by side"
+    case sideBySide = "Side By Side"
     case overlay = "Overlay"
     case slider = "Slider"
     case difference = "Difference"

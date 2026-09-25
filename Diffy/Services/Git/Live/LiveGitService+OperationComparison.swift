@@ -70,7 +70,7 @@ extension LiveGitService {
 
         return GitOperationComparison(
             selection: selection,
-            title: "Fetch complete",
+            title: "Fetch Complete",
             detail: detail,
             emptyMessage: selection == nil ? "No previous tracked upstream revision is available to compare. Choose two references in Branches to inspect fetched code." : "No file changes were fetched for the tracked upstream branch."
         )

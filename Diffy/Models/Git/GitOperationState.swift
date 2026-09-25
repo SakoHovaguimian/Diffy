@@ -16,11 +16,11 @@ enum GitOperationState: Codable, Hashable, Sendable {
 
         switch self {
 
-        case .none: "No operation in progress"
-        case .merging: "Merge in progress"
-        case .rebasing: "Rebase in progress"
-        case .cherryPicking: "Cherry-pick in progress"
-        case .reverting: "Revert in progress"
+        case .none: "No Operation In Progress"
+        case .merging: "Merge In Progress"
+        case .rebasing: "Rebase In Progress"
+        case .cherryPicking: "Cherry-Pick In Progress"
+        case .reverting: "Revert In Progress"
 
         }
 

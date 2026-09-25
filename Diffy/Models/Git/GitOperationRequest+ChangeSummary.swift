@@ -20,12 +20,12 @@ extension GitOperationRequest {
 
         switch self {
 
-        case .pull: "Pull complete"
-        case .fetch: "Fetch complete"
-        case .startMerge, .continueMerge: "Merge complete"
-        case .startRebase, .continueRebase: "Rebase complete"
-        case .switchBranch: "Branch checked out"
-        default: "\(self.title) complete"
+        case .pull: "Pull Complete"
+        case .fetch: "Fetch Complete"
+        case .startMerge, .continueMerge: "Merge Complete"
+        case .startRebase, .continueRebase: "Rebase Complete"
+        case .switchBranch: "Branch Checked Out"
+        default: "\(self.title) Complete"
 
         }
 

@@ -28,7 +28,7 @@ struct MergeScreen: View {
 
                 HSplitView {
 
-                    sourcePane(.base, detail: "Shared starting point", source: self.viewModel.conflict.base, color: self.theme.secondaryText)
+                    sourcePane(.base, detail: "Shared Starting Point", source: self.viewModel.conflict.base, color: self.theme.secondaryText)
                     sourcePane(.yours, detail: "feature/refine-the-details", source: self.viewModel.conflict.yours, color: self.theme.accent)
                     sourcePane(.theirs, detail: "main", source: self.viewModel.conflict.theirs, color: self.theme.added)
 
@@ -44,7 +44,7 @@ struct MergeScreen: View {
 
                 Text("Temporary result · source fixtures never change")
                 Spacer()
-                Text("\(self.viewModel.resolvedCount) of \(self.viewModel.conflicts.count) resolved")
+                Text("\(self.viewModel.resolvedCount) Of \(self.viewModel.conflicts.count) Resolved")
 
             }
             .font(self.contentSize.font(size: 10))
@@ -65,7 +65,7 @@ struct MergeScreen: View {
             Image(systemName: "arrow.triangle.merge").foregroundStyle(self.theme.modified)
             VStack(alignment: .leading, spacing: self.contentSize.scaled(4)) {
 
-                Text("Bring both sides together.").font(self.contentSize.font(size: 17, weight: .semibold))
+                Text("Bring Both Sides Together.").font(self.contentSize.font(size: 17, weight: .semibold))
                 Text("NavigationService.swift · mock three-way merge").font(self.contentSize.font(size: 10)).foregroundStyle(self.theme.secondaryText)
 
             }
@@ -82,8 +82,8 @@ struct MergeScreen: View {
 
         HStack(spacing: self.contentSize.scaled(8)) {
 
-            DiffyIconButton(symbol: "chevron.left", label: "Previous conflict") { self.viewModel.navigate(-1) }
-            DiffyIconButton(symbol: "chevron.right", label: "Next conflict") { self.viewModel.navigate(1) }
+            DiffyIconButton(symbol: "chevron.left", label: "Previous Conflict") { self.viewModel.navigate(-1) }
+            DiffyIconButton(symbol: "chevron.right", label: "Next Conflict") { self.viewModel.navigate(1) }
 
             Text(self.viewModel.conflict.title)
                 .font(self.contentSize.font(size: 11, weight: .medium))
@@ -123,7 +123,7 @@ struct MergeScreen: View {
 
                     Text(side.rawValue).font(self.contentSize.font(size: 12, weight: .semibold)).foregroundStyle(color)
                     Spacer()
-                    DiffyIconButton(symbol: "text.bubble", label: "Annotate \(side.rawValue) conflict") {
+                    DiffyIconButton(symbol: "text.bubble", label: "Annotate \(side.rawValue) Conflict") {
                         annotate(source, side: side)
                     }
 
@@ -160,7 +160,7 @@ struct MergeScreen: View {
                 Spacer()
                 Button("Annotate") { annotate(self.viewModel.result, side: .result) }
                 Button("Undo") { self.viewModel.undo() }.disabled(!self.viewModel.canUndo)
-                Button("Reset draft") { self.viewModel.reset() }
+                Button("Reset Draft") { self.viewModel.reset() }
 
             }
             .font(self.contentSize.font(size: 10))
@@ -181,11 +181,11 @@ struct MergeScreen: View {
 
             HStack {
 
-                Text(self.viewModel.decisions[self.viewModel.conflict.id]?.rawValue ?? "Unresolved")
+                Text(self.viewModel.decisions[self.viewModel.conflict.id]?.displayName ?? "Unresolved")
                     .font(self.contentSize.font(size: 10))
                     .foregroundStyle(self.theme.secondaryText)
                 Spacer()
-                Button("Mark resolved") { self.viewModel.markResolved() }
+                Button("Mark Resolved") { self.viewModel.markResolved() }
                     .font(self.contentSize.font(size: 11))
                     .buttonStyle(.borderedProminent)
 
@@ -203,10 +203,10 @@ struct MergeScreen: View {
 
         return layout {
 
-            Button("Accept yours") { self.viewModel.accept(.yours) }
-            Button("Accept theirs") { self.viewModel.accept(.theirs) }
-            Button("Both: yours → theirs") { self.viewModel.accept(.both) }
-            Button("Reject both · keep base") { self.viewModel.accept(.base) }
+            Button("Accept Yours") { self.viewModel.accept(.yours) }
+            Button("Accept Theirs") { self.viewModel.accept(.theirs) }
+            Button("Both: Yours → Theirs") { self.viewModel.accept(.both) }
+            Button("Reject Both · Keep Base") { self.viewModel.accept(.base) }
 
         }
         .font(self.contentSize.font(size: 10))

@@ -309,7 +309,7 @@ final class RepositoryViewModel: ViewModel {
         }
 
         let selection = self.currentMode == .staged ? ComparisonSelection.staged : .workingTree
-        inspect(selection, title: selection.title)
+        inspect(selection, title: selection.displayTitle)
 
     }
 
@@ -366,7 +366,7 @@ final class RepositoryViewModel: ViewModel {
     func compareBranches() {
 
         let selection = ComparisonSelection(left: .revision(self.branchBase), right: .revision(self.branchTarget), usesMergeBase: true)
-        showComparisonReview(selection, title: "Compare branches", detail: "\(self.branchTarget) relative to merge base with \(self.branchBase)", mode: .branches, startsExpanded: false)
+        showComparisonReview(selection, title: "Compare Branches", detail: "\(self.branchTarget) relative to merge base with \(self.branchBase)", mode: .branches, startsExpanded: false)
 
     }
 
@@ -466,7 +466,7 @@ final class RepositoryViewModel: ViewModel {
 
         guard let reference, let remote = self.linkedRepository?.remoteName, self.canMutate else { return }
         self.isOperating = true
-        self.operationTitle = "Fetch pull request #\(pullRequest.number)"
+        self.operationTitle = "Fetch Pull Request #\(pullRequest.number)"
         self.pullRequestError = nil
         self.operationTask = Task {
 

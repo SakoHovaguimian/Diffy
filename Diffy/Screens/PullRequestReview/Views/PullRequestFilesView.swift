@@ -14,7 +14,7 @@ struct PullRequestFilesView: View {
                 PullRequestFileNavigator(viewModel: self.viewModel, navigator: self.viewModel.fileNavigator)
                     .frame(width: min(self.viewModel.navigatorWidth, navigatorMaximumWidth(in: geometry.size.width)))
                 HorizontalResizeHandle(
-                    label: "Drag to resize changed files",
+                    label: "Drag To Resize Changed Files",
                     resizeGesture: navigatorResizeGesture(availableWidth: geometry.size.width)
                 )
                 selectedFileContent()
@@ -49,7 +49,7 @@ struct PullRequestFilesView: View {
                 fileHeader(file)
                 fileContent(file)
             } else {
-                DiffyEmptyState(symbol: "doc", title: "No changed files", message: "Files returned by GitHub will appear here.")
+                DiffyEmptyState(symbol: "doc", title: "No Changed Files", message: "Files returned by GitHub will appear here.")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
@@ -64,6 +64,7 @@ struct PullRequestFilesView: View {
 
             HStack(spacing: 12) {
 
+                DiffyPathIcon(path: file.filename)
                 Text(file.filename).font(.system(size: 12, weight: .semibold, design: .monospaced)).textSelection(.enabled)
                 Spacer()
                 Toggle("Viewed", isOn: Binding(
@@ -74,7 +75,7 @@ struct PullRequestFilesView: View {
 
             }
             if let previous = file.previousFilename {
-                Text("Renamed from \(previous)").font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
+                Text("Renamed From \(previous)").font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
             }
             ViewThatFits(in: .horizontal) {
 
@@ -110,7 +111,7 @@ struct PullRequestFilesView: View {
             Text("+\(file.additions)").foregroundStyle(self.theme.added)
             Text("−\(file.deletions)").foregroundStyle(self.theme.removed)
             if let url = file.blobUrl {
-                Link("Open file on GitHub", destination: url)
+                Link("Open File On GitHub", destination: url)
             }
 
         }
@@ -122,11 +123,11 @@ struct PullRequestFilesView: View {
 
         HStack(spacing: 8) {
 
-            Text("Diff layout")
+            Text("Diff Layout")
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
                 .layoutPriority(1)
-            Picker("Diff layout", selection: self.$viewModel.isUnified) {
+            Picker("Diff Layout", selection: self.$viewModel.isUnified) {
 
                 Text("Unified").tag(true)
                 Text("Split").tag(false)
@@ -136,12 +137,12 @@ struct PullRequestFilesView: View {
             .pickerStyle(.segmented)
             .frame(width: 135)
             Button { self.viewModel.moveFile(by: -1) } label: { Image(systemName: "chevron.up") }
-                .accessibilityLabel("Previous file")
-                .help("Previous file")
+                .accessibilityLabel("Previous File")
+                .help("Previous File")
                 .disabled(!self.viewModel.canMoveFile(by: -1))
             Button { self.viewModel.moveFile(by: 1) } label: { Image(systemName: "chevron.down") }
-                .accessibilityLabel("Next file")
-                .help("Next file")
+                .accessibilityLabel("Next File")
+                .help("Next File")
                 .disabled(!self.viewModel.canMoveFile(by: 1))
 
         }
@@ -184,7 +185,7 @@ struct PullRequestFilesView: View {
                 ForEach(Array(self.viewModel.lines.enumerated()), id: \.element.id) { index, line in
 
                     if hasGap(before: index) {
-                        Text("⋯ Unchanged lines omitted ⋯")
+                Text("⋯ Unchanged Lines Omitted ⋯")
                             .font(.system(size: 11, design: .monospaced))
                             .foregroundStyle(self.theme.secondaryText)
                             .padding(10)

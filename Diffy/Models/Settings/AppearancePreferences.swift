@@ -2,7 +2,7 @@ import Foundation
 
 struct AppearancePreferences: Codable, Equatable {
 
-    var theme: ThemeSelection = .porcelain
+    var theme: ThemeSelection = .light
     var accentHex: String = "7862D9"
     var density: String = "Comfortable"
     var cornerRadius: Double = 8

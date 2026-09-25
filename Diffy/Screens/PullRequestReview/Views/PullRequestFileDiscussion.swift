@@ -19,7 +19,7 @@ struct PullRequestFileDiscussion: View {
 
                         HStack {
 
-                            Label("Pending · \(draft.side == "LEFT" ? "old" : "new") line \(draft.line)", systemImage: "text.bubble")
+                            Label("Pending · \(draft.side == "LEFT" ? "Old" : "New") Line \(draft.line)", systemImage: "text.bubble")
                                 .font(.system(size: 11, weight: .semibold)).foregroundStyle(self.theme.accent)
                             Spacer()
                             Button("Edit") { self.viewModel.commentEditor = draft }

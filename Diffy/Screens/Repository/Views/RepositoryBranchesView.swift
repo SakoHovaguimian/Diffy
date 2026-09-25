@@ -11,14 +11,14 @@ struct RepositoryBranchesView: View {
 
             VStack(alignment: .leading, spacing: 26) {
 
-                DiffyPageHeading(eyebrow: "Branches & tags", title: "See where the work goes.", detail: "Compare without checking out. Switch branches when you're ready to move your working tree.")
+                DiffyPageHeading(eyebrow: "Branches & Tags", title: "See Where The Work Goes.", detail: "Compare without checking out. Switch branches when you're ready to move your working tree.")
                 comparisonPicker()
                 HStack {
 
-                    Text("Local branches").font(.system(size: 16, weight: .semibold))
+                    Text("Local Branches").font(.system(size: 16, weight: .semibold))
                     Spacer()
-                    TextField("New branch name", text: self.$viewModel.newBranchName).textFieldStyle(.roundedBorder).frame(maxWidth: 250)
-                    Button("Create branch") { self.viewModel.request(.createBranch(name: self.viewModel.newBranchName)) }
+                    TextField("New Branch Name", text: self.$viewModel.newBranchName).textFieldStyle(.roundedBorder).frame(maxWidth: 250)
+                    Button("Create Branch") { self.viewModel.request(.createBranch(name: self.viewModel.newBranchName)) }
                         .disabled(!self.viewModel.canMutate || self.viewModel.newBranchName.isEmpty)
 
                 }
@@ -26,7 +26,7 @@ struct RepositoryBranchesView: View {
 
                 if !(self.viewModel.snapshot?.remoteBranches.isEmpty ?? true) {
 
-                    Text("Remote branches").font(.system(size: 16, weight: .semibold))
+                    Text("Remote Branches").font(.system(size: 16, weight: .semibold))
                     branchList(self.viewModel.snapshot?.remoteBranches ?? [])
 
                 }
@@ -106,10 +106,10 @@ struct RepositoryBranchesView: View {
                     Menu {
 
                         if !branch.isRemote && !branch.isCurrent {
-                            Button("Check out") { self.viewModel.request(.switchBranch(name: branch.name)) }
+                            Button("Check Out") { self.viewModel.request(.switchBranch(name: branch.name)) }
                         }
-                        Button("Merge into current branch…") { self.viewModel.request(.startMerge(branch: branch.name)) }
-                        Button("Rebase current branch onto this…") { self.viewModel.request(.startRebase(onto: branch.name)) }
+                        Button("Merge Into Current Branch…") { self.viewModel.request(.startMerge(branch: branch.name)) }
+                        Button("Rebase Current Branch Onto This…") { self.viewModel.request(.startRebase(onto: branch.name)) }
 
                     } label: {
                         Image(systemName: "ellipsis")
@@ -118,7 +118,7 @@ struct RepositoryBranchesView: View {
                     .menuIndicator(.hidden)
                     .frame(width: 24)
                     .disabled(!self.viewModel.canMutate || branch.isCurrent)
-                    .accessibilityLabel("Actions for \(branch.name)")
+                    .accessibilityLabel("Actions For \(branch.name)")
 
                 }
                 .padding(16)

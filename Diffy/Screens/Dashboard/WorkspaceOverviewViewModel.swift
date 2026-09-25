@@ -14,6 +14,10 @@ final class WorkspaceOverviewViewModel: ViewModel {
     @Published private(set) var activeProjects: [OverviewProjectChange] = []
     @Published private(set) var assignedPullRequests: [AssignedPullRequestSummary] = []
     @Published private(set) var reviewRequestedPullRequests: [AssignedPullRequestSummary] = []
+    @Published var assignedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated
+    @Published var reviewRequestedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated
+    @Published var collapsedAssignedGroups: Set<OverviewPullRequestGroupID> = []
+    @Published var collapsedReviewRequestedGroups: Set<OverviewPullRequestGroupID> = []
     @Published private(set) var hasMoreAssignedPullRequests = false
     @Published private(set) var hasMoreReviewRequestedPullRequests = false
     @Published private(set) var isRefreshing = false
@@ -27,6 +31,14 @@ final class WorkspaceOverviewViewModel: ViewModel {
     @Published private(set) var projectError: String?
     @Published private(set) var assignedError: String?
     @Published private(set) var reviewRequestedError: String?
+
+    var sortedAssignedPullRequests: [AssignedPullRequestSummary] {
+        self.assignedSortOrder.sorted(self.assignedPullRequests)
+    }
+
+    var sortedReviewRequestedPullRequests: [AssignedPullRequestSummary] {
+        self.reviewRequestedSortOrder.sorted(self.reviewRequestedPullRequests)
+    }
 
     init(
         runtime: AppRuntime,

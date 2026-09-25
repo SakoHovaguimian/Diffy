@@ -37,7 +37,7 @@ struct ComparisonSourceBar: View {
             .frame(maxWidth: self.contentSize.scaled(270))
 
             Spacer()
-            DiffyBadge(title: "Sample comparison", color: self.theme.secondaryText)
+            DiffyBadge(title: "Sample Comparison", color: self.theme.secondaryText)
 
         }
         .font(self.contentSize.font(size: 11))

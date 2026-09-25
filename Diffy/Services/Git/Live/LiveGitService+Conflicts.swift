@@ -37,7 +37,7 @@ extension LiveGitService {
         let segment = MergeConflict(id: 0, title: path, base: String(decoding: base, as: UTF8.self), yours: String(decoding: yours, as: UTF8.self), theirs: String(decoding: incoming, as: UTF8.self))
         let fingerprint = SHA256.hash(data: base + yours + incoming).map { String(format: "%02x", $0) }.joined()
 
-        return GitConflictDocument(path: path, kind: conflict, operation: snapshot.operation, baseLabel: "Base", yoursLabel: "Your changes", theirsLabel: "Incoming changes", segments: [.conflict(segment)], isBinary: isBinary, baseSize: base.count, yoursSize: yours.count, theirsSize: incoming.count, fingerprint: fingerprint)
+        return GitConflictDocument(path: path, kind: conflict, operation: snapshot.operation, baseLabel: "Base", yoursLabel: "Your Changes", theirsLabel: "Incoming Changes", segments: [.conflict(segment)], isBinary: isBinary, baseSize: base.count, yoursSize: yours.count, theirsSize: incoming.count, fingerprint: fingerprint)
 
     }
 

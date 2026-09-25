@@ -19,7 +19,7 @@ struct ComparisonScreen: View {
                 FileNavigatorScreen(workspace: self.workspace, viewModel: self.workspace.fileNavigatorViewModel)
                     .frame(width: self.navigatorWidth)
 
-                HorizontalResizeHandle(label: "Drag to resize changed files", resizeGesture: navigatorResizeGesture())
+                HorizontalResizeHandle(label: "Drag To Resize Changed Files", resizeGesture: navigatorResizeGesture())
 
                 comparisonContent()
                     .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
@@ -75,7 +75,7 @@ struct ComparisonScreen: View {
             case .binary:
                 DiffyEmptyState(
                     symbol: "doc.zipper",
-                    title: "A little beyond plain text",
+                    title: "A Little Beyond Plain Text",
                     message: "\(file.name) is a binary file. The sample metadata reports \(file.size.formatted()) bytes. A textual comparison is unavailable."
                 )
 
@@ -83,7 +83,7 @@ struct ComparisonScreen: View {
 
         } else {
 
-            DiffyEmptyState(symbol: "doc.text.magnifyingglass", title: "Choose a file", message: "Select a file in the navigator to explore its changes.")
+            DiffyEmptyState(symbol: "doc.text.magnifyingglass", title: "Choose A File", message: "Select a file in the navigator to explore its changes.")
 
         }
 

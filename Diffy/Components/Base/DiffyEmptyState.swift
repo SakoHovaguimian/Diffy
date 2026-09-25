@@ -38,7 +38,7 @@ struct DiffyEmptyState: View {
 
     DiffyEmptyState(
         symbol: "doc.text.magnifyingglass",
-        title: "Choose a file",
+        title: "Choose A File",
         message: "Select a file to inspect its changes."
     )
     .frame(width: 420, height: 280)

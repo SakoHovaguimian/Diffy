@@ -19,7 +19,7 @@ struct GitHubConversationResponse: Decodable, Sendable {
         PullRequestConversationEntry(
             remoteID: self.id,
             kind: kind,
-            author: self.user?.login ?? "Deleted account",
+            author: self.user?.login ?? "Deleted Account",
             body: self.body ?? "",
             date: self.submittedAt ?? self.createdAt,
             webURL: self.htmlUrl,
