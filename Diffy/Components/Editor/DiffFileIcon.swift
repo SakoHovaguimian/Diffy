@@ -5,6 +5,7 @@ struct DiffFileIcon: View {
     let file: DiffFile
     var size: CGFloat = 12
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
 
     private var symbol: String {
 
@@ -41,9 +42,9 @@ struct DiffFileIcon: View {
     var body: some View {
 
         Image(systemName: self.symbol)
-            .font(.system(size: self.size, weight: .medium))
+            .font(self.contentSize.font(size: self.size, weight: .medium))
             .foregroundStyle(self.color)
-            .frame(width: self.size + 6)
+            .frame(width: self.contentSize.scaled(self.size + 6))
             .accessibilityHidden(true)
 
     }

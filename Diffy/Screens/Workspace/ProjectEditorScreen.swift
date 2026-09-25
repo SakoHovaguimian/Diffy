@@ -3,7 +3,7 @@ import SwiftUI
 struct ProjectEditorScreen: View {
 
     @State var draft: NewProjectDraft
-    let bucket: Bucket
+    let bucket: Bucket?
     let save: (NewProjectDraft) -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.diffyTheme) private var theme
@@ -15,14 +15,14 @@ struct ProjectEditorScreen: View {
 
     var body: some View {
 
-        let accent = Color(hex: self.bucket.accentHex)
+        let accent = self.bucket.map { Color(hex: $0.accentHex) } ?? self.theme.accent
 
         VStack(alignment: .leading, spacing: 20) {
 
             Text("Add New Project")
                 .font(.system(size: 25, weight: .semibold))
 
-            Text("Name this folder and choose an icon. Its color follows the \(self.bucket.title) Bucket.")
+            Text(projectDescription())
                 .font(.system(size: 12))
                 .foregroundStyle(self.theme.secondaryText)
 
@@ -86,7 +86,7 @@ struct ProjectEditorScreen: View {
 
             HStack {
 
-                Label(self.bucket.title, systemImage: self.bucket.symbol)
+                Label(self.bucket?.title ?? "Unassigned", systemImage: self.bucket?.symbol ?? "tray")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(accent)
 
@@ -108,6 +108,16 @@ struct ProjectEditorScreen: View {
         .padding(28)
         .frame(width: 500)
         .background(self.theme.background)
+
+    }
+
+    private func projectDescription() -> String {
+
+        guard let bucket = self.bucket else {
+            return "Name this folder and choose an icon. It will start in Unassigned."
+        }
+
+        return "Name this folder and choose an icon. Its color follows the \(bucket.title) Bucket."
 
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct CodeLineView: View {
 
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
     @EnvironmentObject private var settings: SettingsViewModel
 
     let source: String?
@@ -13,6 +14,7 @@ struct CodeLineView: View {
     let annotated: Bool
     let emphasis: String?
     let action: () -> Void
+    var edit: (() -> Void)? = nil
     let annotate: () -> Void
 
     private var changeColor: Color {
@@ -76,17 +78,19 @@ struct CodeLineView: View {
                 emphasis: self.settings.editor.highlightLevel == "Line" ? nil : self.emphasis
             ))
             .font(editorFont())
-            .lineSpacing(5)
-            .frame(maxWidth: .infinity, minHeight: self.settings.editor.lineHeight, alignment: .topLeading)
-            .padding(.top, 5)
-            .padding(.trailing, 12)
+            .lineSpacing(self.contentSize.scaled(5))
+            .frame(maxWidth: .infinity, minHeight: self.contentSize.scaled(self.settings.editor.lineHeight), alignment: .topLeading)
+            .padding(.top, self.contentSize.scaled(5))
+            .padding(.trailing, self.contentSize.scaled(12))
             .fixedSize(horizontal: !self.settings.editor.wrapLines, vertical: true)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: sourceAction)
+            .help(self.edit == nil ? "Select this line" : "Click to edit the working copy")
 
         }
-        .frame(maxWidth: .infinity, minHeight: self.settings.editor.lineHeight, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: self.contentSize.scaled(self.settings.editor.lineHeight), alignment: .leading)
         .background(self.backgroundColor)
         .contentShape(Rectangle())
-        .onTapGesture(perform: self.action)
         .contextMenu {
 
             if self.number != nil {
@@ -100,50 +104,66 @@ struct CodeLineView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(self.side.rawValue), line \(self.number.map(String.init) ?? "empty"), \(self.source ?? "")")
         .accessibilityAction(named: "Annotate", self.annotate)
+        .accessibilityAction(named: "Edit working copy") { self.edit?() }
 
     }
 
     private func gutter() -> some View {
 
-        HStack(spacing: 4) {
+        HStack(spacing: self.contentSize.scaled(4)) {
 
             if self.annotated {
 
                 Image(systemName: "text.bubble.fill")
                     .foregroundStyle(self.theme.accent)
-                    .font(.system(size: 8))
+                    .font(self.contentSize.font(size: 8))
 
             } else {
 
                 Text(self.changeMarker)
                     .foregroundStyle(self.changeColor)
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(self.contentSize.font(size: 10, design: .monospaced))
 
             }
 
             if self.settings.editor.showLineNumbers {
 
                 Text(self.number.map(String.init) ?? "")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(self.contentSize.font(size: 10, design: .monospaced))
                     .foregroundStyle(self.selected ? self.theme.accent : self.theme.secondaryText.opacity(0.65))
-                    .frame(width: 25, alignment: .trailing)
+                    .frame(width: self.contentSize.scaled(25), alignment: .trailing)
 
             }
 
         }
-        .frame(width: self.settings.editor.showLineNumbers ? 54 : 20, height: self.settings.editor.lineHeight)
-        .padding(.trailing, 8)
+        .frame(
+            width: self.contentSize.scaled(self.settings.editor.showLineNumbers ? 54 : 20),
+            height: self.contentSize.scaled(self.settings.editor.lineHeight)
+        )
+        .padding(.trailing, self.contentSize.scaled(8))
         .background(self.status == .identical || self.source == nil ? .clear : self.changeColor.opacity(0.12))
+        .contentShape(Rectangle())
+        .onTapGesture(perform: self.action)
+
+    }
+
+    private func sourceAction() {
+
+        if let edit = self.edit {
+            edit()
+        } else {
+            self.action()
+        }
 
     }
 
     private func editorFont() -> Font {
 
         if self.settings.editor.fontName == "SF Mono" {
-            return .system(size: self.settings.editor.fontSize, design: .monospaced)
+            return self.contentSize.font(size: self.settings.editor.fontSize, design: .monospaced)
         }
 
-        return .custom(self.settings.editor.fontName, size: self.settings.editor.fontSize)
+        return .custom(self.settings.editor.fontName, size: self.contentSize.scaled(self.settings.editor.fontSize))
 
     }
 

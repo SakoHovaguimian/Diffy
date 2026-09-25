@@ -5,6 +5,7 @@ struct FileNavigatorScreen: View {
     @ObservedObject var workspace: WorkspaceViewModel
     @ObservedObject var viewModel: FileNavigatorViewModel
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
     @State private var hoveredEntryID: String?
 
     var body: some View {
@@ -17,11 +18,11 @@ struct FileNavigatorScreen: View {
 
             if self.viewModel.entries(self.workspace.project.files, mode: self.workspace.mode).isEmpty {
 
-                VStack(spacing: 12) {
+                VStack(spacing: self.contentSize.scaled(12)) {
 
                     DiffyEmptyState(symbol: "line.3.horizontal.decrease.circle", title: "No matching files", message: "Try a different name or clear the active filters.")
                     Button("Clear filters") { self.viewModel.clearFilters() }
-                        .padding(.bottom, 24)
+                        .padding(.bottom, self.contentSize.scaled(24))
 
                 }
 
@@ -29,15 +30,15 @@ struct FileNavigatorScreen: View {
 
                 ScrollView {
 
-                    LazyVStack(spacing: 2) {
+                    LazyVStack(spacing: self.contentSize.scaled(2)) {
 
                         ForEach(self.viewModel.entries(self.workspace.project.files, mode: self.workspace.mode)) { entry in
                             entryRow(entry)
                         }
 
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, self.contentSize.scaled(8))
+                    .padding(.vertical, self.contentSize.scaled(12))
 
                 }
 
@@ -56,25 +57,25 @@ struct FileNavigatorScreen: View {
         HStack {
 
             Text("CHANGED FILES")
-                .font(.system(size: 9, weight: .semibold))
-                .tracking(1.2)
+                .font(self.contentSize.font(size: 9, weight: .semibold))
+                .tracking(self.contentSize.scaled(1.2))
 
             Spacer()
 
             Text("\(self.viewModel.visibleFiles(self.workspace.project.files, mode: self.workspace.mode).count)")
-                .font(.system(size: 10, design: .monospaced))
+                .font(self.contentSize.font(size: 10, design: .monospaced))
 
         }
         .foregroundStyle(self.theme.secondaryText)
-        .padding(.horizontal, 16)
-        .padding(.top, 21)
-        .padding(.bottom, 14)
+        .padding(.horizontal, self.contentSize.scaled(16))
+        .padding(.top, self.contentSize.scaled(21))
+        .padding(.bottom, self.contentSize.scaled(14))
 
     }
 
     private func searchField() -> some View {
 
-        HStack(spacing: 7) {
+        HStack(spacing: self.contentSize.scaled(7)) {
 
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(self.theme.secondaryText)
@@ -93,16 +94,16 @@ struct FileNavigatorScreen: View {
             }
 
         }
-        .font(.system(size: 11))
-        .padding(8)
-        .background(self.theme.elevated, in: RoundedRectangle(cornerRadius: 6))
-        .padding(.horizontal, 12)
+        .font(self.contentSize.font(size: 11))
+        .padding(self.contentSize.scaled(8))
+        .background(self.theme.elevated, in: RoundedRectangle(cornerRadius: self.contentSize.scaled(6)))
+        .padding(.horizontal, self.contentSize.scaled(12))
 
     }
 
     private func navigatorOptions() -> some View {
 
-        HStack(spacing: 7) {
+        HStack(spacing: self.contentSize.scaled(7)) {
 
             Menu {
 
@@ -151,11 +152,11 @@ struct FileNavigatorScreen: View {
 
         }
         .menuStyle(.borderlessButton)
-        .font(.system(size: 10))
+        .font(self.contentSize.font(size: 10))
         .foregroundStyle(self.theme.secondaryText)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 13)
-        .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
+        .padding(.horizontal, self.contentSize.scaled(16))
+        .padding(.vertical, self.contentSize.scaled(13))
+        .overlay(alignment: .bottom) { self.theme.border.frame(height: self.contentSize.scaled(1)) }
 
     }
 
@@ -168,39 +169,39 @@ struct FileNavigatorScreen: View {
                 self.workspace.selectFile(file)
             } label: {
 
-                HStack(spacing: 9) {
+                HStack(spacing: self.contentSize.scaled(9)) {
 
                     DiffFileIcon(file: file, size: 13)
 
                     Text(file.name)
-                        .font(.system(size: 11))
+                        .font(self.contentSize.font(size: 11))
                         .lineLimit(1)
                         .truncationMode(.middle)
 
-                    Spacer(minLength: 3)
+                    Spacer(minLength: self.contentSize.scaled(3))
 
                     Image(systemName: file.status.symbol)
-                        .font(.system(size: 9, weight: .bold))
+                        .font(self.contentSize.font(size: 9, weight: .bold))
                         .foregroundStyle(file.status.color(in: self.theme))
-                        .frame(width: 18, height: 18)
-                        .background(file.status.color(in: self.theme).opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+                        .frame(width: self.contentSize.scaled(18), height: self.contentSize.scaled(18))
+                        .background(file.status.color(in: self.theme).opacity(0.12), in: RoundedRectangle(cornerRadius: self.contentSize.scaled(4)))
 
                 }
-                .padding(.leading, CGFloat(entry.depth) * 15 + 11)
-                .padding(.trailing, 8)
-                .padding(.vertical, 9)
+                .padding(.leading, self.contentSize.scaled(CGFloat(entry.depth) * 15 + 11))
+                .padding(.trailing, self.contentSize.scaled(8))
+                .padding(.vertical, self.contentSize.scaled(9))
                 .background(
                     self.workspace.selectedFileID == file.id ? self.theme.selection :
                         self.hoveredEntryID == entry.id ? self.theme.elevated : .clear,
-                    in: RoundedRectangle(cornerRadius: 8)
+                    in: RoundedRectangle(cornerRadius: self.contentSize.scaled(8))
                 )
                 .overlay(alignment: .leading) {
 
                     if self.workspace.selectedFileID == file.id {
 
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: self.contentSize.scaled(2))
                             .fill(self.theme.accent)
-                            .frame(width: 3)
+                            .frame(width: self.contentSize.scaled(3))
 
                     }
 
@@ -231,29 +232,29 @@ struct FileNavigatorScreen: View {
                 self.viewModel.toggleGroup(entry.id)
             } label: {
 
-                HStack(spacing: 8) {
+                HStack(spacing: self.contentSize.scaled(8)) {
 
                     Image(systemName: self.viewModel.collapsedGroups.contains(entry.id) ? "chevron.right" : "chevron.down")
-                        .font(.system(size: 8, weight: .semibold))
-                        .frame(width: 12)
+                        .font(self.contentSize.font(size: 8, weight: .semibold))
+                        .frame(width: self.contentSize.scaled(12))
                     Image(systemName: "folder.fill")
-                        .font(.system(size: 12))
+                        .font(self.contentSize.font(size: 12))
                         .foregroundStyle(self.theme.accent.opacity(0.8))
                     Text(entry.title)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(self.contentSize.font(size: 11, weight: .semibold))
                     Spacer()
                     Text("\(entry.count)")
-                        .font(.system(size: 9, design: .monospaced))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
+                        .font(self.contentSize.font(size: 9, design: .monospaced))
+                        .padding(.horizontal, self.contentSize.scaled(6))
+                        .padding(.vertical, self.contentSize.scaled(2))
                         .background(self.theme.surface, in: Capsule())
 
                 }
                 .foregroundStyle(self.theme.secondaryText)
-                .padding(.leading, CGFloat(entry.depth) * 15 + 8)
-                .padding(.trailing, 8)
-                .padding(.vertical, 10)
-                .background(self.theme.elevated.opacity(0.75), in: RoundedRectangle(cornerRadius: 8))
+                .padding(.leading, self.contentSize.scaled(CGFloat(entry.depth) * 15 + 8))
+                .padding(.trailing, self.contentSize.scaled(8))
+                .padding(.vertical, self.contentSize.scaled(10))
+                .background(self.theme.elevated.opacity(0.75), in: RoundedRectangle(cornerRadius: self.contentSize.scaled(8)))
                 .contentShape(Rectangle())
 
             }
@@ -266,7 +267,7 @@ struct FileNavigatorScreen: View {
 
     private func navigatorFooter() -> some View {
 
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: self.contentSize.scaled(6)) {
 
             Label(self.viewModel.sort.rawValue, systemImage: "arrow.up.arrow.down")
 
@@ -275,12 +276,12 @@ struct FileNavigatorScreen: View {
             }
 
             Text("Dates are fixed sample metadata")
-                .font(.system(size: 9))
+                .font(self.contentSize.font(size: 9))
 
         }
-        .font(.system(size: 10))
+        .font(self.contentSize.font(size: 10))
         .foregroundStyle(self.theme.secondaryText)
-        .padding(14)
+        .padding(self.contentSize.scaled(14))
 
     }
 

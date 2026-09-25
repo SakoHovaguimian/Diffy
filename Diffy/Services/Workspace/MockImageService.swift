@@ -5,16 +5,19 @@ enum MockImageService {
 
     static func artwork(updated: Bool) -> NSImage {
 
-        let image = NSImage(size: NSSize(width: 600, height: 440))
-        image.lockFocus()
+        NSImage(
+            size: NSSize(width: 600, height: 440),
+            flipped: false
+        ) { _ in
 
-        drawSky(updated: updated)
-        drawSun(updated: updated)
-        drawMountains(updated: updated)
-        drawCaption(updated: updated)
+            drawSky(updated: updated)
+            drawSun(updated: updated)
+            drawMountains(updated: updated)
+            drawCaption(updated: updated)
 
-        image.unlockFocus()
-        return image
+            return true
+
+        }
 
     }
 

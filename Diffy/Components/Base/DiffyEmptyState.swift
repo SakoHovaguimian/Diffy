@@ -3,30 +3,31 @@ import SwiftUI
 struct DiffyEmptyState: View {
 
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
     let symbol: String
     let title: String
     let message: String
 
     var body: some View {
 
-        VStack(spacing: 12) {
+        VStack(spacing: self.contentSize.scaled(12)) {
 
             Image(systemName: self.symbol)
-                .font(.system(size: 30, weight: .light))
+                .font(self.contentSize.font(size: 30, weight: .light))
                 .foregroundStyle(self.theme.accent)
-                .padding(.bottom, 6)
+                .padding(.bottom, self.contentSize.scaled(6))
 
             Text(self.title)
-                .font(.system(size: 16, weight: .semibold))
+                .font(self.contentSize.font(size: 16, weight: .semibold))
 
             Text(self.message)
-                .font(.system(size: 12))
+                .font(self.contentSize.font(size: 12))
                 .foregroundStyle(self.theme.secondaryText)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 290)
+                .frame(maxWidth: self.contentSize.scaled(290))
 
         }
-        .padding(28)
+        .padding(self.contentSize.scaled(28))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     }

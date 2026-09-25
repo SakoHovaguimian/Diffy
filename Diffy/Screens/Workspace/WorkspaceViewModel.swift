@@ -4,10 +4,15 @@ import Combine
 @MainActor
 final class WorkspaceViewModel: ViewModel {
 
+    private static let minimumContentSizeScale = 0.5
+    private static let maximumContentSizeScale = 2.0
+    private static let contentSizeStep = 0.1
+
     let loggerName = "WORKSPACE_VIEW_MODEL"
     @Published private(set) var projects: [RepositoryProject]
     let fileNavigatorViewModel: FileNavigatorViewModel
     private let preferencesService: PreferencesServiceProtocol
+    private let textDiffBuilder: TextDiffBuilding
     private var localProjectRecords: [LocalProjectRecord]
 
     @Published var buckets: [Bucket]
@@ -22,6 +27,8 @@ final class WorkspaceViewModel: ViewModel {
     @Published var recentProjectIDs: [String] = ["rune", "obelisk", "grimoire"]
     @Published var selectedBucket: Bucket?
     @Published var pendingProject: NewProjectDraft?
+    @Published private(set) var projectOrder: [String] = []
+    @Published var projectDropTargetID: String?
     @Published var projectBuckets: [String: String] = [:]
     @Published var annotationDraft: AnnotationDraft?
     @Published var comparisonLeft = "main"
@@ -29,11 +36,13 @@ final class WorkspaceViewModel: ViewModel {
     @Published var pendingScrollLine: Int?
     @Published var pendingMergeConflict: Int?
     @Published var notice: String?
+    @Published private(set) var contentSizeScale = 1.0
 
     init(
         workspaceService: WorkspaceServiceProtocol,
         preferencesService: PreferencesServiceProtocol,
-        fileNavigatorViewModel: FileNavigatorViewModel
+        fileNavigatorViewModel: FileNavigatorViewModel,
+        textDiffBuilder: TextDiffBuilding
     ) {
 
         let localProjects = preferencesService.load([LocalProjectRecord].self, key: "projects.local.v1") ?? []
@@ -42,6 +51,7 @@ final class WorkspaceViewModel: ViewModel {
         self.projects = workspaceService.projects + localProjects.map(\.project)
         self.preferencesService = preferencesService
         self.fileNavigatorViewModel = fileNavigatorViewModel
+        self.textDiffBuilder = textDiffBuilder
         self.buckets = (preferencesService.load([Bucket].self, key: "buckets.demo.v1") ?? workspaceService.buckets).map { bucket in
 
             var updated = bucket
@@ -50,6 +60,7 @@ final class WorkspaceViewModel: ViewModel {
 
         }
         self.projectBuckets = preferencesService.load([String: String].self, key: "projectBuckets.demo.v1") ?? [:]
+        self.projectOrder = preferencesService.load([String].self, key: "projectOrder.demo.v1") ?? []
         self.selectedFileID = self.projects.first?.files.first?.id
 
     }
@@ -60,6 +71,10 @@ final class WorkspaceViewModel: ViewModel {
 
     var file: DiffFile? {
         self.project.files.first { $0.id == self.selectedFileID }
+    }
+
+    func makeTextDiffViewModel() -> TextDiffViewModel {
+        TextDiffViewModel(diffBuilder: self.textDiffBuilder)
     }
 
     var comparisonTitle: String {
@@ -75,6 +90,27 @@ final class WorkspaceViewModel: ViewModel {
         case .merge: "Base · Yours · Theirs"
 
         }
+
+    }
+
+    // MARK: - Content Size
+
+    func increaseContentSize() {
+        setContentSizeScale(self.contentSizeScale + Self.contentSizeStep)
+    }
+
+    func decreaseContentSize() {
+        setContentSizeScale(self.contentSizeScale - Self.contentSizeStep)
+    }
+
+    func resetContentSize() {
+        setContentSizeScale(1)
+    }
+
+    private func setContentSizeScale(_ scale: Double) {
+
+        let clampedScale = min(Self.maximumContentSizeScale, max(Self.minimumContentSizeScale, scale))
+        self.contentSizeScale = (clampedScale * 10).rounded() / 10
 
     }
 
@@ -154,7 +190,7 @@ final class WorkspaceViewModel: ViewModel {
         self.buckets.first { $0.id == bucketID(for: project) }
     }
 
-    func prepareProject(directoryURL: URL, in bucket: Bucket) {
+    func prepareProject(directoryURL: URL, in bucket: Bucket?) {
 
         let path = directoryURL.standardizedFileURL.path
 
@@ -168,7 +204,7 @@ final class WorkspaceViewModel: ViewModel {
 
         self.pendingProject = NewProjectDraft(
             directoryPath: path,
-            bucketID: bucket.id,
+            bucketID: bucket?.id ?? "",
             name: directoryURL.lastPathComponent
         )
 
@@ -178,8 +214,9 @@ final class WorkspaceViewModel: ViewModel {
 
         let name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !name.isEmpty,
-              self.buckets.contains(where: { $0.id == draft.bucketID }) else {
+        let hasValidDestination = draft.bucketID.isEmpty || self.buckets.contains { $0.id == draft.bucketID }
+
+        guard !name.isEmpty, hasValidDestination else {
             return
         }
 
@@ -200,26 +237,83 @@ final class WorkspaceViewModel: ViewModel {
 
     }
 
+    func orderedProjects(in bucketID: String?) -> [RepositoryProject] {
+
+        let matchingProjects = self.projects.filter { project in
+            self.bucket(for: project)?.id == bucketID
+        }
+        let ordered = self.projectOrder.compactMap { id in matchingProjects.first { $0.id == id } }
+        let remaining = matchingProjects.filter { !self.projectOrder.contains($0.id) }
+
+        return ordered + remaining
+
+    }
+
+    func reorderProject(_ draggedID: String, relativeTo targetID: String, placeAfter: Bool) -> Bool {
+
+        guard let target = self.projects.first(where: { $0.id == targetID }),
+              self.projects.contains(where: { $0.id == draggedID }) else {
+            return false
+        }
+
+        guard draggedID != targetID else {
+            return true
+        }
+
+        let destinationBucketID = self.bucket(for: target)?.id ?? ""
+        var reordered = orderedProjectIDs().filter { $0 != draggedID }
+
+        guard let targetIndex = reordered.firstIndex(of: targetID) else {
+            return false
+        }
+
+        reordered.insert(draggedID, at: targetIndex + (placeAfter ? 1 : 0))
+        self.projectBuckets[draggedID] = destinationBucketID
+        self.projectOrder = reordered
+        saveProjectArrangement()
+        return true
+
+    }
+
     func moveProject(_ projectID: String, to bucketID: String) {
 
-        guard self.projects.contains(where: { $0.id == projectID }),
-              self.buckets.contains(where: { $0.id == bucketID }) else {
+        guard self.buckets.contains(where: { $0.id == bucketID }) else {
             return
         }
 
-        self.projectBuckets[projectID] = bucketID
-        self.preferencesService.save(self.projectBuckets, key: "projectBuckets.demo.v1")
+        appendProject(projectID, to: bucketID)
 
     }
 
     func detachProject(_ projectID: String) {
+        appendProject(projectID, to: "")
+    }
+
+    private func appendProject(_ projectID: String, to bucketID: String) {
 
         guard self.projects.contains(where: { $0.id == projectID }) else {
             return
         }
 
-        self.projectBuckets[projectID] = ""
+        self.projectOrder = orderedProjectIDs().filter { $0 != projectID } + [projectID]
+        self.projectBuckets[projectID] = bucketID
+        saveProjectArrangement()
+
+    }
+
+    private func orderedProjectIDs() -> [String] {
+
+        let currentIDs = self.projects.map(\.id)
+        let savedIDs = self.projectOrder.filter { currentIDs.contains($0) }
+
+        return savedIDs + currentIDs.filter { !savedIDs.contains($0) }
+
+    }
+
+    private func saveProjectArrangement() {
+
         self.preferencesService.save(self.projectBuckets, key: "projectBuckets.demo.v1")
+        self.preferencesService.save(self.projectOrder, key: "projectOrder.demo.v1")
 
     }
 

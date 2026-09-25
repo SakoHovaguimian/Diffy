@@ -23,7 +23,7 @@ final class MockAssembler {
         } else if type == FileNavigatorViewModel.self {
             resolved = FileNavigatorViewModel(preferencesService: self.assembler.services.preferencesService)
         } else if type == TextDiffViewModel.self {
-            resolved = TextDiffViewModel()
+            resolved = self.assembler.viewModels.textDiffViewModel()
         } else if type == MergeViewModel.self {
             resolved = MergeViewModel()
         } else if type == SettingsViewModel.self {

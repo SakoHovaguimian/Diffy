@@ -32,7 +32,7 @@ struct WorkspaceScreen: View {
 
                 }
 
-                workspaceContent()
+                sizableWorkspaceContent()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if self.viewModel.showsReview {
@@ -74,14 +74,13 @@ struct WorkspaceScreen: View {
         }
         .sheet(item: self.$viewModel.pendingProject) { draft in
 
-            if let bucket = self.viewModel.buckets.first(where: { $0.id == draft.bucketID }) {
-
-                ProjectEditorScreen(draft: draft, bucket: bucket) { project in
-                    self.viewModel.addProject(project)
-                }
-                .diffyStyle()
-
+            ProjectEditorScreen(
+                draft: draft,
+                bucket: self.viewModel.buckets.first { $0.id == draft.bucketID }
+            ) { project in
+                self.viewModel.addProject(project)
             }
+            .diffyStyle()
 
         }
         .sheet(item: self.$viewModel.annotationDraft) { draft in
@@ -146,6 +145,14 @@ struct WorkspaceScreen: View {
     }
 
     // MARK: - Workspace
+
+    private func sizableWorkspaceContent() -> some View {
+
+        workspaceContent()
+            .diffyContentSize(self.viewModel.contentSizeScale)
+            .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.24), value: self.viewModel.contentSizeScale)
+
+    }
 
     private func workspaceContent() -> some View {
 

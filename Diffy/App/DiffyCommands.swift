@@ -65,6 +65,23 @@ struct DiffyCommands: Commands {
             }
             .keyboardShortcut("s", modifiers: [.command, .control])
 
+            Divider()
+
+            Button("Make Content Larger") {
+                self.workspace?.increaseContentSize()
+            }
+            .keyboardShortcut("+", modifiers: .command)
+
+            Button("Make Content Smaller") {
+                self.workspace?.decreaseContentSize()
+            }
+            .keyboardShortcut("-", modifiers: .command)
+
+            Button("Actual Size") {
+                self.workspace?.resetContentSize()
+            }
+            .keyboardShortcut("0", modifiers: .command)
+
         }
 
     }

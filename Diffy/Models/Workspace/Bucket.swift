@@ -8,7 +8,7 @@ struct Bucket: Identifiable, Codable, Hashable {
     var symbol: String
     var accentHex: String
     var usesGradient: Bool = true
-    var cornerRadius: Double = 10
+    var cornerRadius: Double = 6
     var isExpanded: Bool = true
     var isVisible: Bool = true
     var density: String = "Expanded"
@@ -19,7 +19,7 @@ struct Bucket: Identifiable, Codable, Hashable {
         self.usesGradient = true
         self.isVisible = true
         self.density = "Expanded"
-        self.cornerRadius = 10
+        self.cornerRadius = 6
 
     }
 

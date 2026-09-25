@@ -5,6 +5,7 @@ struct MergeScreen: View {
     @ObservedObject var workspace: WorkspaceViewModel
     @StateObject private var viewModel: MergeViewModel
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
 
     init(
         workspace: WorkspaceViewModel,
@@ -46,9 +47,9 @@ struct MergeScreen: View {
                 Text("\(self.viewModel.resolvedCount) of \(self.viewModel.conflicts.count) resolved")
 
             }
-            .font(.system(size: 10))
+            .font(self.contentSize.font(size: 10))
             .foregroundStyle(self.theme.secondaryText)
-            .padding(14)
+            .padding(self.contentSize.scaled(14))
 
         }
         .background(self.theme.background)
@@ -59,33 +60,33 @@ struct MergeScreen: View {
 
     private func header() -> some View {
 
-        HStack(spacing: 12) {
+        HStack(spacing: self.contentSize.scaled(12)) {
 
             Image(systemName: "arrow.triangle.merge").foregroundStyle(self.theme.modified)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: self.contentSize.scaled(4)) {
 
-                Text("Bring both sides together.").font(.system(size: 17, weight: .semibold))
-                Text("NavigationService.swift · mock three-way merge").font(.system(size: 10)).foregroundStyle(self.theme.secondaryText)
+                Text("Bring both sides together.").font(self.contentSize.font(size: 17, weight: .semibold))
+                Text("NavigationService.swift · mock three-way merge").font(self.contentSize.font(size: 10)).foregroundStyle(self.theme.secondaryText)
 
             }
             Spacer()
             DiffyBadge(title: "\(self.viewModel.conflicts.count - self.viewModel.resolvedCount) UNRESOLVED", color: self.theme.modified)
 
         }
-        .padding(20)
+        .padding(self.contentSize.scaled(20))
         .background(self.theme.surface)
 
     }
 
     private func conflictNavigation() -> some View {
 
-        HStack(spacing: 8) {
+        HStack(spacing: self.contentSize.scaled(8)) {
 
             DiffyIconButton(symbol: "chevron.left", label: "Previous conflict") { self.viewModel.navigate(-1) }
             DiffyIconButton(symbol: "chevron.right", label: "Next conflict") { self.viewModel.navigate(1) }
 
             Text(self.viewModel.conflict.title)
-                .font(.system(size: 11, weight: .medium))
+                .font(self.contentSize.font(size: 11, weight: .medium))
                 .lineLimit(1)
 
             Spacer()
@@ -94,10 +95,10 @@ struct MergeScreen: View {
 
                 Button { self.viewModel.selectedIndex = conflict.id } label: {
 
-                    RoundedRectangle(cornerRadius: 3)
+                    RoundedRectangle(cornerRadius: self.contentSize.scaled(3))
                         .fill(self.viewModel.decisions[conflict.id] == nil || self.viewModel.decisions[conflict.id] == .unresolved ? self.theme.modified.opacity(0.4) : self.theme.added)
-                        .frame(width: 22, height: 7)
-                        .overlay(RoundedRectangle(cornerRadius: 3).stroke(self.viewModel.selectedIndex == conflict.id ? self.theme.text : .clear))
+                        .frame(width: self.contentSize.scaled(22), height: self.contentSize.scaled(7))
+                        .overlay(RoundedRectangle(cornerRadius: self.contentSize.scaled(3)).stroke(self.viewModel.selectedIndex == conflict.id ? self.theme.text : .clear))
 
                 }
                 .buttonStyle(.plain)
@@ -107,8 +108,8 @@ struct MergeScreen: View {
             }
 
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, self.contentSize.scaled(12))
+        .padding(.vertical, self.contentSize.scaled(8))
 
     }
 
@@ -116,29 +117,29 @@ struct MergeScreen: View {
 
         VStack(alignment: .leading, spacing: 0) {
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: self.contentSize.scaled(5)) {
 
                 HStack {
 
-                    Text(side.rawValue).font(.system(size: 12, weight: .semibold)).foregroundStyle(color)
+                    Text(side.rawValue).font(self.contentSize.font(size: 12, weight: .semibold)).foregroundStyle(color)
                     Spacer()
                     DiffyIconButton(symbol: "text.bubble", label: "Annotate \(side.rawValue) conflict") {
                         annotate(source, side: side)
                     }
 
                 }
-                Text(detail).font(.system(size: 9)).foregroundStyle(self.theme.secondaryText).lineLimit(1)
+                Text(detail).font(self.contentSize.font(size: 9)).foregroundStyle(self.theme.secondaryText).lineLimit(1)
 
             }
-            .padding(14)
+            .padding(self.contentSize.scaled(14))
 
             ScrollView([.horizontal, .vertical]) {
 
                 Text(source)
-                    .font(.system(size: 11, design: .monospaced))
-                    .lineSpacing(5)
+                    .font(self.contentSize.font(size: 11, design: .monospaced))
+                    .lineSpacing(self.contentSize.scaled(5))
                     .textSelection(.enabled)
-                    .padding(14)
+                    .padding(self.contentSize.scaled(14))
                     .frame(maxWidth: .infinity, alignment: .topLeading)
 
             }
@@ -151,18 +152,18 @@ struct MergeScreen: View {
 
     private func resultPane() -> some View {
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: self.contentSize.scaled(12)) {
 
             HStack {
 
-                Label("Result", systemImage: "pencil.line").font(.system(size: 13, weight: .semibold))
+                Label("Result", systemImage: "pencil.line").font(self.contentSize.font(size: 13, weight: .semibold))
                 Spacer()
                 Button("Annotate") { annotate(self.viewModel.result, side: .result) }
                 Button("Undo") { self.viewModel.undo() }.disabled(!self.viewModel.canUndo)
                 Button("Reset draft") { self.viewModel.reset() }
 
             }
-            .font(.system(size: 10))
+            .font(self.contentSize.font(size: 10))
 
             ViewThatFits(in: .horizontal) {
 
@@ -172,32 +173,33 @@ struct MergeScreen: View {
             }
 
             TextEditor(text: Binding(get: { self.viewModel.result }, set: { self.viewModel.editResult($0) }))
-                .font(.system(size: 12, design: .monospaced))
+                .font(self.contentSize.font(size: 12, design: .monospaced))
                 .scrollContentBackground(.hidden)
-                .padding(8)
-                .background(self.theme.surface, in: RoundedRectangle(cornerRadius: 7))
-                .overlay(RoundedRectangle(cornerRadius: 7).stroke(self.theme.border))
+                .padding(self.contentSize.scaled(8))
+                .background(self.theme.surface, in: RoundedRectangle(cornerRadius: self.contentSize.scaled(7)))
+                .overlay(RoundedRectangle(cornerRadius: self.contentSize.scaled(7)).stroke(self.theme.border))
 
             HStack {
 
                 Text(self.viewModel.decisions[self.viewModel.conflict.id]?.rawValue ?? "Unresolved")
-                    .font(.system(size: 10))
+                    .font(self.contentSize.font(size: 10))
                     .foregroundStyle(self.theme.secondaryText)
                 Spacer()
                 Button("Mark resolved") { self.viewModel.markResolved() }
-                    .font(.system(size: 11))
+                    .font(self.contentSize.font(size: 11))
                     .buttonStyle(.borderedProminent)
 
             }
 
         }
-        .padding(18)
+        .padding(self.contentSize.scaled(18))
 
     }
 
     private func decisions(horizontal: Bool) -> some View {
 
-        let layout = horizontal ? AnyLayout(HStackLayout(spacing: 6)) : AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+        let spacing = self.contentSize.scaled(6)
+        let layout = horizontal ? AnyLayout(HStackLayout(spacing: spacing)) : AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
 
         return layout {
 
@@ -207,7 +209,7 @@ struct MergeScreen: View {
             Button("Reject both · keep base") { self.viewModel.accept(.base) }
 
         }
-        .font(.system(size: 10))
+        .font(self.contentSize.font(size: 10))
         .controlSize(.small)
 
     }

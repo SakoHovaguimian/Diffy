@@ -5,6 +5,8 @@ import Combine
 final class TextDiffViewModel: ViewModel {
 
     let loggerName = "TEXT_DIFF_VIEW_MODEL"
+    private let diffBuilder: TextDiffBuilding
+    private var preparedFileID: String?
     @Published var selectionStart: Int?
     @Published var selectionEnd: Int?
     @Published var selectedSide: SourceSide = .right
@@ -13,6 +15,101 @@ final class TextDiffViewModel: ViewModel {
     @Published var search = ""
     @Published var showsSearch = false
     @Published var paneRatio = 0.5
+    @Published private(set) var draftText = ""
+    @Published private(set) var draftLines: [DiffLine] = []
+    @Published var isEditing = false
+    @Published private(set) var editingLineNumber: Int?
+
+    init(diffBuilder: TextDiffBuilding) {
+        self.diffBuilder = diffBuilder
+    }
+
+    // MARK: - Editable Draft
+
+    func prepare(file: DiffFile) {
+
+        guard self.preparedFileID != file.id else {
+            return
+        }
+
+        self.preparedFileID = file.id
+        self.draftText = file.updatedSource
+        self.draftLines = file.lines
+        self.isEditing = false
+        self.editingLineNumber = nil
+        clearSelection()
+
+    }
+
+    func displayedFile(_ file: DiffFile) -> DiffFile {
+
+        guard self.preparedFileID == file.id else {
+            return file
+        }
+
+        return file.replacingLines(self.draftLines)
+
+    }
+
+    func updateDraft(_ source: String, file: DiffFile) {
+
+        prepare(file: file)
+
+        self.draftText = source
+        self.draftLines = self.diffBuilder.lines(
+            original: sourceLines(file.originalSource),
+            updated: sourceLines(source)
+        )
+        clearSelection()
+
+    }
+
+    func beginEditing(file: DiffFile, lineNumber: Int?) {
+
+        prepare(file: file)
+        self.isEditing = true
+        self.editingLineNumber = lineNumber
+        self.showsSearch = false
+        clearSelection()
+
+    }
+
+    func finishEditing() {
+
+        self.isEditing = false
+        self.editingLineNumber = nil
+        clearSelection()
+
+    }
+
+    func resetDraft(file: DiffFile) {
+
+        self.draftText = file.updatedSource
+        self.draftLines = file.lines
+        clearSelection()
+
+    }
+
+    func isDraftModified(file: DiffFile) -> Bool {
+        self.preparedFileID == file.id && self.draftText != file.updatedSource
+    }
+
+    func updatedLineStatuses() -> [FileChangeStatus] {
+        self.draftLines.compactMap { $0.right == nil ? nil : $0.status }
+    }
+
+    private func sourceLines(_ source: String) -> [String] {
+        source.isEmpty ? [] : source.components(separatedBy: "\n")
+    }
+
+    private func clearSelection() {
+
+        self.selectionStart = nil
+        self.selectionEnd = nil
+        self.selectedChangeIndex = 0
+        self.scrollTarget = nil
+
+    }
 
     // MARK: - Source Selection
 

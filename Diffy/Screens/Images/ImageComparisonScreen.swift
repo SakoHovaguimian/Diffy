@@ -5,6 +5,7 @@ struct ImageComparisonScreen: View {
 
     let file: DiffFile
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var mode: ImageComparisonMode = .sideBySide
     @State private var amount = 0.5
@@ -51,12 +52,12 @@ struct ImageComparisonScreen: View {
 
     private func header() -> some View {
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: self.contentSize.scaled(14)) {
 
             HStack {
 
                 Label(self.file.name, systemImage: "photo")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(self.contentSize.font(size: 13, weight: .medium))
                 Spacer()
                 DiffyBadge(title: "600 × 440", color: self.theme.secondaryText)
 
@@ -69,25 +70,29 @@ struct ImageComparisonScreen: View {
             .controlSize(.small)
 
         }
-        .padding(18)
+        .padding(self.contentSize.scaled(18))
 
     }
 
     private func artwork(available: CGSize) -> some View {
 
-        let width = min(available.width - 50, (available.height - 60) * 600 / 440)
+        let fittedWidth = min(
+            available.width - self.contentSize.scaled(50),
+            (available.height - self.contentSize.scaled(60)) * 600 / 440
+        )
+        let width = fittedWidth * self.zoom
         let height = width * 440 / 600
 
         return imageContent(width: width, height: height)
             .frame(width: width, height: height)
-            .scaleEffect(self.zoom)
             .offset(self.offset)
-            .shadow(color: .black.opacity(0.09), radius: 24, y: 12)
-            .gesture(DragGesture().onChanged { value in
-
-                self.offset = CGSize(width: self.dragStart.width + value.translation.width, height: self.dragStart.height + value.translation.height)
-
-            }.onEnded { _ in self.dragStart = self.offset })
+            .shadow(
+                color: .black.opacity(0.09),
+                radius: self.contentSize.scaled(24),
+                y: self.contentSize.scaled(12)
+            )
+            .contentShape(Rectangle())
+            .gesture(artworkDragGesture(width: width))
             .onContinuousHover { phase in
 
                 if case .active(let point) = phase {
@@ -111,6 +116,43 @@ struct ImageComparisonScreen: View {
 
     }
 
+    private func artworkDragGesture(width: CGFloat) -> some Gesture {
+
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+
+                if self.mode == .slider {
+
+                    updateRevealAmount(for: value.location.x, width: width)
+                    return
+
+                }
+
+                self.offset = CGSize(width: self.dragStart.width + value.translation.width, height: self.dragStart.height + value.translation.height)
+
+            }
+            .onEnded { _ in
+
+                guard self.mode != .slider else {
+                    return
+                }
+
+                self.dragStart = self.offset
+
+            }
+
+    }
+
+    private func updateRevealAmount(for horizontalPosition: CGFloat, width: CGFloat) {
+
+        guard width > 0 else {
+            return
+        }
+
+        self.amount = min(1, max(0, horizontalPosition / width))
+
+    }
+
     @ViewBuilder
     private func imageContent(width: CGFloat, height: CGFloat) -> some View {
 
@@ -118,16 +160,16 @@ struct ImageComparisonScreen: View {
 
         case .sideBySide:
 
-            HStack(spacing: 12) {
+            HStack(spacing: self.contentSize.scaled(12)) {
 
-                VStack(spacing: 10) {
+                VStack(spacing: self.contentSize.scaled(10)) {
 
                     image(self.original)
                     Text("Original").font(.caption).foregroundStyle(self.theme.secondaryText)
 
                 }
 
-                VStack(spacing: 10) {
+                VStack(spacing: self.contentSize.scaled(10)) {
 
                     image(self.updated)
                     Text("Updated").font(.caption).foregroundStyle(self.theme.secondaryText)
@@ -166,13 +208,13 @@ struct ImageComparisonScreen: View {
                 image(self.updated)
                     .mask(alignment: .leading) { Rectangle().frame(width: width * self.amount) }
 
-                Rectangle().fill(.white).frame(width: 2)
+                Rectangle().fill(.white).frame(width: self.contentSize.scaled(2))
                     .offset(x: width * self.amount)
 
                 Image(systemName: "arrow.left.and.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(self.contentSize.font(size: 12, weight: .semibold))
                     .foregroundStyle(.black.opacity(0.7))
-                    .frame(width: 32, height: 32)
+                    .frame(width: self.contentSize.scaled(32), height: self.contentSize.scaled(32))
                     .background(.white, in: Circle())
                     .position(x: width * self.amount, y: height / 2)
 
@@ -188,14 +230,14 @@ struct ImageComparisonScreen: View {
 
     private func controls() -> some View {
 
-        VStack(spacing: 14) {
+        VStack(spacing: self.contentSize.scaled(14)) {
 
-            HStack(spacing: 12) {
+            HStack(spacing: self.contentSize.scaled(12)) {
 
                 if self.mode == .slider || self.mode == .overlay {
 
                     Text(self.mode == .slider ? "Reveal" : "Opacity")
-                    Slider(value: self.$amount, in: 0...1).frame(maxWidth: 180)
+                    Slider(value: self.$amount, in: 0...1).frame(maxWidth: self.contentSize.scaled(180))
 
                 }
 
@@ -204,29 +246,43 @@ struct ImageComparisonScreen: View {
                 }
 
                 Spacer()
-                Button { self.zoom = max(0.5, self.zoom - 0.25) } label: { Image(systemName: "minus.magnifyingglass") }
+                Button { updateZoom(self.zoom - 0.25) } label: { Image(systemName: "minus.magnifyingglass") }
                     .help("Zoom out")
-                Text("\(Int(self.zoom * 100))%").monospacedDigit().frame(width: 40)
-                Button { self.zoom = min(4, self.zoom + 0.25) } label: { Image(systemName: "plus.magnifyingglass") }
+                Text("\(Int(self.zoom * 100))%")
+                    .monospacedDigit()
+                    .frame(width: self.contentSize.scaled(40))
+                Button { updateZoom(self.zoom + 0.25) } label: { Image(systemName: "plus.magnifyingglass") }
                     .help("Zoom in")
                 Button("Fit") {
 
-                    self.zoom = 1
-                    self.offset = .zero
-                    self.dragStart = .zero
+                    withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.24)) {
+
+                        self.zoom = 1
+                        self.offset = .zero
+                        self.dragStart = .zero
+
+                    }
 
                 }
 
             }
-            .font(.system(size: 11))
+            .font(self.contentSize.font(size: 11))
             .buttonStyle(.plain)
 
             Text(self.pixelDescription)
-                .font(.system(size: 9, design: .monospaced))
+                .font(self.contentSize.font(size: 9, design: .monospaced))
                 .foregroundStyle(self.theme.secondaryText)
 
         }
-        .padding(18)
+        .padding(self.contentSize.scaled(18))
+
+    }
+
+    private func updateZoom(_ proposedZoom: Double) {
+
+        withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.24)) {
+            self.zoom = min(4, max(0.5, proposedZoom))
+        }
 
     }
 

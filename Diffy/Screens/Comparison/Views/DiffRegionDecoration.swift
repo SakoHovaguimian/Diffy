@@ -9,6 +9,7 @@ struct DiffRegionDecoration: View {
     let showsTrailingLines: Bool
     let framesCurrentRegion: Bool
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
 
     private var guideColor: Color {
 
@@ -52,10 +53,17 @@ struct DiffRegionDecoration: View {
 
             if self.showsTrailingLines {
 
-                let frameInset: CGFloat = self.framesCurrentRegion ? 2 : 0
+                let frameInset = self.framesCurrentRegion ? self.contentSize.scaled(2) : 0
 
                 connectorPath(size: size, leftEdge: leftWidth - frameInset, rightEdge: rightOrigin + frameInset)
-                    .stroke(self.guideColor, style: StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
+                    .stroke(
+                        self.guideColor,
+                        style: StrokeStyle(
+                            lineWidth: self.contentSize.scaled(3.5),
+                            lineCap: .round,
+                            lineJoin: .round
+                        )
+                    )
 
             }
 
@@ -66,12 +74,15 @@ struct DiffRegionDecoration: View {
 
     private func regionFrame(width: CGFloat, height: CGFloat, innerEdge: Alignment) -> some View {
 
-        RoundedRectangle(cornerRadius: 5)
-            .stroke(self.guideColor.opacity(0.38), lineWidth: 1)
+        RoundedRectangle(cornerRadius: self.contentSize.scaled(5))
+            .stroke(self.guideColor.opacity(0.38), lineWidth: self.contentSize.scaled(1))
             .overlay(alignment: innerEdge) {
-                self.guideColor.opacity(0.8).frame(width: 2)
+                self.guideColor.opacity(0.8).frame(width: self.contentSize.scaled(2))
             }
-            .frame(width: max(0, width - 4), height: max(0, height - 3))
+            .frame(
+                width: max(0, width - self.contentSize.scaled(4)),
+                height: max(0, height - self.contentSize.scaled(3))
+            )
 
     }
 
@@ -79,7 +90,7 @@ struct DiffRegionDecoration: View {
 
         let difference = CGFloat(abs(self.region.updatedCount - self.region.originalCount))
         let offset = min(difference * self.lineHeight * 0.55, size.height * 0.7)
-        let baseline = size.height - 2
+        let baseline = size.height - self.contentSize.scaled(2)
         let leftY = baseline - (self.region.status == .added ? offset : 0)
         let rightY = baseline - (self.region.status == .removed ? offset : 0)
         let span = rightEdge - leftEdge

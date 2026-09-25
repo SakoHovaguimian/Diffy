@@ -23,9 +23,14 @@ final class ViewModelAssembly {
         WorkspaceViewModel(
             workspaceService: self.services.workspaceService,
             preferencesService: self.services.preferencesService,
-            fileNavigatorViewModel: FileNavigatorViewModel(preferencesService: self.services.preferencesService)
+            fileNavigatorViewModel: FileNavigatorViewModel(preferencesService: self.services.preferencesService),
+            textDiffBuilder: self.services.textDiffBuilder
         )
 
+    }
+
+    func textDiffViewModel() -> TextDiffViewModel {
+        TextDiffViewModel(diffBuilder: self.services.textDiffBuilder)
     }
 
 }

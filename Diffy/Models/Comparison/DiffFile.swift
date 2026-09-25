@@ -24,6 +24,14 @@ struct DiffFile: Identifiable, Hashable {
         self.status == .added && self.lines.allSatisfy { $0.left == nil }
     }
 
+    var originalSource: String {
+        self.lines.compactMap(\.left).joined(separator: "\n")
+    }
+
+    var updatedSource: String {
+        self.lines.compactMap(\.right).joined(separator: "\n")
+    }
+
     var additions: Int {
         self.lines.filter { $0.status == .added }.count
     }
@@ -51,6 +59,22 @@ struct DiffFile: Identifiable, Hashable {
         default: "text"
 
         }
+
+    }
+
+    func replacingLines(_ lines: [DiffLine]) -> DiffFile {
+
+        DiffFile(
+            id: self.id,
+            path: self.path,
+            originalPath: self.originalPath,
+            status: self.status,
+            kind: self.kind,
+            isStaged: self.isStaged,
+            updatedMinutesAgo: self.updatedMinutesAgo,
+            size: self.size,
+            lines: lines
+        )
 
     }
 

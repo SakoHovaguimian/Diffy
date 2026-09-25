@@ -37,7 +37,11 @@ struct ComparisonScreen: View {
             switch file.kind {
 
             case .text:
-                TextDiffScreen(file: file, workspace: self.workspace, viewModel: TextDiffViewModel())
+                TextDiffScreen(
+                    file: file,
+                    workspace: self.workspace,
+                    viewModel: self.workspace.makeTextDiffViewModel()
+                )
                     .id(file.id)
 
             case .image:

@@ -4,6 +4,7 @@ struct ComparisonSourceBar: View {
 
     @ObservedObject var workspace: WorkspaceViewModel
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.diffyContentSize) private var contentSize
 
     private var choices: [String] {
 
@@ -17,7 +18,7 @@ struct ComparisonSourceBar: View {
 
     var body: some View {
 
-        HStack(spacing: 12) {
+        HStack(spacing: self.contentSize.scaled(12)) {
 
             Image(systemName: self.workspace.mode.symbol)
                 .foregroundStyle(self.theme.accent)
@@ -25,7 +26,7 @@ struct ComparisonSourceBar: View {
             Picker("From", selection: self.$workspace.comparisonLeft) {
                 ForEach(self.choices, id: \.self) { Text($0).tag($0) }
             }
-            .frame(maxWidth: 270)
+            .frame(maxWidth: self.contentSize.scaled(270))
 
             Image(systemName: "arrow.right")
                 .foregroundStyle(self.theme.secondaryText)
@@ -33,15 +34,15 @@ struct ComparisonSourceBar: View {
             Picker("To", selection: self.$workspace.comparisonRight) {
                 ForEach(self.choices, id: \.self) { Text($0).tag($0) }
             }
-            .frame(maxWidth: 270)
+            .frame(maxWidth: self.contentSize.scaled(270))
 
             Spacer()
             DiffyBadge(title: "Sample comparison", color: self.theme.secondaryText)
 
         }
-        .font(.system(size: 11))
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
+        .font(self.contentSize.font(size: 11))
+        .padding(.horizontal, self.contentSize.scaled(18))
+        .padding(.vertical, self.contentSize.scaled(12))
         .background(self.theme.elevated)
 
     }
