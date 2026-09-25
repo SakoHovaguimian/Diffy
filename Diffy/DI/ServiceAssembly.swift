@@ -3,6 +3,9 @@ import Foundation
 @MainActor
 final class ServiceAssembly {
 
+    let gitService: GitServiceProtocol
+    let gitHubService: GitHubServiceProtocol
+    let gitHubAccountService: GitHubAccountServiceProtocol
     let runtime: AppRuntime
     let workspaceService: WorkspaceServiceProtocol
     let preferencesService: PreferencesServiceProtocol
@@ -27,16 +30,27 @@ final class ServiceAssembly {
                 paths: paths,
                 preferencesService: preferencesService
             )
+            self.gitService = LiveGitService()
+            let configuration = GitHubAppConfiguration.bundled()
+            let resolver = GitHubCredentialResolver(configuration: configuration)
+            self.gitHubService = LiveGitHubService(configuration: configuration, resolver: resolver)
+            self.gitHubAccountService = LiveGitHubAccountService(configuration: configuration, fileURL: paths.gitHubAccountsFile, resolver: resolver)
             notesURL = paths.annotationsFile
 
         } else {
 
             self.workspaceService = MockWorkspaceService()
+            self.gitService = MockGitService()
+            self.gitHubService = MockGitHubService()
+            self.gitHubAccountService = MockGitHubAccountService()
             notesURL = nil
 
         }
         #else
         self.workspaceService = MockWorkspaceService()
+        self.gitService = MockGitService()
+        self.gitHubService = MockGitHubService()
+        self.gitHubAccountService = MockGitHubAccountService()
         notesURL = isPreview ? nil : Self.annotationsURL()
         #endif
 

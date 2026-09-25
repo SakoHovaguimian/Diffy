@@ -10,16 +10,20 @@ final class WorkspaceViewModel: ViewModel {
 
     let loggerName = "WORKSPACE_VIEW_MODEL"
     let runtime: AppRuntime
+    let repositoryViewModel: RepositoryViewModel
+    let overviewViewModel: WorkspaceOverviewViewModel
     @Published private(set) var projects: [RepositoryProject]
     let fileNavigatorViewModel: FileNavigatorViewModel
     let textDiffViewModel: TextDiffViewModel
     private let workspaceService: WorkspaceServiceProtocol
     private let preferencesService: PreferencesServiceProtocol
+    private var comparisonObservation: AnyCancellable?
 
     @Published var buckets: [Bucket]
     @Published var selectedProjectID: String = "rune"
     @Published var selectedFileID: String?
     @Published var mode: ComparisonMode = .workingTree
+    @Published var showsOverview = true
     @Published var showsDashboard = false
     @Published var showsReview = false
     @Published var showsCommandPalette = false
@@ -27,7 +31,8 @@ final class WorkspaceViewModel: ViewModel {
     @Published var favorites: Set<String> = ["rune", "obelisk"]
     @Published var recentProjectIDs: [String] = ["rune", "obelisk", "grimoire"]
     @Published var selectedBucket: Bucket?
-    @Published var pendingProject: NewProjectDraft?
+    @Published var pendingProject: ProjectEditorDraft?
+    @Published private(set) var projectEditorError: String?
     @Published private(set) var projectOrder: [String] = []
     @Published var projectDropTargetID: String?
     @Published var projectBuckets: [String: String] = [:]
@@ -42,6 +47,8 @@ final class WorkspaceViewModel: ViewModel {
 
     init(
         runtime: AppRuntime,
+        repositoryViewModel: RepositoryViewModel,
+        overviewViewModel: WorkspaceOverviewViewModel,
         workspaceService: WorkspaceServiceProtocol,
         preferencesService: PreferencesServiceProtocol,
         fileNavigatorViewModel: FileNavigatorViewModel,
@@ -51,6 +58,8 @@ final class WorkspaceViewModel: ViewModel {
         let library = workspaceService.loadLibrary()
 
         self.runtime = runtime
+        self.repositoryViewModel = repositoryViewModel
+        self.overviewViewModel = overviewViewModel
         self.projects = library.projects
         self.workspaceService = workspaceService
         self.preferencesService = preferencesService
@@ -72,6 +81,46 @@ final class WorkspaceViewModel: ViewModel {
         self.selectedFileID = self.projects.first?.files.first?.id
         self.showsDashboard = self.projects.first?.checkout != nil
 
+        self.fileNavigatorViewModel.restore(projectID: self.selectedProjectID)
+        self.comparisonObservation = repositoryViewModel.comparison.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+
+        migrateStarterBucketsIfNeeded()
+
+    }
+
+    private func migrateStarterBucketsIfNeeded() {
+
+        let migrationKey = "buckets.personalDefault.v1"
+        guard self.preferencesService.load(Bool.self, key: migrationKey) != true else { return }
+
+        self.buckets = WorkspaceDefaults.migrateStarterBuckets(self.buckets)
+
+        if self.buckets.isEmpty {
+            self.buckets = WorkspaceDefaults.starterBuckets
+        }
+
+        if self.buckets.contains(where: { $0.id == "personal" }) {
+
+            let bucketIDs = Set(self.buckets.map(\.id))
+
+            for project in self.projects {
+
+                let bucketID = bucketID(for: project)
+
+                if WorkspaceDefaults.retiredBucketIDs.contains(bucketID), !bucketIDs.contains(bucketID) {
+                    self.projectBuckets[project.id] = "personal"
+                }
+
+            }
+
+        }
+
+        self.preferencesService.save(self.projectBuckets, key: "projectBuckets.demo.v1")
+        self.preferencesService.save(self.buckets, key: "buckets.demo.v1")
+        self.preferencesService.save(true, key: migrationKey)
+
     }
 
     var selectedProject: RepositoryProject? {
@@ -88,13 +137,25 @@ final class WorkspaceViewModel: ViewModel {
 
     }
 
+    var files: [DiffFile] {
+        self.runtime.isLive ? self.repositoryViewModel.comparison.files : self.selectedProject?.files ?? []
+    }
+
+    var currentFileID: String? {
+        self.runtime.isLive ? self.repositoryViewModel.comparison.selectedFileID : self.selectedFileID
+    }
+
     var file: DiffFile? {
-        self.selectedProject?.files.first { $0.id == self.selectedFileID }
+        self.runtime.isLive ? self.repositoryViewModel.comparison.selectedFile : self.files.first { $0.id == self.selectedFileID }
     }
 
     var comparisonTitle: String {
 
-        switch self.mode {
+        if self.runtime.isLive {
+            return self.repositoryViewModel.comparison.selection.title
+        }
+
+        return switch self.mode {
 
         case .workingTree: "HEAD → Working tree"
         case .staged: "HEAD → Index"
@@ -133,10 +194,14 @@ final class WorkspaceViewModel: ViewModel {
     // MARK: - Navigation
 
     func selectProject(_ project: RepositoryProject) {
+
+        guard !self.repositoryViewModel.isOperating else { return }
         requestNavigation(.project(projectID: project.id, opensWorkingTree: false))
     }
 
     func openWorkingTree(for project: RepositoryProject) {
+
+        guard !self.repositoryViewModel.isOperating else { return }
         requestNavigation(.project(projectID: project.id, opensWorkingTree: true))
     }
 
@@ -156,6 +221,24 @@ final class WorkspaceViewModel: ViewModel {
 
     func showDashboard() {
         requestNavigation(.dashboard)
+    }
+
+    func showOverview() {
+        requestNavigation(.overview)
+    }
+
+    func showFileHistory(_ file: DiffFile) {
+
+        if self.runtime.isLive {
+
+            self.repositoryViewModel.showsPatch = false
+            selectMode(.history)
+            Task { await self.repositoryViewModel.loadHistory(path: file.path) }
+
+        } else {
+            selectFile(file, mode: .history)
+        }
+
     }
 
     func resolvePendingDiffNavigation(_ decision: DiffNavigationDecision) {
@@ -185,6 +268,8 @@ final class WorkspaceViewModel: ViewModel {
 
     private func requestNavigation(_ destination: DiffNavigationDestination) {
 
+        if self.repositoryViewModel.isOperating { return }
+
         guard !isCurrentDestination(destination) else {
             return
         }
@@ -204,17 +289,20 @@ final class WorkspaceViewModel: ViewModel {
 
         switch destination {
 
+        case .overview:
+            return self.showsOverview
+
         case .dashboard:
-            return self.showsDashboard
+            return !self.showsOverview && self.showsDashboard
 
         case let .file(projectID, fileID, mode):
-            return !self.showsDashboard && self.selectedProjectID == projectID && self.selectedFileID == fileID && self.mode == mode
+            return !self.showsOverview && !self.showsDashboard && self.selectedProjectID == projectID && self.currentFileID == fileID && self.mode == mode
 
         case let .mode(mode):
-            return !self.showsDashboard && self.mode == mode
+            return !self.showsOverview && !self.showsDashboard && self.mode == mode
 
         case let .project(projectID, opensWorkingTree):
-            return self.selectedProjectID == projectID && (opensWorkingTree ? !self.showsDashboard && self.mode == .workingTree : self.showsDashboard)
+            return !self.showsOverview && self.selectedProjectID == projectID && (opensWorkingTree ? !self.showsDashboard && self.mode == .workingTree : self.showsDashboard)
 
         case .annotation:
             return false
@@ -227,8 +315,13 @@ final class WorkspaceViewModel: ViewModel {
 
         switch destination {
 
+        case .overview:
+            self.showsOverview = true
+
         case .dashboard:
+            self.showsOverview = false
             self.showsDashboard = true
+            self.mode = .workingTree
 
         case let .file(projectID, fileID, mode):
             navigateToFile(projectID: projectID, fileID: fileID, mode: mode)
@@ -253,6 +346,7 @@ final class WorkspaceViewModel: ViewModel {
         }
 
         self.selectedProjectID = project.id
+        self.showsOverview = false
         self.fileNavigatorViewModel.restore(projectID: project.id)
         self.selectedFileID = project.files.first?.id
         self.mode = .workingTree
@@ -264,12 +358,30 @@ final class WorkspaceViewModel: ViewModel {
 
     private func navigateToFile(projectID: String, fileID: String, mode: ComparisonMode) {
 
+        if self.runtime.isLive, projectID == self.selectedProjectID,
+           let file = self.files.first(where: { $0.id == fileID }) {
+
+            self.repositoryViewModel.comparison.select(file)
+
+            if !self.repositoryViewModel.showsPatch {
+
+                self.showsOverview = false
+                self.showsDashboard = false
+                self.mode = mode
+
+            }
+
+            return
+
+        }
+
         guard let project = self.projects.first(where: { $0.id == projectID }),
               project.files.contains(where: { $0.id == fileID }) else {
             return
         }
 
         self.selectedProjectID = projectID
+        self.showsOverview = false
         self.selectedFileID = fileID
         self.showsDashboard = false
         self.mode = mode
@@ -278,14 +390,8 @@ final class WorkspaceViewModel: ViewModel {
 
     private func navigateToMode(_ mode: ComparisonMode) {
 
-        guard self.project.directoryPath == nil else {
-
-            self.showsDashboard = true
-            return
-
-        }
-
         self.mode = mode
+        self.showsOverview = false
         self.showsDashboard = false
 
         if mode == .staged {
@@ -320,6 +426,47 @@ final class WorkspaceViewModel: ViewModel {
 
     }
 
+    // MARK: - Live Project Library
+
+    func reloadProjects() {
+
+        let library = self.workspaceService.loadLibrary()
+        self.projects = library.projects
+
+        if !self.projects.contains(where: { $0.id == self.selectedProjectID }) {
+
+            self.selectedProjectID = self.projects.last?.id ?? ""
+            self.showsOverview = self.showsOverview || self.projects.isEmpty
+            self.showsDashboard = !self.showsOverview
+
+        }
+
+        if let error = library.loadErrorMessage { self.notice = error }
+
+        if let selectedProject, self.repositoryViewModel.project?.id == selectedProject.id {
+            Task { await self.repositoryViewModel.load(selectedProject) }
+        }
+
+    }
+
+    func relocateSelectedProject(to directory: URL) {
+
+        guard var project = self.selectedProject else { return }
+
+        do {
+
+            project.checkout = try self.workspaceService.makeCheckoutReference(for: directory)
+            let updated = self.workspaceService.loadLibrary().projects.map { $0.id == project.id ? project : $0 }
+            try self.workspaceService.saveProjects(updated)
+            self.projects = updated
+            Task { await self.repositoryViewModel.load(project) }
+
+        } catch {
+            self.notice = error.localizedDescription
+        }
+
+    }
+
     // MARK: - Bucket Customization
 
     func bucketID(for project: RepositoryProject) -> String {
@@ -342,30 +489,86 @@ final class WorkspaceViewModel: ViewModel {
 
         }
 
-        self.pendingProject = NewProjectDraft(
+        self.projectEditorError = nil
+        self.pendingProject = ProjectEditorDraft(
             directoryURL: directoryURL.standardizedFileURL,
-            bucketID: bucket?.id ?? "",
-            name: directoryURL.lastPathComponent
+            bucketID: bucket?.id ?? ""
         )
 
     }
 
-    func addProject(_ draft: NewProjectDraft) {
+    func editProject(_ project: RepositoryProject) {
 
-        let name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.projectEditorError = nil
+        self.pendingProject = ProjectEditorDraft(project: project, bucketID: bucketID(for: project))
+
+    }
+
+    func saveProject(_ draft: ProjectEditorDraft) {
+
+        self.projectEditorError = nil
+
+        guard !draft.displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+
+            self.projectEditorError = "Enter a display name for this project."
+            return
+
+        }
+
+        if let projectID = draft.projectID {
+            updateProject(projectID, from: draft)
+        } else {
+            addProject(draft)
+        }
+
+    }
+
+    private func updateProject(_ projectID: String, from draft: ProjectEditorDraft) {
+
+        var updatedProjects = self.workspaceService.loadLibrary().projects
+
+        guard let index = updatedProjects.firstIndex(where: { $0.id == projectID }) else {
+
+            self.projectEditorError = "This project is no longer in your library."
+            return
+
+        }
+
+        updatedProjects[index].displayName = draft.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        updatedProjects[index].symbol = draft.symbol
+
+        do {
+
+            try self.workspaceService.saveProjects(updatedProjects)
+            self.projects = updatedProjects
+            self.repositoryViewModel.updateProjectPresentation(updatedProjects[index])
+            self.pendingProject = nil
+            self.notice = "Project updated."
+
+        } catch {
+            self.projectEditorError = "Diffy could not save this project: \(error.localizedDescription)"
+        }
+
+    }
+
+    private func addProject(_ draft: ProjectEditorDraft) {
 
         let hasValidDestination = draft.bucketID.isEmpty || self.buckets.contains { $0.id == draft.bucketID }
 
-        guard !name.isEmpty, hasValidDestination else {
+        guard let directoryURL = draft.directoryURL, hasValidDestination else {
+
+            self.projectEditorError = "Choose a project folder and an available Bucket."
             return
+
         }
 
         do {
 
-            let checkout = try self.workspaceService.makeCheckoutReference(for: draft.directoryURL)
+            let checkout = try self.workspaceService.makeCheckoutReference(for: directoryURL)
             let project = RepositoryProject(
                 id: "local-\(UUID().uuidString)",
-                name: name,
+                name: directoryURL.lastPathComponent,
+                displayName: draft.displayName.trimmingCharacters(in: .whitespacesAndNewlines),
                 subtitle: "",
                 bucketID: draft.bucketID,
                 symbol: draft.symbol,
@@ -374,16 +577,16 @@ final class WorkspaceViewModel: ViewModel {
                 gitHubAccountID: nil,
                 addedAt: Date()
             )
-            let updatedProjects = self.projects + [project]
+            let updatedProjects = self.workspaceService.loadLibrary().projects + [project]
 
             try self.workspaceService.saveProjects(updatedProjects)
             self.projects = updatedProjects
             self.pendingProject = nil
             selectProject(project)
-            self.notice = "Folder added to Diffy. Comparisons are not available for local folders yet."
+            self.notice = "Project added to Diffy."
 
         } catch {
-            self.notice = "Diffy could not save this folder: \(error.localizedDescription)"
+            self.projectEditorError = "Diffy could not save this folder: \(error.localizedDescription)"
         }
 
     }
@@ -569,7 +772,8 @@ final class WorkspaceViewModel: ViewModel {
     private func reveal(_ annotation: CodeAnnotation) {
 
         guard let project = self.projects.first(where: { $0.id == annotation.projectID }),
-              let file = project.files.first(where: { $0.path == annotation.filePath || $0.originalPath == annotation.filePath }) else {
+              !self.runtime.isLive || (project.id == self.selectedProjectID && annotation.comparison == self.comparisonTitle),
+              let file = (self.runtime.isLive ? self.files : project.files).first(where: { $0.path == annotation.filePath || $0.originalPath == annotation.filePath }) else {
 
             self.notice = "This source is unavailable. The captured snippet is preserved in your note."
             return
@@ -577,8 +781,17 @@ final class WorkspaceViewModel: ViewModel {
         }
 
         self.selectedProjectID = project.id
+        self.showsOverview = false
         self.selectedFileID = file.id
         self.showsDashboard = false
+
+        if self.runtime.isLive {
+
+            self.repositoryViewModel.comparison.select(file)
+            self.repositoryViewModel.comparison.reveal(lineNumber: annotation.startLine, side: annotation.side)
+            return
+
+        }
 
         if annotation.source.hasPrefix("mock/merge/") {
 

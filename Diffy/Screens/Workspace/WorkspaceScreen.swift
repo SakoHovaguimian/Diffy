@@ -5,11 +5,20 @@ struct WorkspaceScreen: View {
     @StateObject var viewModel: WorkspaceViewModel
     @EnvironmentObject private var settings: SettingsViewModel
     @EnvironmentObject private var review: ReviewViewModel
+    @EnvironmentObject private var accounts: GitHubAccountsViewModel
+    @ObservedObject private var repository: RepositoryViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sidebarDragStartWidth: Double?
     @State private var reviewWidth: CGFloat = 310
     @State private var reviewDragStartWidth: CGFloat?
+
+    init(viewModel: WorkspaceViewModel) {
+
+        self._viewModel = StateObject(wrappedValue: viewModel)
+        self._repository = ObservedObject(wrappedValue: viewModel.repositoryViewModel)
+
+    }
 
     var body: some View {
 
@@ -20,6 +29,7 @@ struct WorkspaceScreen: View {
                 if self.viewModel.showsSidebar {
 
                     WorkspaceSidebar(viewModel: self.viewModel)
+                        .disabled(self.repository.isOperating)
                         .frame(width: max(214, self.settings.appearance.sidebarWidth))
                         .transition(.move(edge: .leading).combined(with: .opacity))
 
@@ -61,6 +71,18 @@ struct WorkspaceScreen: View {
         .navigationTitle(self.viewModel.runtime.windowTitle)
         .focusedSceneValue(\.workspace, self.viewModel)
         .toolbar { toolbarContent() }
+        .task(id: "\(self.viewModel.selectedProjectID)|\(self.viewModel.showsOverview)") {
+
+            if !self.viewModel.showsOverview, let project = self.viewModel.selectedProject {
+
+                await self.repository.load(project)
+                guard !Task.isCancelled, self.repository.project?.id == project.id else { return }
+                if !self.viewModel.showsDashboard { self.repository.activate(self.viewModel.mode) }
+
+            }
+
+        }
+        .onReceive(self.accounts.$libraryRevision.dropFirst()) { _ in self.viewModel.reloadProjects() }
         .sheet(item: self.$viewModel.selectedBucket) { bucket in
 
             BucketEditorScreen(
@@ -75,15 +97,22 @@ struct WorkspaceScreen: View {
         .sheet(item: self.$viewModel.pendingProject) { draft in
 
             ProjectEditorScreen(
-                draft: draft,
-                bucket: self.viewModel.buckets.first { $0.id == draft.bucketID }
+                draft: Binding(
+                    get: { self.viewModel.pendingProject ?? draft },
+                    set: { self.viewModel.pendingProject = $0 }
+                ),
+                bucket: self.viewModel.buckets.first { $0.id == draft.bucketID },
+                errorMessage: self.viewModel.projectEditorError
             ) { project in
-                self.viewModel.addProject(project)
+                self.viewModel.saveProject(project)
             }
             .diffyStyle()
 
         }
-        .sheet(item: self.$viewModel.annotationDraft) { draft in
+        .sheet(item: Binding(
+            get: { self.repository.showsPatch ? nil : self.viewModel.annotationDraft },
+            set: { self.viewModel.annotationDraft = $0 }
+        )) { draft in
 
             AnnotationEditorScreen(draft: draft, workspace: self.viewModel)
                 .diffyStyle()
@@ -182,25 +211,35 @@ struct WorkspaceScreen: View {
 
         Group {
 
-            if self.viewModel.projects.isEmpty {
-                emptyWorkspace()
+            if self.viewModel.showsOverview || self.viewModel.projects.isEmpty {
+                WorkspaceOverviewScreen(workspace: self.viewModel, viewModel: self.viewModel.overviewViewModel)
             } else {
 
                 VStack(spacing: 0) {
 
-                    WorkspaceHeader(viewModel: self.viewModel)
+                    WorkspaceHeader(viewModel: self.viewModel, repository: self.repository)
 
-                    if self.viewModel.showsDashboard {
-                        ProjectDashboardScreen(workspace: self.viewModel)
-                    } else if self.viewModel.mode == .workingTree {
+                    if let notice = self.viewModel.notice {
+
+                        HStack {
+
+                            DiffyStatusBanner(message: notice)
+                            Button { self.viewModel.notice = nil } label: { Image(systemName: "xmark") }
+                                .accessibilityLabel("Dismiss workspace notice")
+
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+
+                    }
+
+                    if !self.viewModel.runtime.isLive && !self.viewModel.showsDashboard && [.workingTree, .merge].contains(self.viewModel.mode) {
+
                         ComparisonScreen(workspace: self.viewModel)
+
                     } else {
 
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(self.theme.added.opacity(0.28))
-                            .padding(24)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(self.theme.background)
+                        RepositoryWorkspaceScreen(viewModel: self.repository, workspace: self.viewModel)
 
                     }
 
@@ -209,34 +248,6 @@ struct WorkspaceScreen: View {
             }
 
         }
-
-    }
-
-    private func emptyWorkspace() -> some View {
-
-        VStack(spacing: 18) {
-
-            DiffyEmptyState(
-                symbol: "folder.badge.plus",
-                title: "Add your first project",
-                message: "Choose a local folder to create Diffy's secure project reference. Live mode does not load sample repositories."
-            )
-            .frame(maxHeight: 280)
-
-            Button("Choose Project Folder") {
-
-                guard let directoryURL = ProjectDirectoryController().chooseDirectory() else {
-                    return
-                }
-
-                self.viewModel.prepareProject(directoryURL: directoryURL, in: nil)
-
-            }
-            .buttonStyle(.borderedProminent)
-
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(self.theme.background)
 
     }
 
@@ -260,12 +271,16 @@ struct WorkspaceScreen: View {
 
         ToolbarItem(placement: .principal) {
 
-            if let project = self.viewModel.selectedProject {
+            if self.viewModel.showsOverview {
+                Text("Workspace overview")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(self.theme.secondaryText)
+            } else if self.viewModel.selectedProject != nil {
 
                 HStack(spacing: 8) {
 
-                    Image(systemName: project.directoryPath == nil ? "arrow.triangle.branch" : "folder")
-                    Text(project.directoryPath == nil ? project.branch : "Local folder")
+                    Image(systemName: "arrow.triangle.branch")
+                    Text(self.repository.snapshot?.head.displayName ?? "Local project")
                         .lineLimit(1)
 
                 }

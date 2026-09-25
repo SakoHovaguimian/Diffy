@@ -91,8 +91,8 @@ struct AnnotationEditorScreen: View {
         let annotation = CodeAnnotation(
             id: UUID(),
             projectID: self.workspace.project.id,
-            projectName: self.workspace.project.name,
-            comparison: self.workspace.comparisonTitle,
+            projectName: self.workspace.project.displayName,
+            comparison: self.draft.comparisonTitle ?? self.workspace.comparisonTitle,
             filePath: self.draft.side == .left ? (self.draft.file.originalPath ?? self.draft.file.path) : self.draft.file.path,
             source: self.draft.source,
             side: self.draft.side,
@@ -103,7 +103,7 @@ struct AnnotationEditorScreen: View {
             createdAt: Date(),
             comment: self.comment,
             isResolved: false,
-            comparisonMode: self.workspace.mode.rawValue
+            comparisonMode: (self.draft.comparisonMode ?? self.workspace.mode).rawValue
         )
 
         self.review.add(annotation)

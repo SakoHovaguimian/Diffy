@@ -13,6 +13,7 @@ struct DiffyApp: App {
             WorkspaceScreen(viewModel: self.appAssembler.viewModels.workspaceViewModel())
                 .diffyStyle()
                 .environmentObject(self.appAssembler.viewModels.settingsViewModel)
+                .environmentObject(self.appAssembler.viewModels.gitHubAccountsViewModel)
                 .environmentObject(self.appAssembler.viewModels.reviewViewModel)
 
         }
@@ -27,6 +28,7 @@ struct DiffyApp: App {
             SettingsScreen()
                 .diffyStyle()
                 .environmentObject(self.appAssembler.viewModels.settingsViewModel)
+                .environmentObject(self.appAssembler.viewModels.gitHubAccountsViewModel)
 
         }
 

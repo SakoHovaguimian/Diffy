@@ -16,7 +16,16 @@ struct FileNavigatorScreen: View {
             searchField()
             navigatorOptions()
 
-            if self.viewModel.entries(self.workspace.project.files, mode: self.workspace.mode).isEmpty {
+            if self.workspace.runtime.isLive && self.workspace.repositoryViewModel.comparison.isLoadingFiles {
+
+                ProgressView("Reading changed files…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            } else if self.workspace.files.isEmpty {
+
+                DiffyEmptyState(symbol: "checkmark.circle", title: "No changed files", message: "Changes for this comparison will appear here.")
+
+            } else if self.viewModel.entries(self.workspace.files, mode: self.workspace.mode).isEmpty {
 
                 VStack(spacing: self.contentSize.scaled(12)) {
 
@@ -32,7 +41,7 @@ struct FileNavigatorScreen: View {
 
                     LazyVStack(spacing: self.contentSize.scaled(2)) {
 
-                        ForEach(self.viewModel.entries(self.workspace.project.files, mode: self.workspace.mode)) { entry in
+                        ForEach(self.viewModel.entries(self.workspace.files, mode: self.workspace.mode)) { entry in
                             entryRow(entry)
                         }
 
@@ -62,7 +71,7 @@ struct FileNavigatorScreen: View {
 
             Spacer()
 
-            Text("\(self.viewModel.visibleFiles(self.workspace.project.files, mode: self.workspace.mode).count)")
+            Text("\(self.viewModel.visibleFiles(self.workspace.files, mode: self.workspace.mode).count)")
                 .font(self.contentSize.font(size: 10, design: .monospaced))
 
         }
@@ -115,7 +124,7 @@ struct FileNavigatorScreen: View {
                 Button("Expand all") { self.viewModel.collapsedGroups.removeAll() }
                 Button("Collapse all") {
 
-                    self.viewModel.collapsedGroups = Set(self.viewModel.entries(self.workspace.project.files, mode: self.workspace.mode).filter { $0.file == nil }.map(\.id))
+                    self.viewModel.collapsedGroups = Set(self.viewModel.entries(self.workspace.files, mode: self.workspace.mode).filter { $0.file == nil }.map(\.id))
 
                 }
 
@@ -166,7 +175,7 @@ struct FileNavigatorScreen: View {
         if let file = entry.file {
 
             Button {
-                self.workspace.selectFile(file)
+                self.workspace.selectFile(file, mode: self.workspace.mode)
             } label: {
 
                 HStack(spacing: self.contentSize.scaled(9)) {
@@ -191,13 +200,13 @@ struct FileNavigatorScreen: View {
                 .padding(.trailing, self.contentSize.scaled(8))
                 .padding(.vertical, self.contentSize.scaled(9))
                 .background(
-                    self.workspace.selectedFileID == file.id ? self.theme.selection :
+                    self.workspace.currentFileID == file.id ? self.theme.selection :
                         self.hoveredEntryID == entry.id ? self.theme.elevated : .clear,
                     in: RoundedRectangle(cornerRadius: self.contentSize.scaled(8))
                 )
                 .overlay(alignment: .leading) {
 
-                    if self.workspace.selectedFileID == file.id {
+                    if self.workspace.currentFileID == file.id {
 
                         RoundedRectangle(cornerRadius: self.contentSize.scaled(2))
                             .fill(self.theme.accent)
@@ -211,14 +220,14 @@ struct FileNavigatorScreen: View {
             }
             .buttonStyle(.plain)
             .onHover { hovering in self.hoveredEntryID = hovering ? entry.id : nil }
-            .help("\(file.path) · \(file.status.rawValue) · edited \(file.updatedMinutesAgo)m ago")
+            .help(file.lastEditedAt == nil ? "\(file.path) · \(file.status.rawValue)" : "\(file.path) · \(file.status.rawValue) · edited \(file.updatedMinutesAgo)m ago")
             .accessibilityLabel("\(file.path), \(file.status.rawValue)")
             .contextMenu {
 
-                Button("Open comparison") { self.workspace.selectFile(file) }
+                Button("Open comparison") { self.workspace.selectFile(file, mode: self.workspace.mode) }
                 Button("Copy relative path") { ExportController.copy(file.path) }
                 Button("Show file history") {
-                    self.workspace.selectFile(file, mode: .history)
+                    self.workspace.showFileHistory(file)
 
                 }
 
@@ -273,7 +282,7 @@ struct FileNavigatorScreen: View {
                 Text("Showing \(filter.rawValue.lowercased()) files")
             }
 
-            Text("Dates are fixed sample metadata")
+            Text(self.workspace.runtime.isLive ? "Dates show last edit on disk when available" : "Dates are fixed sample metadata")
                 .font(self.contentSize.font(size: 9))
 
         }

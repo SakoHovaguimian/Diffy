@@ -20,6 +20,8 @@ final class TextDiffViewModel: ViewModel {
     @Published var paneRatio = 0.5
     @Published private(set) var draftText = ""
     @Published private(set) var draftLines: [DiffLine] = []
+    @Published var embeddedCanvasHeight: CGFloat = 120
+    @Published var reviewLineLimit = 400
     @Published var isEditing = false
     @Published private(set) var editingLineNumber: Int?
 
@@ -33,7 +35,19 @@ final class TextDiffViewModel: ViewModel {
 
     // MARK: - Editable Draft
 
-    func prepare(file: DiffFile) {
+    func prepare(file: DiffFile, allowsEditing: Bool = true) {
+
+        if !allowsEditing {
+
+            self.preparedFileID = file.id
+            self.appliedText = file.updatedSource
+            self.appliedLines = file.lines
+            self.draftText = file.updatedSource
+            self.draftLines = file.lines
+            finishEditing()
+            return
+
+        }
 
         guard self.preparedFileID != file.id else {
             return
@@ -180,7 +194,7 @@ final class TextDiffViewModel: ViewModel {
 
     }
 
-    func draft(file: DiffFile, comparison: String) -> AnnotationDraft? {
+    func draft(file: DiffFile, comparison: String, sourcePrefix: String = "mock") -> AnnotationDraft? {
 
         guard let start = self.selectionStart, let end = self.selectionEnd else {
             return nil
@@ -200,7 +214,8 @@ final class TextDiffViewModel: ViewModel {
             startLine: first,
             endLine: last,
             snippet: snippets.joined(separator: "\n"),
-            source: "mock/\(comparison)/\(self.selectedSide.rawValue.lowercased())/v1"
+            source: "\(sourcePrefix)/\(comparison)/\(self.selectedSide.rawValue.lowercased())/v1",
+            comparisonTitle: comparison
         )
 
     }
@@ -233,7 +248,11 @@ final class TextDiffViewModel: ViewModel {
             return
         }
 
-        self.selectedChangeIndex = (self.selectedChangeIndex + direction + changes.count) % changes.count
+        if self.scrollTarget == nil {
+            self.selectedChangeIndex = direction < 0 ? changes.count - 1 : 0
+        } else {
+            self.selectedChangeIndex = (self.selectedChangeIndex + direction + changes.count) % changes.count
+        }
         self.scrollTarget = changes[self.selectedChangeIndex]
 
     }
@@ -254,29 +273,32 @@ final class TextDiffViewModel: ViewModel {
 
     func visibleLines(_ file: DiffFile, preferences: EditorPreferences) -> [DiffLine] {
 
-        file.lines.filter { line in
+        let changedIDs = file.lines.filter(\.isChanged).map(\.id)
+        let context = max(0, preferences.contextLines)
+        var nextChange = 0
+
+        return file.lines.filter { line in
 
             if preferences.ignoreComments && (line.left ?? line.right ?? "").trimmingCharacters(in: .whitespaces).hasPrefix("//") {
                 return false
             }
 
-            if preferences.collapseUnchanged && !line.isChanged {
+            guard preferences.collapseUnchanged, !line.isChanged else { return true }
 
-                return file.lines.contains { other in
-                    other.isChanged && abs(other.id - line.id) <= preferences.contextLines
-                }
-
+            while nextChange < changedIDs.count && changedIDs[nextChange] < line.id - context {
+                nextChange += 1
             }
 
-            return true
+            return nextChange < changedIDs.count && changedIDs[nextChange] <= line.id + context
 
         }
 
     }
 
-    func visibleRegions(_ file: DiffFile, preferences: EditorPreferences) -> [DiffRegion] {
+    func visibleRegions(_ file: DiffFile, preferences: EditorPreferences, limit: Int? = nil) -> [DiffRegion] {
 
-        let lines = visibleLines(file, preferences: preferences)
+        let visible = visibleLines(file, preferences: preferences)
+        let lines = Array(visible.prefix(limit ?? visible.count))
         var regions: [DiffRegion] = []
         var currentLines: [DiffLine] = []
 

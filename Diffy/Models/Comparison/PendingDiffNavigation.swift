@@ -6,6 +6,7 @@ struct PendingDiffNavigation: Identifiable {
 }
 
 enum DiffNavigationDestination {
+    case overview
     case dashboard
     case file(projectID: String, fileID: String, mode: ComparisonMode)
     case mode(ComparisonMode)

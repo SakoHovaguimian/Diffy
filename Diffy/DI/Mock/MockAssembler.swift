@@ -28,6 +28,8 @@ final class MockAssembler {
             resolved = MergeViewModel()
         } else if type == SettingsViewModel.self {
             resolved = self.assembler.viewModels.settingsViewModel
+        } else if type == GitHubAccountsViewModel.self {
+            resolved = self.assembler.viewModels.gitHubAccountsViewModel
         } else if type == ReviewViewModel.self {
             resolved = self.assembler.viewModels.reviewViewModel
         } else if type == WorkspaceServiceProtocol.self {

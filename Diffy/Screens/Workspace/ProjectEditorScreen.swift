@@ -2,9 +2,10 @@ import SwiftUI
 
 struct ProjectEditorScreen: View {
 
-    @State var draft: NewProjectDraft
+    @Binding var draft: ProjectEditorDraft
     let bucket: Bucket?
-    let save: (NewProjectDraft) -> Void
+    let errorMessage: String?
+    let save: (ProjectEditorDraft) -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.diffyTheme) private var theme
 
@@ -19,7 +20,7 @@ struct ProjectEditorScreen: View {
 
         VStack(alignment: .leading, spacing: 20) {
 
-            Text("Add New Project")
+            Text(self.draft.isEditing ? "Edit Project" : "Add New Project")
                 .font(.system(size: 25, weight: .semibold))
 
             Text(projectDescription())
@@ -34,9 +35,10 @@ struct ProjectEditorScreen: View {
                     .frame(width: 46, height: 46)
                     .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
 
-                TextField("Project name", text: self.$draft.name)
+                TextField("Display name", text: self.$draft.displayName)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 14))
+                    .accessibilityLabel("Project display name")
 
             }
 
@@ -69,19 +71,14 @@ struct ProjectEditorScreen: View {
 
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            projectReference(label: "REPOSITORY", value: self.draft.repositoryName)
 
-                Text("FOLDER")
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(1)
-                    .foregroundStyle(self.theme.secondaryText)
+            if let directoryURL = self.draft.directoryURL {
+                projectReference(label: "FOLDER", value: directoryURL.path)
+            }
 
-                Text(self.draft.directoryPath)
-                    .font(.system(size: 11, design: .monospaced))
-                    .textSelection(.enabled)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-
+            if let errorMessage = self.errorMessage {
+                DiffyStatusBanner(message: errorMessage, isError: true)
             }
 
             HStack {
@@ -92,15 +89,12 @@ struct ProjectEditorScreen: View {
 
                 Spacer()
                 Button("Cancel") { self.dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Add Project") {
-
+                Button(self.draft.isEditing ? "Save Changes" : "Add Project") {
                     self.save(self.draft)
-                    self.dismiss()
-
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
-                .disabled(self.draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(self.draft.displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             }
 
@@ -108,10 +102,15 @@ struct ProjectEditorScreen: View {
         .padding(28)
         .frame(width: 500)
         .background(self.theme.background)
+        .interactiveDismissDisabled()
 
     }
 
     private func projectDescription() -> String {
+
+        if self.draft.isEditing {
+            return "Choose the name and icon shown in Diffy. Your repository name and GitHub link stay the same."
+        }
 
         guard let bucket = self.bucket else {
             return "Name this folder and choose an icon. It will start in Unassigned."
@@ -121,17 +120,36 @@ struct ProjectEditorScreen: View {
 
     }
 
+    private func projectReference(label: String, value: String) -> some View {
+
+        VStack(alignment: .leading, spacing: 6) {
+
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(1)
+                .foregroundStyle(self.theme.secondaryText)
+
+            Text(value)
+                .font(.system(size: 11, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(2)
+                .truncationMode(.middle)
+
+        }
+
+    }
+
 }
 
 #Preview {
 
     ProjectEditorScreen(
-        draft: NewProjectDraft(
+        draft: .constant(ProjectEditorDraft(
             directoryURL: URL(fileURLWithPath: "/Users/example/Projects/Rune", isDirectory: true),
-            bucketID: "ios",
-            name: "Rune"
-        ),
+            bucketID: "personal"
+        )),
         bucket: MockWorkspaceFixtures.buckets[0],
+        errorMessage: nil,
         save: { _ in }
     )
     .withMockPreviews()

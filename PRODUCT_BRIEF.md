@@ -1,5 +1,7 @@
 # Diffy — Product Brief
 
+**Current scope update · September 24, 2026:** GitHub account connection, repository import, live Git pages, comparisons, and explicit Git actions are now authorized. Earlier milestone sequencing below is the original roadmap. See [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md) for the implemented workflow and distribution requirements.
+
 ## 1. What we are building
 
 Diffy is a native macOS application for understanding changes in code, images, folders, and Git repositories, annotating a review, and eventually resolving merge conflicts.

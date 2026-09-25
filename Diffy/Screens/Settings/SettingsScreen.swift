@@ -9,6 +9,9 @@ struct SettingsScreen: View {
 
         TabView {
 
+            GitHubAccountsScreen()
+                .tabItem { Label("Accounts", systemImage: "person.crop.circle") }
+
             AppearanceSettingsScreen()
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
 
@@ -26,7 +29,7 @@ struct SettingsScreen: View {
 
         }
         .padding(12)
-        .frame(width: 650, height: 570)
+        .frame(width: 780, height: 680)
 
     }
 
@@ -176,9 +179,9 @@ struct SettingsScreen: View {
 
             Section("Local by design") {
 
-                Label("Source repositories are fixed samples", systemImage: "lock.doc")
+                Label("Local repositories work without a GitHub account", systemImage: "folder")
                 Label("Review notes are saved on this Mac", systemImage: "internaldrive")
-                Label("No account or backend is required", systemImage: "checkmark.shield")
+                Label("Git actions use your Mac’s existing credentials", systemImage: "checkmark.shield")
 
             }
 
@@ -193,9 +196,9 @@ struct SettingsScreen: View {
 
             }
 
-            Section("Later configuration") {
+            Section("Git and GitHub") {
 
-                Text("Default comparison, exclusion patterns, generated-file handling, and binary behavior will be connected when local project support is added. GitHub settings arrive in Milestone 5.")
+                Text("Connect GitHub in Accounts. The Live app uses /usr/bin/git, your repository’s author identity, SSH agent, and credential helper. Install the Command Line Tools if Git is unavailable. The Mock app keeps its sample sources immutable.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

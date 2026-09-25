@@ -1,3 +1,5 @@
+> Historical prototype status. The September 24, 2026 integration request advances Live Git and GitHub work beyond Milestone 0. See [GITHUB_SETUP.md](GITHUB_SETUP.md); Mock sources remain immutable.
+
 # Milestone 0 — Initial Implementation
 
 This implementation establishes the native application and the principal review workflows. Milestone 0 remains open for runtime review, visual iteration, and the remaining controls in the product brief.

@@ -60,7 +60,7 @@ extension GitError: LocalizedError {
 
         switch self {
 
-        case .executableUnavailable: "Choose a Git executable in Settings → Repository."
+        case .executableUnavailable: "Install Apple’s Command Line Tools so /usr/bin/git is available, then refresh."
         case .checkoutUnavailable: "Choose Locate Folder to grant access again."
         case .authenticationRequired: "Confirm that this Mac can reach the remote with its existing SSH agent or credential helper, then try again."
         case .nonFastForward: "Pull first, or push with lease if you intentionally rewrote history."

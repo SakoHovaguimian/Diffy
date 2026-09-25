@@ -71,6 +71,11 @@ protocol GitServiceProtocol: Sendable {
         file: DiffFile
     ) async throws -> DiffFile
 
+    /// Read-only patch and file inventory for repository pages.
+    func patch(in repository: GitRepositoryReference, selection: ComparisonSelection) async throws -> String
+    func trackedPaths(in repository: GitRepositoryReference) async throws -> [String]
+    func folderPatch(left: URL, right: URL) async throws -> String
+
     // MARK: - Explicit Actions
 
     func perform(

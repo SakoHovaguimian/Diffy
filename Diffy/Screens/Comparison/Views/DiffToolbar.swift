@@ -118,6 +118,16 @@ struct DiffToolbar: View {
                 Button("Larger text") { self.settings.editor.fontSize = min(20, self.settings.editor.fontSize + 1) }
                 Button("Smaller text") { self.settings.editor.fontSize = max(9, self.settings.editor.fontSize - 1) }
 
+                if compact {
+
+                    Divider()
+                    Button("Previous change") { self.viewModel.navigate(-1, file: self.comparisonFile) }
+                    Button("Next change") { self.viewModel.navigate(1, file: self.comparisonFile) }
+                    Button("Annotate selected lines", action: self.annotate)
+                        .disabled(self.viewModel.selectionStart == nil || self.viewModel.isEditing)
+
+                }
+
                 if self.viewModel.isDraftModified(file: self.file) {
 
                     Divider()

@@ -18,6 +18,7 @@ struct WorkspaceSidebar: View {
         VStack(alignment: .leading, spacing: 0) {
 
             brand()
+            overviewRow()
             favorites()
 
             self.theme.border
@@ -117,6 +118,28 @@ struct WorkspaceSidebar: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 28)
+
+    }
+
+    private func overviewRow() -> some View {
+
+        Button {
+            self.viewModel.showOverview()
+        } label: {
+
+            Label("Overview", systemImage: "square.grid.2x2")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(self.viewModel.showsOverview ? self.theme.accent : self.theme.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .frame(height: 36)
+                .background(self.viewModel.showsOverview ? self.theme.selection : .clear, in: RoundedRectangle(cornerRadius: 8))
+                .contentShape(Rectangle())
+
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 14)
 
     }
 
@@ -456,7 +479,7 @@ struct WorkspaceSidebar: View {
                     .foregroundStyle(color)
                     .frame(width: 17)
 
-                Text(project.name)
+                Text(project.displayName)
                     .font(.system(size: 12, weight: isSelected ? .medium : .regular))
                     .lineLimit(1)
 
@@ -482,6 +505,7 @@ struct WorkspaceSidebar: View {
         .contextMenu {
 
             Button("Open overview") { self.viewModel.selectProject(project) }
+            Button("Edit Project…") { self.viewModel.editProject(project) }
             Button("Toggle favorite") { self.viewModel.toggleFavorite(project) }
 
             Menu("Move to Bucket") {
@@ -515,7 +539,7 @@ struct WorkspaceSidebar: View {
 
                     } label: {
 
-                        Label(project.directoryPath == nil ? "\(project.name) · working tree" : "\(project.name) · local folder", systemImage: "clock")
+                        Label(project.directoryPath == nil ? "\(project.displayName) · working tree" : "\(project.displayName) · local folder", systemImage: "clock")
                             .font(.system(size: 10))
                             .foregroundStyle(self.theme.secondaryText)
                             .lineLimit(1)

@@ -4,11 +4,7 @@ enum MockWorkspaceFixtures {
 
     private static let addedAt = Date(timeIntervalSince1970: 1_700_000_000)
 
-    static let buckets: [Bucket] = [
-        Bucket(id: "ios", title: "iOS", subtitle: "Made for the everyday", symbol: "square.stack.3d.up", accentHex: "7862D9"),
-        Bucket(id: "backend", title: "Backend", subtitle: "Behind the scenes", symbol: "server.rack", accentHex: "319B90"),
-        Bucket(id: "personal", title: "Personal", subtitle: "A little room to explore", symbol: "sparkles", accentHex: "D39553")
-    ]
+    static let buckets = WorkspaceDefaults.starterBuckets
 
     static let projects: [RepositoryProject] = [
         project("rune", name: "Rune", subtitle: "A considered design system", bucket: "ios", symbol: "square.stack.3d.up.fill", language: "Swift"),

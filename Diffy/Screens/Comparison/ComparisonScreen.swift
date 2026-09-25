@@ -9,7 +9,7 @@ struct ComparisonScreen: View {
 
         VStack(spacing: 0) {
 
-            if [.branches, .commits, .history].contains(self.workspace.mode) {
+            if !self.workspace.runtime.isLive && [.branches, .commits, .history].contains(self.workspace.mode) {
                 ComparisonSourceBar(workspace: self.workspace)
             }
 
@@ -30,7 +30,9 @@ struct ComparisonScreen: View {
     @ViewBuilder
     private func comparisonContent() -> some View {
 
-        if self.workspace.mode == .merge {
+        if self.workspace.runtime.isLive {
+            RepositoryComparisonContent(workspace: self.workspace, viewModel: self.workspace.repositoryViewModel.comparison)
+        } else if self.workspace.mode == .merge {
             MergeScreen(workspace: self.workspace, viewModel: MergeViewModel())
         } else if let file = self.workspace.file {
 

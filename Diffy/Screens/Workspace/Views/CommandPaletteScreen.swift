@@ -32,14 +32,15 @@ struct CommandPaletteScreen: View {
 
                     command("Open review notes", symbol: "text.bubble") { self.workspace.showsReview = true }
                     command("Create a Bucket", symbol: "folder.badge.plus") { self.workspace.addBucket() }
+                    command("Workspace overview", symbol: "square.grid.2x2") { self.workspace.showOverview() }
                     command("Project overview", symbol: "square.grid.2x2") { self.workspace.showDashboard() }
 
                     ForEach(ComparisonMode.allCases) { mode in
                         command("Compare · \(mode.rawValue)", symbol: mode.symbol) { self.workspace.selectMode(mode) }
                     }
 
-                    ForEach(self.workspace.project.files) { file in
-                        command(file.path, symbol: "doc.text") { self.workspace.selectFile(file) }
+                    ForEach(self.workspace.files) { file in
+                        command(file.path, symbol: "doc.text") { self.workspace.selectFile(file, mode: self.workspace.mode) }
                     }
 
                 }
@@ -52,7 +53,7 @@ struct CommandPaletteScreen: View {
 
                 Text("Navigate with Tab · Return to open")
                 Spacer()
-                Text("\(self.workspace.project.name)")
+                Text("\(self.workspace.project.displayName)")
 
             }
             .font(.system(size: 10))

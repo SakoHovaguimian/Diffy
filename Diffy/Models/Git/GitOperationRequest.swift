@@ -2,6 +2,8 @@ import Foundation
 
 /// An explicit, user-initiated action that may write to a repository.
 enum GitOperationRequest: Hashable, Sendable {
+    case commit(message: String)
+    case createBranch(name: String)
     case fetch(remote: String?)
     case push(GitPushOptions)
     case pull(GitPullStrategy)
@@ -21,6 +23,8 @@ enum GitOperationRequest: Hashable, Sendable {
 
         switch self {
 
+        case .commit: "Commit"
+        case .createBranch: "Create Branch"
         case .fetch: "Fetch"
         case let .push(options): options.forceWithLease ? "Force Push with Lease" : (options.setsUpstream ? "Set Upstream and Push" : "Push")
         case let .pull(strategy): "Pull · \(strategy.title)"
@@ -35,6 +39,17 @@ enum GitOperationRequest: Hashable, Sendable {
         case .restore: "Discard Changes"
         case .resolveConflict: "Resolve Conflict"
         case .switchBranch: "Check Out"
+
+        }
+
+    }
+
+    var canPauseForConflicts: Bool {
+
+        switch self {
+
+        case .pull, .startRebase, .continueRebase, .startMerge, .continueMerge: true
+        default: false
 
         }
 

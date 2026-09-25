@@ -89,7 +89,7 @@ struct ReviewScreen: View {
 
             ReviewExportScreen(
                 annotations: self.scopedAnnotations,
-                scope: self.scope == "All projects" ? "All projects" : "\(self.workspace.project.name) · \(self.scope.lowercased())"
+                scope: self.scope == "All projects" ? "All projects" : "\(self.workspace.project.displayName) · \(self.scope.lowercased())"
             )
             .diffyStyle()
 

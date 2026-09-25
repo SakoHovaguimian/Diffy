@@ -3,6 +3,7 @@ import SwiftUI
 struct WorkspaceHeader: View {
 
     @ObservedObject var viewModel: WorkspaceViewModel
+    @ObservedObject var repository: RepositoryViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.diffyContentSize) private var contentSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -28,7 +29,7 @@ struct WorkspaceHeader: View {
 
                 VStack(alignment: .leading, spacing: self.contentSize.scaled(3)) {
 
-                    Text(self.viewModel.project.name)
+                    Text(self.viewModel.project.displayName)
                         .font(self.contentSize.font(size: 20, weight: .semibold))
 
                     Text(self.viewModel.project.displaySubtitle)
@@ -40,8 +41,10 @@ struct WorkspaceHeader: View {
                 }
 
                 Spacer()
-                if self.viewModel.project.directoryPath == nil {
-                    DiffyBadge(title: "\(self.viewModel.project.changeCount) changes", color: self.theme.modified)
+                DiffyBadge(title: "\(self.repository.snapshot?.changes.count ?? self.viewModel.project.changeCount) changes", color: self.theme.modified)
+
+                DiffyIconButton(symbol: "pencil", label: "Edit project") {
+                    self.viewModel.editProject(self.viewModel.project)
                 }
 
                 DiffyIconButton(
@@ -53,7 +56,7 @@ struct WorkspaceHeader: View {
 
             }
 
-            if self.viewModel.project.directoryPath == nil {
+            Group {
 
                 ScrollView(.horizontal, showsIndicators: false) {
 
@@ -69,7 +72,7 @@ struct WorkspaceHeader: View {
 
                         ForEach(ComparisonMode.allCases.filter { $0 != .workingTree }) { mode in
 
-                            navigationButton(mode.rawValue, symbol: mode.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == mode, available: false) {
+                            navigationButton(mode.tabTitle, symbol: mode.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == mode) {
                                 self.viewModel.selectMode(mode)
                             }
 
@@ -86,7 +89,7 @@ struct WorkspaceHeader: View {
         }
         .padding(.horizontal, self.contentSize.scaled(24))
         .padding(.top, self.contentSize.scaled(22))
-        .padding(.bottom, self.viewModel.project.directoryPath == nil ? 0 : self.contentSize.scaled(18))
+        .padding(.bottom, 0)
         .background(self.theme.surface)
         .overlay(alignment: .bottom) { self.theme.border.frame(height: self.contentSize.scaled(1)) }
 
@@ -120,7 +123,7 @@ struct WorkspaceHeader: View {
 
         }
         .buttonStyle(.plain)
-        .help(available ? title : "\(title) placeholder")
+        .help(title)
 
     }
 
@@ -129,7 +132,8 @@ struct WorkspaceHeader: View {
 #Preview {
 
     WorkspaceHeader(
-        viewModel: mockResolve(WorkspaceViewModel.self)
+        viewModel: mockResolve(WorkspaceViewModel.self),
+        repository: mockResolve(WorkspaceViewModel.self).repositoryViewModel
     )
     .frame(width: 1100)
     .withMockPreviews()

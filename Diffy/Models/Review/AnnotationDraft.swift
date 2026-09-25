@@ -9,5 +9,7 @@ struct AnnotationDraft: Identifiable {
     let endLine: Int
     let snippet: String
     let source: String
+    var comparisonTitle: String? = nil
+    var comparisonMode: ComparisonMode? = nil
 
 }

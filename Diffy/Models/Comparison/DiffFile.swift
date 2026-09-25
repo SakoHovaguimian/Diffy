@@ -73,7 +73,13 @@ struct DiffFile: Codable, Identifiable, Hashable, Sendable {
     }
 
     var changeMagnitude: Int {
-        self.additions + self.deletions + self.changedLines
+
+        if let lineCounts = self.lineCounts {
+            return lineCounts.additions + lineCounts.deletions
+        }
+
+        return self.additions + self.deletions + self.changedLines
+
     }
 
     var language: String {
@@ -91,13 +97,17 @@ struct DiffFile: Codable, Identifiable, Hashable, Sendable {
     }
 
     func replacingLines(_ lines: [DiffLine]) -> DiffFile {
+        replacingContent(lines: lines, kind: self.kind)
+    }
+
+    func replacingContent(lines: [DiffLine], kind: ComparisonFileKind) -> DiffFile {
 
         var file = DiffFile(
             id: self.id,
             path: self.path,
             originalPath: self.originalPath,
             status: self.status,
-            kind: self.kind,
+            kind: kind,
             isStaged: self.isStaged,
             lastEditedAt: self.lastEditedAt,
             size: self.size,

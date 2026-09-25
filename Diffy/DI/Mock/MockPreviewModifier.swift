@@ -7,6 +7,7 @@ struct MockPreviewModifier: ViewModifier {
         content
             .diffyStyle()
             .environmentObject(mockResolve(SettingsViewModel.self))
+            .environmentObject(mockResolve(GitHubAccountsViewModel.self))
             .environmentObject(mockResolve(ReviewViewModel.self))
 
     }

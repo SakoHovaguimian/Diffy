@@ -40,7 +40,7 @@ enum MockPreviewFixtures {
         CodeAnnotation(
             id: UUID(uuidString: "EC0B151D-043E-4423-83D9-4B4C00C11518") ?? UUID(),
             projectID: self.project.id,
-            projectName: self.project.name,
+            projectName: self.project.displayName,
             comparison: "HEAD → Working tree",
             filePath: self.textFile.path,
             source: "mock/HEAD → Working tree/right/v1",
@@ -53,6 +53,22 @@ enum MockPreviewFixtures {
             comment: "Check the contrast of this state before shipping.",
             isResolved: false,
             comparisonMode: ComparisonMode.workingTree.rawValue
+        )
+
+    }
+
+    static func comparisonReview(startsExpanded: Bool) -> ComparisonReviewRequest {
+
+        ComparisonReviewRequest(
+            repository: GitRepositoryReference(
+                projectID: self.project.id,
+                checkout: LocalCheckoutReference(bookmarkData: nil, lastKnownPath: "/preview/\(self.project.name)")
+            ),
+            selection: ComparisonSelection(left: .revision("main"), right: .revision("feature/refine-the-details")),
+            title: startsExpanded ? "Compare branches" : "Pull complete",
+            detail: startsExpanded ? "main → feature/refine-the-details" : "Updated your branch · b4f1d08 → a7e2c91",
+            startsExpanded: startsExpanded,
+            mode: .branches
         )
 
     }

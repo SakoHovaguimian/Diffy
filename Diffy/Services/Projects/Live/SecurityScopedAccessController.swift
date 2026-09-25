@@ -67,7 +67,7 @@ final class SecurityScopedAccessController: Sendable {
         let resolved = try resolve(checkout)
         let startedSecurityScope = resolved.url.startAccessingSecurityScopedResource()
 
-        guard startedSecurityScope || checkout.bookmarkData == nil else {
+        guard startedSecurityScope || FileManager.default.isReadableFile(atPath: resolved.url.path) else {
             throw GitError.checkoutUnavailable(.accessDenied)
         }
 

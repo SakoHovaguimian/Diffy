@@ -14,7 +14,8 @@ struct LocalProjectRecord: Codable, Identifiable {
 
         RepositoryProject(
             id: self.id,
-            name: self.name,
+            name: URL(fileURLWithPath: self.directoryPath).lastPathComponent,
+            displayName: self.name,
             subtitle: "",
             bucketID: self.bucketID,
             symbol: self.symbol,

@@ -4,6 +4,9 @@ import AppKit
 struct TextDiffScreen: View {
 
     let file: DiffFile
+    let presentation: TextDiffPresentation?
+    private let annotate: ((AnnotationDraft) -> Void)?
+    private let navigateToLine: ((String) -> Void)?
     @ObservedObject var workspace: WorkspaceViewModel
     @ObservedObject private var viewModel: TextDiffViewModel
     @EnvironmentObject private var settings: SettingsViewModel
@@ -20,19 +23,36 @@ struct TextDiffScreen: View {
         self.settings.editor.unified || self.comparisonFile.hasNoOriginalSource
     }
 
+    private var allowsEditing: Bool {
+        !self.workspace.runtime.isLive && self.presentation == nil
+    }
+
+    private var pendingScrollLine: Int? {
+
+        guard self.presentation == nil else { return nil }
+        return self.workspace.runtime.isLive ? self.workspace.repositoryViewModel.comparison.scrollTarget : self.workspace.pendingScrollLine
+
+    }
+
     private var comparisonFile: DiffFile {
-        self.viewModel.displayedFile(self.file)
+        self.allowsEditing ? self.viewModel.displayedFile(self.file) : self.file
     }
 
     init(
         file: DiffFile,
         workspace: WorkspaceViewModel,
-        viewModel: TextDiffViewModel
+        viewModel: TextDiffViewModel,
+        presentation: TextDiffPresentation? = nil,
+        annotate: ((AnnotationDraft) -> Void)? = nil,
+        navigateToLine: ((String) -> Void)? = nil
     ) {
 
         self.file = file
         self.workspace = workspace
         self.viewModel = viewModel
+        self.presentation = presentation
+        self.annotate = annotate
+        self.navigateToLine = navigateToLine
 
     }
 
@@ -40,7 +60,10 @@ struct TextDiffScreen: View {
 
         VStack(spacing: 0) {
 
-            fileHeader()
+            if self.presentation == nil {
+                fileHeader()
+            }
+
             DiffToolbar(viewModel: self.viewModel, file: self.file) {
                 createAnnotation()
             }
@@ -65,6 +88,8 @@ struct TextDiffScreen: View {
 
             if self.viewModel.isEditing {
                 inlineEditableCanvas()
+            } else if self.presentation != nil {
+                embeddedCodeCanvas()
             } else {
                 codeCanvas()
 
@@ -74,7 +99,10 @@ struct TextDiffScreen: View {
 
         }
         .background(self.theme.background)
-        .onAppear { self.viewModel.prepare(file: self.file) }
+        .onAppear { self.viewModel.prepare(file: self.file, allowsEditing: self.allowsEditing) }
+        .onChange(of: self.file) { _, file in
+            self.viewModel.prepare(file: file, allowsEditing: self.allowsEditing)
+        }
 
     }
 
@@ -163,6 +191,12 @@ struct TextDiffScreen: View {
 
     private func leftLabel() -> String {
 
+        if let presentation { return presentation.selection.left.label }
+
+        if self.workspace.runtime.isLive {
+            return self.workspace.repositoryViewModel.comparison.selection.left.label
+        }
+
         if [.branches, .commits, .history].contains(self.workspace.mode) {
             return self.workspace.comparisonLeft
         }
@@ -186,6 +220,12 @@ struct TextDiffScreen: View {
     }
 
     private func rightLabel() -> String {
+
+        if let presentation { return presentation.selection.right.label }
+
+        if self.workspace.runtime.isLive {
+            return self.workspace.repositoryViewModel.comparison.selection.right.label
+        }
 
         if [.branches, .commits, .history].contains(self.workspace.mode) {
             return self.workspace.comparisonRight
@@ -350,19 +390,28 @@ struct TextDiffScreen: View {
                     }
                     .onAppear {
 
-                        if let target = self.workspace.pendingScrollLine {
+                        if let target = self.pendingScrollLine {
+
+                            self.settings.editor.collapseUnchanged = false
                             proxy.scrollTo(target, anchor: .center)
+
                         }
 
                     }
                     .onChange(of: self.viewModel.scrollTarget) { _, target in
 
                         if let target {
+
+                            if self.comparisonFile.lines.first(where: { $0.id == target })?.isChanged == false {
+                                self.settings.editor.collapseUnchanged = false
+                            }
+
                             proxy.scrollTo(target, anchor: .center)
+
                         }
 
                     }
-                    .onChange(of: self.workspace.pendingScrollLine) { _, target in
+                    .onChange(of: self.pendingScrollLine) { _, target in
 
                         if let target {
 
@@ -381,12 +430,110 @@ struct TextDiffScreen: View {
 
     }
 
+    // MARK: - Continuous Review Canvas
+
+    private func embeddedCodeCanvas() -> some View {
+
+        let regions = self.viewModel.visibleRegions(self.comparisonFile, preferences: self.settings.editor, limit: self.viewModel.reviewLineLimit)
+        let totalLines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.settings.editor).count
+
+        return GeometryReader { geometry in
+
+            let width = canvasWidth(available: geometry.size.width)
+
+            ScrollView(.horizontal) {
+
+                VStack(spacing: 0) {
+
+                    ForEach(regions) { region in
+                        diffRegion(region, width: width)
+                    }
+
+                    if totalLines > self.viewModel.reviewLineLimit {
+
+                        Button("Show more lines (\(totalLines - self.viewModel.reviewLineLimit) remaining)") {
+                            self.viewModel.reviewLineLimit += 400
+                        }
+                        .padding(self.contentSize.scaled(14))
+
+                    } else if regions.isEmpty {
+
+                        Text("No visible text changes · choose File to show the source")
+                            .font(self.contentSize.font(size: 11))
+                            .foregroundStyle(self.theme.secondaryText)
+                            .padding(self.contentSize.scaled(24))
+
+                    }
+
+                }
+                .frame(width: width)
+                .padding(.vertical, self.contentSize.scaled(12))
+                .fixedSize(horizontal: false, vertical: true)
+                .background {
+
+                    GeometryReader { content in
+                        Color.clear.preference(key: DiffCanvasHeightPreference.self, value: content.size.height)
+                    }
+
+                }
+
+            }
+
+        }
+        .frame(height: self.viewModel.embeddedCanvasHeight)
+        .onPreferenceChange(DiffCanvasHeightPreference.self) { [viewModel = self.viewModel] height in
+
+            Task { @MainActor in
+
+                if abs(viewModel.embeddedCanvasHeight - height) > 1 {
+                    viewModel.embeddedCanvasHeight = height
+                }
+
+            }
+
+        }
+        .onChange(of: self.viewModel.scrollTarget) { _, target in
+            revealReviewLine(target)
+        }
+        .onChange(of: self.viewModel.embeddedCanvasHeight) { _, _ in
+            scrollToReviewLine(self.viewModel.scrollTarget)
+        }
+
+    }
+
+    private func revealReviewLine(_ target: Int?) {
+
+        guard let target else { return }
+        let visible = self.viewModel.visibleLines(self.comparisonFile, preferences: self.settings.editor)
+
+        if !visible.contains(where: { $0.id == target }) {
+            self.settings.editor.collapseUnchanged = false
+        }
+
+        let lines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.settings.editor)
+
+        if let index = lines.firstIndex(where: { $0.id == target }) {
+            self.viewModel.reviewLineLimit = max(self.viewModel.reviewLineLimit, index + 100)
+        }
+
+        scrollToReviewLine(target)
+
+    }
+
+    private func scrollToReviewLine(_ target: Int?) {
+
+        guard let target, let presentation else { return }
+        self.navigateToLine?(presentation.lineAnchor(fileID: self.file.id, lineID: target))
+
+    }
+
     private func diffRegion(_ region: DiffRegion, width: CGFloat) -> some View {
 
         VStack(spacing: 0) {
 
             ForEach(region.lines) { line in
-                codeRow(line, width: width).id(line.id)
+                codeRow(line, width: width)
+                    .id(self.presentation.map { AnyHashable($0.lineAnchor(fileID: self.file.id, lineID: line.id)) } ?? AnyHashable(line.id))
             }
 
         }
@@ -500,7 +647,7 @@ struct TextDiffScreen: View {
 
     private func editAction(for line: DiffLine, side: SourceSide) -> (() -> Void)? {
 
-        guard side == .right else {
+        guard side == .right, self.allowsEditing else {
             return nil
         }
 
@@ -538,7 +685,20 @@ struct TextDiffScreen: View {
     }
 
     private func createAnnotation() {
-        self.workspace.annotationDraft = self.viewModel.draft(file: self.comparisonFile, comparison: self.workspace.comparisonTitle)
+        let comparison = self.presentation?.selection.title ?? self.workspace.comparisonTitle
+        guard var draft = self.viewModel.draft(
+            file: self.comparisonFile,
+            comparison: comparison,
+            sourcePrefix: self.workspace.runtime.isLive ? "git/\(self.workspace.project.id)" : "mock"
+        ) else { return }
+        draft.comparisonMode = self.presentation?.mode ?? self.workspace.mode
+
+        if let annotate {
+            annotate(draft)
+        } else {
+            self.workspace.annotationDraft = draft
+        }
+
     }
 
     private func searchBar() -> some View {

@@ -14,9 +14,35 @@ struct ImageComparisonScreen: View {
     @State private var dragStart = CGSize.zero
     @State private var blinkUpdated = false
     @State private var pixelDescription = "Hover over the image to inspect a pixel"
-    @State private var original = MockImageService.artwork(updated: false)
-    @State private var updated = MockImageService.artwork(updated: true)
+    private let original: NSImage?
+    private let updated: NSImage?
     private let timer = Timer.publish(every: 0.8, on: .main, in: .common).autoconnect()
+
+    init(file: DiffFile, sources: ImageComparisonSources? = nil) {
+
+        self.file = file
+
+        if let sources {
+
+            self.original = sources.original.flatMap(NSImage.init(data:))
+            self.updated = sources.updated.flatMap(NSImage.init(data:))
+
+        } else {
+
+            self.original = MockImageService.artwork(updated: false)
+            self.updated = MockImageService.artwork(updated: true)
+
+        }
+
+    }
+
+    private var imageSize: CGSize {
+
+        let image = self.updated ?? self.original
+        let representation = image?.representations.first
+        return CGSize(width: max(1, representation?.pixelsWide ?? 600), height: max(1, representation?.pixelsHigh ?? 440))
+
+    }
 
     var body: some View {
 
@@ -59,7 +85,7 @@ struct ImageComparisonScreen: View {
                 Label(self.file.name, systemImage: "photo")
                     .font(self.contentSize.font(size: 13, weight: .medium))
                 Spacer()
-                DiffyBadge(title: "600 × 440", color: self.theme.secondaryText)
+                DiffyBadge(title: "\(Int(self.imageSize.width)) × \(Int(self.imageSize.height))", color: self.theme.secondaryText)
 
             }
 
@@ -78,10 +104,10 @@ struct ImageComparisonScreen: View {
 
         let fittedWidth = min(
             available.width - self.contentSize.scaled(50),
-            (available.height - self.contentSize.scaled(60)) * 600 / 440
+            (available.height - self.contentSize.scaled(60)) * self.imageSize.width / self.imageSize.height
         )
-        let width = fittedWidth * self.zoom
-        let height = width * 440 / 600
+        let width = max(1, fittedWidth) * self.zoom
+        let height = width * self.imageSize.height / self.imageSize.width
 
         return imageContent(width: width, height: height)
             .frame(width: width, height: height)
@@ -104,10 +130,10 @@ struct ImageComparisonScreen: View {
 
                     }
 
-                    let x = Int(point.x / width * 600)
-                    let y = Int(point.y / height * 440)
-                    let left = MockImageService.pixel(in: self.original, x: x, y: y)
-                    let right = MockImageService.pixel(in: self.updated, x: x, y: y)
+                    let x = Int(point.x / width * self.imageSize.width)
+                    let y = Int(point.y / height * self.imageSize.height)
+                    let left = self.original.map { MockImageService.pixel(in: $0, x: x, y: y) } ?? "Absent"
+                    let right = self.updated.map { MockImageService.pixel(in: $0, x: x, y: y) } ?? "Absent"
                     self.pixelDescription = "x: \(x)  y: \(y)    Original \(left)    Updated \(right)"
 
                 }
@@ -224,8 +250,15 @@ struct ImageComparisonScreen: View {
 
     }
 
-    private func image(_ image: NSImage) -> some View {
-        Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
+    @ViewBuilder
+    private func image(_ image: NSImage?) -> some View {
+
+        if let image {
+            Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
+        } else {
+            DiffyEmptyState(symbol: "photo", title: "No image", message: "This side has no displayable image.")
+        }
+
     }
 
     private func controls() -> some View {

@@ -44,7 +44,8 @@ TARGETS = (
         'network_client': 'YES',
         'xcconfig': 'Config/DiffyLive.xcconfig',
         'includes_live_sources': True,
-        'extra_settings': {},
+        # Direct distribution: Git must reach SSH agents, credentials, and linked worktrees.
+        'extra_settings': {'ENABLE_APP_SANDBOX': 'NO'},
     },
     {
         'key': 'mock',
@@ -253,7 +254,9 @@ def write_schemes(native_targets):
 
     for target in TARGETS:
         blueprint, _ = native_targets[target['key']]
-        (SCHEMES / f'{target["name"]}.xcscheme').write_text(scheme_text(target, blueprint))
+        scheme_path = SCHEMES / f'{target["name"]}.xcscheme'
+        if not scheme_path.exists():
+            scheme_path.write_text(scheme_text(target, blueprint))
 
 
 def generate():
