@@ -203,7 +203,7 @@ struct TextDiffScreen: View {
 
             let contentWidth = geometry.size.width - (self.usesSingleSourceLayout ? 0 : self.gutterWidth)
 
-            ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: .bottom) {
 
                 HStack(spacing: 0) {
 
@@ -236,21 +236,43 @@ struct TextDiffScreen: View {
 
     private func originalEditingPane(width: CGFloat) -> some View {
 
-        ScrollView([.vertical, .horizontal]) {
+        ScrollViewReader { proxy in
 
-            LazyVStack(spacing: 0) {
+            ScrollView([.vertical, .horizontal]) {
 
-                ForEach(self.comparisonFile.lines) { line in
-                    codeLine(line, side: .left)
-                        .frame(width: width)
-                        .allowsHitTesting(false)
+                LazyVStack(spacing: 0) {
+
+                    ForEach(self.comparisonFile.lines) { line in
+                        codeLine(line, side: .left)
+                            .frame(width: width)
+                            .allowsHitTesting(false)
+                            .id(line.id)
+                    }
+
+                }
+                .frame(width: width, alignment: .topLeading)
+                .padding(.vertical, self.contentSize.scaled(12))
+
+            }
+            .onAppear {
+
+                if let target = editingLineID() {
+                    proxy.scrollTo(target, anchor: .center)
                 }
 
             }
-            .frame(width: width, alignment: .topLeading)
-            .padding(.vertical, self.contentSize.scaled(12))
 
         }
+
+    }
+
+    private func editingLineID() -> Int? {
+
+        guard let editingLineNumber = self.viewModel.editingLineNumber else {
+            return nil
+        }
+
+        return self.comparisonFile.lines.first { $0.newNumber == editingLineNumber }?.id
 
     }
 
@@ -274,8 +296,10 @@ struct TextDiffScreen: View {
             self.viewModel.applyChanges()
         } label: {
             Label("Apply Changes", systemImage: "checkmark.circle.fill")
-                .font(self.contentSize.font(size: 12, weight: .semibold))
-                .padding(.horizontal, self.contentSize.scaled(8))
+                .font(self.contentSize.font(size: 14, weight: .semibold))
+                .frame(minWidth: self.contentSize.scaled(190))
+                .padding(.horizontal, self.contentSize.scaled(18))
+                .padding(.vertical, self.contentSize.scaled(5))
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
@@ -286,7 +310,7 @@ struct TextDiffScreen: View {
             radius: self.contentSize.scaled(12),
             y: self.contentSize.scaled(4)
         )
-        .padding(self.contentSize.scaled(20))
+        .padding(.bottom, self.contentSize.scaled(24))
 
     }
 
@@ -476,9 +500,11 @@ struct TextDiffScreen: View {
 
     private func editAction(for line: DiffLine, side: SourceSide) -> (() -> Void)? {
 
-        guard side == .right, let lineNumber = line.newNumber else {
+        guard side == .right else {
             return nil
         }
+
+        let lineNumber = line.newNumber ?? line.oldNumber ?? 1
 
         return {
             self.viewModel.beginEditing(file: self.file, lineNumber: lineNumber)

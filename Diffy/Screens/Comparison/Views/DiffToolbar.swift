@@ -51,7 +51,7 @@ struct DiffToolbar: View {
             .frame(width: self.contentSize.scaled(compact ? 108 : 132))
             .controlSize(.small)
             .disabled(self.viewModel.isEditing)
-            .help("Show changed regions or the whole file")
+            .help(self.viewModel.isEditing ? "Apply or discard the current draft to change visible content" : "Show changed regions or the whole file")
 
             actionControls(compact: compact)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -151,7 +151,7 @@ struct DiffToolbar: View {
     private func layoutHelp() -> String {
 
         if self.viewModel.isEditing {
-            return "Finish editing to change the comparison layout"
+            return "Apply or discard the current draft to change the comparison layout"
         }
 
         if self.file.hasNoOriginalSource {

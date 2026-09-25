@@ -39,8 +39,13 @@ def generate():
                 resource_builds.append(add('build:' + relative, f'isa = PBXBuildFile; fileRef = {reference};'))
             elif path.is_dir():
                 children.append(group(path))
-            elif path.suffix in ('.swift', '.entitlements'):
-                kind = 'sourcecode.swift' if path.suffix == '.swift' else 'text.plist.entitlements'
+            elif path.suffix in ('.swift', '.entitlements', '.plist'):
+                kinds = {
+                    '.swift': 'sourcecode.swift',
+                    '.entitlements': 'text.plist.entitlements',
+                    '.plist': 'text.plist.xml',
+                }
+                kind = kinds[path.suffix]
                 reference = add(relative, f'isa = PBXFileReference; lastKnownFileType = {kind}; path = {quote(path.name)}; sourceTree = "<group>";')
                 children.append(reference)
 
@@ -72,10 +77,8 @@ def generate():
         target_settings = {
             'PRODUCT_NAME': 'Diffy',
             'PRODUCT_BUNDLE_IDENTIFIER': 'com.diffy.app',
-            'GENERATE_INFOPLIST_FILE': 'YES',
-            'INFOPLIST_KEY_CFBundleDisplayName': 'Diffy',
-            'INFOPLIST_KEY_ATSApplicationFontsPath': 'Fonts/',
-            'INFOPLIST_KEY_LSApplicationCategoryType': 'public.app-category.developer-tools',
+            'GENERATE_INFOPLIST_FILE': 'NO',
+            'INFOPLIST_FILE': 'Diffy/Resources/Info.plist',
             'CODE_SIGN_STYLE': 'Automatic',
             'CODE_SIGN_IDENTITY': '-',
             'CODE_SIGN_ENTITLEMENTS': 'Diffy/Resources/Diffy.entitlements',
