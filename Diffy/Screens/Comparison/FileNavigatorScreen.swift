@@ -18,7 +18,7 @@ struct FileNavigatorScreen: View {
 
             if self.workspace.runtime.isLive && self.workspace.repositoryViewModel.comparison.isLoadingFiles {
 
-                ProgressView("Reading Changed Files…")
+                DiffyLoadingState(title: "Reading Changed Files…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             } else if self.workspace.files.isEmpty {

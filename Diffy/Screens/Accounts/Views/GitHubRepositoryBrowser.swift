@@ -46,7 +46,7 @@ struct GitHubRepositoryBrowser: View {
                 .foregroundStyle(self.theme.secondaryText)
 
             if self.viewModel.isImporting {
-                ProgressView("Adding Repository…").controlSize(.small)
+                DiffyLoadingState(title: "Adding Repository…")
             }
 
             LazyVStack(spacing: 0) {
@@ -59,7 +59,7 @@ struct GitHubRepositoryBrowser: View {
             .background(self.theme.surface, in: RoundedRectangle(cornerRadius: 10))
 
             if self.viewModel.isLoadingRepositories {
-                ProgressView("Loading Repositories…").controlSize(.small)
+                DiffyLoadingState(title: "Loading Repositories…")
             } else if self.viewModel.visibleRepositories.isEmpty {
                 Text(self.viewModel.search.isEmpty ? "No repositories are visible to this account. Check the app installation or token's repository access, then refresh." : "No loaded repositories match this filter.")
                     .font(.system(size: 12))

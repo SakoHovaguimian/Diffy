@@ -155,7 +155,7 @@ final class LiveWorkspaceService: WorkspaceServiceProtocol {
         ProjectLibrary(
             projects: projects,
             defaultFavoriteProjectIDs: [],
-            defaultRecentProjectIDs: Array(projects.prefix(3).map(\.id)),
+            defaultRecentProjectIDs: Array(projects.prefix(WorkspaceDefaults.maximumRecentProjectCount).map(\.id)),
             migrationNotice: migrationNotice,
             loadErrorMessage: loadErrorMessage
         )

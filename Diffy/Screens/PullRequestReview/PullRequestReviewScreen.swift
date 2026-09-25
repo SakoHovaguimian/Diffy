@@ -15,7 +15,8 @@ struct PullRequestReviewScreen: View {
             messages()
 
             if self.viewModel.isLoading {
-                ProgressView("Loading Pull Request & Discussions…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                DiffyLoadingState(title: "Loading Pull Request & Discussions…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.viewModel.details != nil {
 
                 if self.viewModel.showsConversation {
@@ -80,10 +81,16 @@ struct PullRequestReviewScreen: View {
                     HStack(spacing: 10) {
 
                         DiffyBadge(title: summary.statusTitle, color: self.theme.accent)
+                        GitHubAvatar(user: summary.author, size: 18)
                         Text("\(summary.author.login) · \(summary.headRef) → \(summary.baseRef)")
                             .font(.system(size: 11)).foregroundStyle(self.theme.secondaryText).lineLimit(1)
 
                     }
+                    PullRequestPeopleSummary(
+                        assignees: summary.assignees,
+                        requestedReviewers: summary.requestedReviewers,
+                        avatarSize: 18
+                    )
 
                 }
 

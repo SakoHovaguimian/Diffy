@@ -33,15 +33,22 @@ struct WorkspaceScreen: View {
 
                 sizableWorkspaceContent()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .geometryGroup()
+                    .compositingGroup()
 
                 if self.viewModel.showsReview {
 
-                    HorizontalResizeHandle(label: "Drag To Resize Review Notes", resizeGesture: reviewResizeGesture())
-                        .transition(.opacity)
+                    HStack(spacing: 0) {
 
-                    ReviewScreen(workspace: self.viewModel)
-                        .frame(width: self.reviewWidth)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        HorizontalResizeHandle(label: "Drag To Resize Review Notes", resizeGesture: reviewResizeGesture())
+
+                        ReviewScreen(workspace: self.viewModel)
+                            .frame(width: self.reviewWidth)
+
+                    }
+                    .geometryGroup()
+                    .compositingGroup()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
 
                 }
 
@@ -304,10 +311,13 @@ struct WorkspaceScreen: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 2)
-        .background(self.theme.elevated, in: Capsule())
+        .background {
+            Capsule()
+                .fill(self.theme.elevated)
+        }
         .overlay {
             Capsule()
-                .stroke(self.theme.border.opacity(self.theme.isDark ? 0.85 : 0.8), lineWidth: 0.75)
+                .strokeBorder(self.theme.border.opacity(self.theme.isDark ? 0.85 : 0.8), lineWidth: 0.75)
         }
 
     }

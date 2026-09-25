@@ -20,7 +20,8 @@ struct RepositoryWorkspaceScreen: View {
             }
 
             if self.viewModel.snapshot == nil && self.viewModel.isRefreshing {
-                ProgressView("Opening Repository…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                DiffyLoadingState(title: "Opening Repository…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if !self.workspace.showsDashboard && self.workspace.mode == .folders {
                 RepositoryFoldersView(viewModel: self.viewModel)
             } else if self.viewModel.snapshot == nil {
@@ -29,9 +30,11 @@ struct RepositoryWorkspaceScreen: View {
                 RepositoryOverviewView(viewModel: self.viewModel, selectMode: self.workspace.selectMode)
             } else {
                 page()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
 
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(self.theme.background)
         .onAppear {
 

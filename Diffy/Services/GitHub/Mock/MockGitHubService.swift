@@ -5,7 +5,7 @@ struct MockGitHubService: GitHubServiceProtocol {
     let configuration = GitHubAppConfiguration.unconfigured
 
     func currentUser(for account: GitHubAccount) async throws -> GitHubUserSummary {
-        GitHubUserSummary(id: account.userID, login: account.login, name: account.displayName)
+        GitHubUserSummary(id: account.userID, login: account.login, name: account.displayName, avatarURL: nil)
     }
 
     func accessibleRepositories(for account: GitHubAccount, page: Int) async throws -> [GitHubRepositorySummary] {

@@ -3,6 +3,8 @@ import Foundation
 /// Organization defaults shared by every runtime.
 enum WorkspaceDefaults {
 
+    static let maximumRecentProjectCount = 15
+
     static let starterBuckets: [Bucket] = [
         Bucket(id: "personal", title: "Personal", subtitle: "A little room to explore", symbol: "sparkles", accentHex: "319B90")
     ]

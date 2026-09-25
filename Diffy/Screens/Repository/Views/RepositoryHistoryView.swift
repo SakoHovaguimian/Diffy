@@ -23,7 +23,7 @@ struct RepositoryHistoryView: View {
                     )
                 )
                 if self.viewModel.isLoadingHistoryFiles {
-                    ProgressView("Reading Files…")
+                    DiffyLoadingState(title: "Reading Files…")
                 } else if let error = self.viewModel.historyFilesError {
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -47,7 +47,7 @@ struct RepositoryHistoryView: View {
 
             }
             .padding(20)
-            .frame(minWidth: 240, idealWidth: 300, maxWidth: 400)
+            .frame(minWidth: 240, idealWidth: 300, maxWidth: 400, maxHeight: .infinity, alignment: .topLeading)
             ScrollView {
 
                 VStack(alignment: .leading, spacing: 26) {
@@ -59,7 +59,7 @@ struct RepositoryHistoryView: View {
                     )
 
                     if self.viewModel.isLoadingHistory {
-                        ProgressView("Reading History…")
+                        DiffyLoadingState(title: "Reading History…")
                     } else if self.viewModel.history.isEmpty {
                         DiffyEmptyState(symbol: "clock.arrow.circlepath", title: self.viewModel.historyPath.isEmpty ? "Choose A File" : "No Git History", message: self.viewModel.historyPath.isEmpty ? "Its history on \(self.viewModel.historyBranch) will appear here. Each commit opens a read-only comparison." : "This file has no commits on \(self.viewModel.historyBranch) yet.")
                     }
@@ -83,11 +83,13 @@ struct RepositoryHistoryView: View {
 
                 }
                 .padding(32)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             }
-            .frame(minWidth: 300, maxWidth: .infinity)
+            .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
     }
 

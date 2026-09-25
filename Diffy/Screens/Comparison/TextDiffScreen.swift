@@ -444,7 +444,7 @@ struct TextDiffScreen: View {
 
             ScrollView(.horizontal) {
 
-                VStack(spacing: 0) {
+                LazyVStack(spacing: 0) {
 
                     ForEach(regions) { region in
                         diffRegion(region, width: width)
@@ -530,7 +530,7 @@ struct TextDiffScreen: View {
 
     private func diffRegion(_ region: DiffRegion, width: CGFloat) -> some View {
 
-        VStack(spacing: 0) {
+        LazyVStack(spacing: 0) {
 
             ForEach(region.lines) { line in
                 codeRow(line, width: width)

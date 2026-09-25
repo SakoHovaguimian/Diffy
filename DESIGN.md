@@ -25,6 +25,7 @@ spacing:
   row: "16px"
 components:
   page-heading: {}
+  loading-state: {}
   status-banner: {}
   badge: {}
   patch: {}
@@ -66,11 +67,13 @@ Use 10–12 point rounded surfaces and 6–8 point selected rows and status bann
 
 ## Components
 
-`DiffyPageHeading` owns eyebrow/title/detail hierarchy. `DiffyStatusBanner` owns textual error and status feedback. `DiffyBadge` owns compact statuses. `RepositoryCommitRow` owns the commit spine and explicitly receives whether it draws a trailing connector. `ComparisonScreen`, `FileNavigatorScreen`, `TextDiffScreen`, and `DiffToolbar` own the comparison experience in both Live and Mock. Live data must feed these shared components, including image tools, rather than replacing them with raw patch output. `ComparisonReviewScreen` owns vertical review modals; `DiffChangeSummary` owns numeric additions/deletions and the compact delta bar. `ComparisonModalSizingController` sizes the native sheet to its parent window. `DiffyPatchTextView` remains a fallback for folder patches.
+`DiffyPageHeading` owns eyebrow/title/detail hierarchy. `DiffyLoadingState` owns every titled loading treatment, pairing a native spinner with a compact work-in-progress label on a quiet bordered surface; control-only spinners remain native and unlabeled. `DiffyStatusBanner` owns textual error and status feedback. `DiffyBadge` owns compact statuses. `GitHubAvatar` owns remote GitHub profile images with an initials fallback, and `PullRequestPeopleSummary` owns compact assignee and requested-reviewer groups. `RepositoryCommitRow` owns the commit spine and explicitly receives whether it draws a trailing connector. `ComparisonScreen`, `FileNavigatorScreen`, `TextDiffScreen`, and `DiffToolbar` own the comparison experience in both Live and Mock. Live data must feed these shared components, including image tools, rather than replacing them with raw patch output. `ComparisonReviewScreen` owns vertical review modals; `DiffChangeSummary` owns numeric additions/deletions and the compact delta bar. `ComparisonModalSizingController` sizes the native sheet to its parent window. `DiffyPatchTextView` remains a fallback for folder patches.
 
-Buttons use native focus, pressed, disabled, and hover behavior. Bordered prominent emphasis identifies the next deliberate action; destructive actions stay in menus and named confirmations. Native ProgressView is the loading treatment. Keep source content selectable; loading and failure should not pretend a repository is empty.
+Buttons use native focus, pressed, disabled, and hover behavior. Bordered prominent emphasis identifies the next deliberate action; destructive actions stay in menus and named confirmations. `DiffyLoadingState` keeps the native `ProgressView` spinner as its motion core rather than inventing ambient animation. Keep source content selectable; loading and failure should not pretend a repository is empty.
 
 Search offers a clear action. Native SwiftUI menus and pickers are intentional macOS-owned popups. Secret values are masked by default. The existing tab transition respects Reduce Motion; new data pages add no ambient animation.
+
+Coordinated motion for large view groups is isolated at the group boundary with SwiftUI `geometryGroup()` and `compositingGroup()`. Apply this to opening and closing workspace side panels and layered image canvases rather than to individual rows. Keep Bucket disclosure groups outside this isolation because it interferes with their disclosure and reorder animations. All authored group motion respects Reduce Motion.
 
 `DiffyPathIcon` owns file and folder imagery for every navigator and review header; `DiffFileIcon` adapts comparison models to it. `FileIconService` loads bundled catalogs and caches raster artwork, with theme-specific light/dark and expanded-folder variants. Unknown names use generic icons; unavailable artwork falls back to native symbols. Keep icon geometry fixed and scale it with `DiffyContentSize`. Settings → Appearance provides the native theme picker and common-file preview. `SettingsViewModel.fileIconTheme` persists independently of workspace colors and updates all windows immediately. Previews use the same bundled artwork and in-memory preferences.
 

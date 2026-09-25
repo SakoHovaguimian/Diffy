@@ -75,14 +75,13 @@ struct RepositoryPullRequestsView: View {
             }
 
             if self.viewModel.isLoadingPullRequests {
-                ProgressView("Loading Pull Requests…")
+                DiffyLoadingState(title: "Loading Pull Requests…")
             } else if self.viewModel.visiblePullRequests.isEmpty {
                 DiffyEmptyState(symbol: "tray", title: "Nothing Waiting Here", message: "No unmerged pull requests match these filters. Refresh to check again.")
             }
 
-            if self.viewModel.isLoadingChecks {
-                ProgressView("Loading Check Status…")
-                    .font(.system(size: 11))
+            if self.viewModel.isLoadingPullRequestMetadata {
+                DiffyLoadingState(title: "Loading Pull Request Details…")
             }
 
             LazyVStack(spacing: 0) {
@@ -98,10 +97,20 @@ struct RepositoryPullRequestsView: View {
                         VStack(alignment: .leading, spacing: 9) {
 
                             Text(request.title).font(.system(size: 14, weight: .semibold))
-                            Text("#\(request.number) · \(request.author.login) · \(request.updatedAt.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
+                            HStack(spacing: 6) {
+
+                                GitHubAvatar(user: request.author, size: 18)
+                                Text("#\(request.number) · \(request.author.login) · \(request.updatedAt.formatted(date: .abbreviated, time: .omitted))")
+
+                            }
+                            .font(.system(size: 11))
+                            .foregroundStyle(self.theme.secondaryText)
                             Label("\(request.headRef) → \(request.baseRef)", systemImage: "arrow.triangle.branch")
                                 .font(.system(size: 10, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
+                            PullRequestPeopleSummary(
+                                assignees: request.assignees,
+                                requestedReviewers: request.requestedReviewers
+                            )
                             if !request.requestedTeams.isEmpty {
                                 Text("Team Review: \(request.requestedTeams.map(\.name).joined(separator: ", "))").font(.system(size: 10))
                             }
@@ -109,7 +118,14 @@ struct RepositoryPullRequestsView: View {
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 6) {
-                            DiffyBadge(title: request.statusTitle, color: request.isDraft || request.lifecycle == .closedUnmerged ? self.theme.secondaryText : self.theme.added)
+                            DiffyBadge(
+                                title: request.statusTitle,
+                                color: request.isDraft || request.lifecycle == .closedUnmerged ? self.theme.secondaryText : self.theme.added,
+                                size: .small
+                            )
+                            if let lineCounts = request.lineCounts {
+                                DiffChangeSummary(counts: lineCounts)
+                            }
                             Label(request.checks?.state.title ?? "Checks Not Loaded", systemImage: request.checks?.state.symbol ?? "questionmark.circle")
                                 .font(.system(size: 10))
                                 .foregroundStyle(request.checks?.state == .failure ? self.theme.removed : self.theme.secondaryText)

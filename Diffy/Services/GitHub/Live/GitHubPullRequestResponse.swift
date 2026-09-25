@@ -29,10 +29,41 @@ struct GitHubPullRequestResponse: Decodable, Sendable {
     let htmlUrl: URL
     let body: String?
     let changedFiles: Int?
+    let additions: Int?
+    let deletions: Int?
 
     var summary: PullRequestSummary {
 
-        PullRequestSummary(id: self.id, number: self.number, title: self.title, author: self.user, assignees: self.assignees, requestedReviewers: self.requestedReviewers, requestedTeams: self.requestedTeams, isDraft: self.draft, lifecycle: self.mergedAt != nil ? .merged : (self.state == "closed" ? .closedUnmerged : .open), baseRef: self.base.ref, baseSHA: self.base.sha, headRef: self.head.ref, headSHA: self.head.sha, headRepositoryFullName: self.head.repo?.fullName, createdAt: self.createdAt, updatedAt: self.updatedAt, webURL: self.htmlUrl)
+        PullRequestSummary(
+            id: self.id,
+            number: self.number,
+            title: self.title,
+            author: self.user,
+            assignees: self.assignees,
+            requestedReviewers: self.requestedReviewers,
+            requestedTeams: self.requestedTeams,
+            isDraft: self.draft,
+            lifecycle: self.mergedAt != nil ? .merged : (self.state == "closed" ? .closedUnmerged : .open),
+            baseRef: self.base.ref,
+            baseSHA: self.base.sha,
+            headRef: self.head.ref,
+            headSHA: self.head.sha,
+            headRepositoryFullName: self.head.repo?.fullName,
+            createdAt: self.createdAt,
+            updatedAt: self.updatedAt,
+            webURL: self.htmlUrl,
+            lineCounts: self.lineCounts
+        )
+
+    }
+
+    private var lineCounts: DiffLineCounts? {
+
+        guard let additions = self.additions, let deletions = self.deletions else {
+            return nil
+        }
+
+        return DiffLineCounts(additions: additions, deletions: deletions)
 
     }
 

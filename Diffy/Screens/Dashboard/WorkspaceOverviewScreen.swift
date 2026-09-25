@@ -26,8 +26,7 @@ struct WorkspaceOverviewScreen: View {
                     if !self.accounts.accounts.isEmpty {
 
                         if self.viewModel.isLoadingPullRequests {
-                            ProgressView("Refreshing Pull Requests…")
-                                .font(.system(size: 11))
+                            DiffyLoadingState(title: "Refreshing Pull Requests…")
                         }
 
                         pullRequestsSection()
@@ -86,8 +85,7 @@ struct WorkspaceOverviewScreen: View {
         VStack(alignment: .leading, spacing: 18) {
 
             if self.viewModel.isLoadingProjects || self.viewModel.isLoadingPullRequests {
-                ProgressView("Refreshing \(self.viewModel.isLoadingProjects ? "Projects" : "Pull Requests")…")
-                    .font(.system(size: 11))
+                DiffyLoadingState(title: "Refreshing \(self.viewModel.isLoadingProjects ? "Projects" : "Pull Requests")…")
             }
 
             ViewThatFits(in: .horizontal) {
@@ -124,7 +122,8 @@ struct WorkspaceOverviewScreen: View {
             sectionHeading("Projects Needing Attention", count: self.viewModel.activeProjects.count, symbol: "square.stack.3d.up", isLoading: self.viewModel.isLoadingProjects)
 
             if self.viewModel.activeProjects.isEmpty, self.viewModel.isLoadingProjects {
-                ProgressView("Reading Local Projects…").padding(18)
+                DiffyLoadingState(title: "Reading Local Projects…")
+                    .padding(18)
             }
 
             if let error = self.viewModel.projectError {
@@ -191,7 +190,8 @@ struct WorkspaceOverviewScreen: View {
             )
 
             if requests.isEmpty, isLoading {
-                ProgressView("Loading Pull Requests…").padding(18)
+                DiffyLoadingState(title: "Loading Pull Requests…")
+                    .padding(18)
             }
 
             if let error {
@@ -228,7 +228,7 @@ struct WorkspaceOverviewScreen: View {
 
                 if hasMore {
 
-                    VStack(alignment: .leading, spacing: 8) {
+                    LazyVStack(alignment: .leading, spacing: 8) {
 
                         Text("Showing up to 100 recently updated requests per account. GitHub may have more.")
                             .font(.system(size: 10))

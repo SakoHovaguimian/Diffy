@@ -18,6 +18,7 @@ struct PullRequestSummary: Codable, Hashable, Identifiable, Sendable {
     let createdAt: Date
     let updatedAt: Date
     let webURL: URL
+    let lineCounts: DiffLineCounts?
     var checks: PullRequestChecksSummary?
 
     var statusTitle: String {

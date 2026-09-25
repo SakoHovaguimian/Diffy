@@ -111,6 +111,8 @@ struct ImageComparisonScreen: View {
 
         return imageContent(width: width, height: height)
             .frame(width: width, height: height)
+            .geometryGroup()
+            .compositingGroup()
             .offset(self.offset)
             .shadow(
                 color: .black.opacity(0.09),
@@ -221,7 +223,6 @@ struct ImageComparisonScreen: View {
                 image(self.updated).blendMode(.difference)
 
             }
-            .compositingGroup()
 
         case .blink:
             image(self.blinkUpdated ? self.updated : self.original)

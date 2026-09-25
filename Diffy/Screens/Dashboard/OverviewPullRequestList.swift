@@ -37,7 +37,7 @@ struct OverviewPullRequestList: View {
         let requests = self.requests.filter { $0.repositoryFullName == repository }
         let group = OverviewPullRequestGroupID.repository(repository)
 
-        return VStack(spacing: 0) {
+        return LazyVStack(spacing: 0) {
 
             if repository != self.repositories.first {
                 self.theme.border.frame(height: 1)
@@ -72,7 +72,7 @@ struct OverviewPullRequestList: View {
         let authoredRequests = requests.filter { $0.author.login == author }
         let group = OverviewPullRequestGroupID.author(repository: repository, login: author)
 
-        return VStack(spacing: 0) {
+        return LazyVStack(spacing: 0) {
 
             groupHeader(
                 author,
@@ -157,19 +157,23 @@ struct OverviewPullRequestList: View {
         isGrouped: Bool
     ) -> some View {
 
-        ForEach(requests) { request in
+        LazyVStack(spacing: 0) {
 
-            OverviewPullRequestRow(
-                request: request,
-                showsRepository: showsRepository,
-                showsAuthor: showsAuthor,
-                isGrouped: isGrouped
-            ) {
-                self.review(request)
-            }
+            ForEach(requests) { request in
 
-            if request.id != requests.last?.id {
-                self.theme.border.frame(height: 1).padding(.leading, 18)
+                OverviewPullRequestRow(
+                    request: request,
+                    showsRepository: showsRepository,
+                    showsAuthor: showsAuthor,
+                    isGrouped: isGrouped
+                ) {
+                    self.review(request)
+                }
+
+                if request.id != requests.last?.id {
+                    self.theme.border.frame(height: 1).padding(.leading, 18)
+                }
+
             }
 
         }

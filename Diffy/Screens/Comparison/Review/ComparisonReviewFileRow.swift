@@ -118,7 +118,7 @@ struct ComparisonReviewFileRow: View {
             .padding(24)
 
         } else if self.viewModel.isLoading || !self.viewModel.file.isContentLoaded {
-            ProgressView("Reading File…")
+            DiffyLoadingState(title: "Reading File…")
                 .frame(maxWidth: .infinity)
                 .frame(height: 150)
         } else {

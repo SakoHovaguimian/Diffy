@@ -58,7 +58,7 @@ struct GitHubAccountsScreen: View {
 
     private func accountList() -> some View {
 
-        VStack(spacing: 0) {
+        LazyVStack(spacing: 0) {
 
             ForEach(self.viewModel.accounts) { account in
 

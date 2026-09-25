@@ -38,10 +38,18 @@ struct OverviewPullRequestRow: View {
                         .foregroundStyle(self.theme.text)
                         .lineLimit(2)
 
-                    Text(self.metadata)
-                        .font(.system(size: 10))
-                        .foregroundStyle(self.theme.secondaryText)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+
+                        if self.showsAuthor {
+                            GitHubAvatar(user: self.request.author, size: 17)
+                        }
+
+                        Text(self.metadata)
+                            .lineLimit(1)
+
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(self.theme.secondaryText)
 
                     Text("Updated \(self.request.updatedAt.formatted(date: .abbreviated, time: .omitted))")
                         .font(.system(size: 10))

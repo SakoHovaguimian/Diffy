@@ -108,6 +108,7 @@ struct RepositoryPathNavigation: View {
             }
 
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
     }
 

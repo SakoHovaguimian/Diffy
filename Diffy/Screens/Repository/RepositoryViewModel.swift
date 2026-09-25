@@ -78,7 +78,7 @@ final class RepositoryViewModel: ViewModel {
     @Published var pullRequestCheckFilter: PullRequestCheckFilter = .any
     @Published var selectedAccountID = ""
     @Published var isLoadingPullRequests = false
-    @Published var isLoadingChecks = false
+    @Published var isLoadingPullRequestMetadata = false
     @Published var pullRequestError: String?
     @Published var leftFolder: URL?
     @Published var rightFolder: URL?
@@ -185,7 +185,7 @@ final class RepositoryViewModel: ViewModel {
         self.isLoadingHistoryFiles = false
         self.isLoadingCommits = false
         self.isLoadingPullRequests = false
-        self.isLoadingChecks = false
+        self.isLoadingPullRequestMetadata = false
         self.isLoadingPatch = false
         self.isLoadingBranchReview = false
         self.historyPath = ""

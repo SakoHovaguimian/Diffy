@@ -4,6 +4,7 @@ struct WorkspaceSidebar: View {
 
     @ObservedObject var viewModel: WorkspaceViewModel
     @Environment(\.diffyTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var bucketPendingDeletion: Bucket?
     @State private var bucketDropPosition: BucketDropPosition?
     private let bucketHeaderHeight: CGFloat = 30
@@ -186,7 +187,7 @@ struct WorkspaceSidebar: View {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 8, weight: .semibold))
                             .rotationEffect(.degrees(bucket.isExpanded ? 90 : 0))
-                            .animation(.easeInOut(duration: 0.22), value: bucket.isExpanded)
+                            .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.22), value: bucket.isExpanded)
                         Image(systemName: bucket.symbol)
                             .foregroundStyle(color)
                         Text(bucket.title.uppercased())
@@ -238,14 +239,16 @@ struct WorkspaceSidebar: View {
 
             if bucket.isExpanded {
 
-                ForEach(projects) { project in
+                VStack(alignment: .leading, spacing: 6) {
 
-                    reorderableProjectRow(project)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    ForEach(projects) { project in
+                        reorderableProjectRow(project)
+                    }
+
+                    addProjectButton(in: bucket, color: color)
 
                 }
-
-                addProjectButton(in: bucket, color: color)
+                .transition(.opacity)
 
             }
 
@@ -314,7 +317,7 @@ struct WorkspaceSidebar: View {
                 return false
             }
 
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.2)) {
 
                 _ = self.viewModel.reorderBucket(
                     draggedID,
@@ -370,7 +373,7 @@ struct WorkspaceSidebar: View {
 
         let projects = self.viewModel.orderedProjects(in: nil)
 
-        return VStack(alignment: .leading, spacing: 6) {
+        return LazyVStack(alignment: .leading, spacing: 6) {
 
             sectionLabel("UNASSIGNED")
 
@@ -413,7 +416,7 @@ struct WorkspaceSidebar: View {
         var updated = bucket
         updated.isExpanded.toggle()
 
-        withAnimation(.easeInOut(duration: 0.22)) {
+        withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.22)) {
             self.viewModel.saveBucket(updated)
         }
 
@@ -441,7 +444,7 @@ struct WorkspaceSidebar: View {
                     return false
                 }
 
-                return withAnimation(.easeInOut(duration: 0.2)) {
+                return withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.2)) {
 
                     self.viewModel.reorderProject(
                         draggedID,
@@ -538,7 +541,7 @@ struct WorkspaceSidebar: View {
 
     private func recentComparisons() -> some View {
 
-        VStack(alignment: .leading, spacing: 10) {
+        LazyVStack(alignment: .leading, spacing: 10) {
 
             sectionLabel("RECENT")
 

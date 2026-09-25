@@ -126,7 +126,7 @@ struct ReviewScreen: View {
         let annotations = self.visibleAnnotations.filter { $0.projectID == projectID }
         let isCollapsed = self.collapsedProjectIDs.contains(projectID)
 
-        return VStack(alignment: .leading, spacing: 10) {
+        return LazyVStack(alignment: .leading, spacing: 10) {
 
             HStack(spacing: 8) {
 

@@ -76,7 +76,7 @@ final class WorkspaceViewModel: ViewModel {
         self.projectBuckets = preferencesService.load([String: String].self, key: "projectBuckets.demo.v1") ?? [:]
         self.projectOrder = preferencesService.load([String].self, key: "projectOrder.demo.v1") ?? []
         self.favorites = Set(library.defaultFavoriteProjectIDs)
-        self.recentProjectIDs = library.defaultRecentProjectIDs
+        self.recentProjectIDs = Array(library.defaultRecentProjectIDs.prefix(WorkspaceDefaults.maximumRecentProjectCount))
         self.notice = library.loadErrorMessage ?? library.migrationNotice
         self.selectedProjectID = self.projects.first?.id ?? ""
         self.selectedFileID = self.projects.first?.files.first?.id
@@ -386,8 +386,15 @@ final class WorkspaceViewModel: ViewModel {
 
         }
 
+        recordRecentProject(project)
+
+    }
+
+    private func recordRecentProject(_ project: RepositoryProject) {
+
         self.recentProjectIDs.removeAll { $0 == project.id }
         self.recentProjectIDs.insert(project.id, at: 0)
+        self.recentProjectIDs = Array(self.recentProjectIDs.prefix(WorkspaceDefaults.maximumRecentProjectCount))
 
     }
 

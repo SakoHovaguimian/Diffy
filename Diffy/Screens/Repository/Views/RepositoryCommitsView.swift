@@ -37,7 +37,7 @@ struct RepositoryCommitsView: View {
                 }
 
                 if self.viewModel.isLoadingCommits {
-                    ProgressView("Reading \(self.viewModel.commitsBranch)…")
+                    DiffyLoadingState(title: "Reading \(self.viewModel.commitsBranch)…")
                 } else if let error = self.viewModel.commitsError {
 
                     VStack(alignment: .leading, spacing: 12) {

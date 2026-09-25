@@ -20,7 +20,7 @@ struct RepositoryComparisonContent: View {
                 }
 
             } else if self.viewModel.isLoadingFiles || self.viewModel.isLoadingFile {
-                ProgressView("Reading Comparison…")
+                DiffyLoadingState(title: "Reading Comparison…")
             } else if let file = self.viewModel.selectedFile {
                 fileContent(file)
             } else {

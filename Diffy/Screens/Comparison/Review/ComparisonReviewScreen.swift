@@ -147,7 +147,7 @@ struct ComparisonReviewScreen: View {
     private func reviewContent() -> some View {
 
         if self.viewModel.isLoading {
-            ProgressView("Reading Changed Files…")
+            DiffyLoadingState(title: "Reading Changed Files…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let error = self.viewModel.error ?? self.viewModel.request.warning {
 

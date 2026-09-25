@@ -10,7 +10,7 @@ struct PullRequestConversationEntry: Identifiable, Sendable {
 
     let remoteID: Int
     let kind: Kind
-    let author: String
+    let user: GitHubUserSummary?
     let body: String
     let date: Date?
     let webURL: URL?
@@ -21,6 +21,7 @@ struct PullRequestConversationEntry: Identifiable, Sendable {
     let replyToID: Int?
 
     var id: String { "\(self.kind.rawValue)-\(self.remoteID)" }
+    var author: String { self.user?.login ?? "Deleted Account" }
     var isPending: Bool { self.state == "PENDING" }
     var isOutdated: Bool { self.kind == .inline && self.line == nil }
 

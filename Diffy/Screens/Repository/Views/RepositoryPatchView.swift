@@ -25,7 +25,8 @@ struct RepositoryPatchView: View {
             Divider()
 
             if self.viewModel.isLoadingPatch {
-                ProgressView("Reading Comparison…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                DiffyLoadingState(title: "Reading Comparison…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = self.viewModel.patchError {
                 DiffyEmptyState(symbol: "exclamationmark.circle", title: "Comparison Unavailable", message: error)
             } else if self.viewModel.patchText.isEmpty {

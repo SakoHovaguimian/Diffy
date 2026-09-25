@@ -141,7 +141,7 @@ extension RepositoryViewModel {
         let requestID = UUID()
         self.pullRequestsRequestID = requestID
         self.isLoadingPullRequests = true
-        self.isLoadingChecks = false
+        self.isLoadingPullRequestMetadata = false
         self.pullRequestError = nil
         let projectID = self.project?.id
 
@@ -151,7 +151,7 @@ extension RepositoryViewModel {
             guard self.project?.id == projectID, self.pullRequestsRequestID == requestID, self.selectedAccountID == account.id else { return }
             self.pullRequests = result.value ?? []
             self.isLoadingPullRequests = false
-            await loadChecks(link: link, account: account, requestID: requestID)
+            await loadPullRequestMetadata(link: link, account: account, requestID: requestID)
 
         } catch {
 
@@ -167,25 +167,30 @@ extension RepositoryViewModel {
 
     }
 
-    private func loadChecks(link: GitHubRepositoryLink, account: GitHubAccount, requestID: UUID) async {
+    private func loadPullRequestMetadata(link: GitHubRepositoryLink, account: GitHubAccount, requestID: UUID) async {
 
         let requests = self.pullRequests
         guard !requests.isEmpty else { return }
-        self.isLoadingChecks = true
+        self.isLoadingPullRequestMetadata = true
 
-        await withTaskGroup(of: (Int, PullRequestChecksSummary).self) { group in
+        await withTaskGroup(of: (Int, PullRequestSummary?, PullRequestChecksSummary).self) { group in
 
             var remaining = requests.makeIterator()
 
             for _ in 0..<min(6, requests.count) {
                 if let request = remaining.next() {
                     group.addTask { [gitHub] in
-                        (request.id, await gitHub.checksSummary(for: request, link: link, account: account))
+
+                        async let details = try? gitHub.pullRequest(number: request.number, link: link, account: account)
+                        async let checks = gitHub.checksSummary(for: request, link: link, account: account)
+
+                        return await (request.id, details, checks)
+
                     }
                 }
             }
 
-            for await (id, checks) in group {
+            for await (id, details, checks) in group {
 
                 guard self.pullRequestsRequestID == requestID, !Task.isCancelled else {
                     group.cancelAll()
@@ -193,12 +198,24 @@ extension RepositoryViewModel {
                 }
 
                 if let index = self.pullRequests.firstIndex(where: { $0.id == id }) {
-                    self.pullRequests[index].checks = checks
+
+                    if var details {
+                        details.checks = checks
+                        self.pullRequests[index] = details
+                    } else {
+                        self.pullRequests[index].checks = checks
+                    }
+
                 }
 
                 if let request = remaining.next() {
                     group.addTask { [gitHub] in
-                        (request.id, await gitHub.checksSummary(for: request, link: link, account: account))
+
+                        async let details = try? gitHub.pullRequest(number: request.number, link: link, account: account)
+                        async let checks = gitHub.checksSummary(for: request, link: link, account: account)
+
+                        return await (request.id, details, checks)
+
                     }
                 }
 
@@ -207,7 +224,7 @@ extension RepositoryViewModel {
         }
 
         if self.pullRequestsRequestID == requestID {
-            self.isLoadingChecks = false
+            self.isLoadingPullRequestMetadata = false
         }
 
     }

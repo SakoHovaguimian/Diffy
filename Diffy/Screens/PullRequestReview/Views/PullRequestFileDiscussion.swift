@@ -11,7 +11,7 @@ struct PullRequestFileDiscussion: View {
 
         if !self.drafts.isEmpty || !self.comments.isEmpty {
 
-            VStack(alignment: .leading, spacing: 14) {
+            LazyVStack(alignment: .leading, spacing: 14) {
 
                 ForEach(self.drafts) { draft in
 

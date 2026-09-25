@@ -12,6 +12,15 @@ struct PullRequestConversationRow: View {
 
             HStack(spacing: 10) {
 
+                if let user = self.entry.user {
+                    GitHubAvatar(user: user, size: 22)
+                } else {
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .font(.system(size: 18))
+                        .foregroundStyle(self.theme.secondaryText)
+                        .frame(width: 22, height: 22)
+                        .accessibilityLabel("Deleted Account")
+                }
                 Text(self.entry.author).fontWeight(.semibold)
                 Text(self.entry.title).foregroundStyle(self.theme.secondaryText)
                 Spacer()

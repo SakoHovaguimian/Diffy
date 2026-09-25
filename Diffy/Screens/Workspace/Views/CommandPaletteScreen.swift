@@ -28,7 +28,7 @@ struct CommandPaletteScreen: View {
 
             ScrollView {
 
-                VStack(alignment: .leading, spacing: 3) {
+                LazyVStack(alignment: .leading, spacing: 3) {
 
                     command("Open Review Notes", symbol: "text.bubble") { self.workspace.showsReview = true }
                     command("Create A Bucket", symbol: "folder.badge.plus") { self.workspace.addBucket() }
