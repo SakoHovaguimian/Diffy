@@ -9,11 +9,12 @@ final class WorkspaceViewModel: ViewModel {
     private static let contentSizeStep = 0.1
 
     let loggerName = "WORKSPACE_VIEW_MODEL"
+    let runtime: AppRuntime
     @Published private(set) var projects: [RepositoryProject]
     let fileNavigatorViewModel: FileNavigatorViewModel
     let textDiffViewModel: TextDiffViewModel
+    private let workspaceService: WorkspaceServiceProtocol
     private let preferencesService: PreferencesServiceProtocol
-    private var localProjectRecords: [LocalProjectRecord]
 
     @Published var buckets: [Bucket]
     @Published var selectedProjectID: String = "rune"
@@ -40,20 +41,22 @@ final class WorkspaceViewModel: ViewModel {
     @Published private(set) var contentSizeScale = 1.0
 
     init(
+        runtime: AppRuntime,
         workspaceService: WorkspaceServiceProtocol,
         preferencesService: PreferencesServiceProtocol,
         fileNavigatorViewModel: FileNavigatorViewModel,
         textDiffBuilder: TextDiffBuilding
     ) {
 
-        let localProjects = preferencesService.load([LocalProjectRecord].self, key: "projects.local.v1") ?? []
+        let library = workspaceService.loadLibrary()
 
-        self.localProjectRecords = localProjects
-        self.projects = workspaceService.projects + localProjects.map(\.project)
+        self.runtime = runtime
+        self.projects = library.projects
+        self.workspaceService = workspaceService
         self.preferencesService = preferencesService
         self.fileNavigatorViewModel = fileNavigatorViewModel
         self.textDiffViewModel = TextDiffViewModel(diffBuilder: textDiffBuilder)
-        self.buckets = (preferencesService.load([Bucket].self, key: "buckets.demo.v1") ?? workspaceService.buckets).map { bucket in
+        self.buckets = (preferencesService.load([Bucket].self, key: "buckets.demo.v1") ?? workspaceService.defaultBuckets).map { bucket in
 
             var updated = bucket
             updated.enforceDesignDefaults()
@@ -62,16 +65,31 @@ final class WorkspaceViewModel: ViewModel {
         }
         self.projectBuckets = preferencesService.load([String: String].self, key: "projectBuckets.demo.v1") ?? [:]
         self.projectOrder = preferencesService.load([String].self, key: "projectOrder.demo.v1") ?? []
+        self.favorites = Set(library.defaultFavoriteProjectIDs)
+        self.recentProjectIDs = library.defaultRecentProjectIDs
+        self.notice = library.loadErrorMessage ?? library.migrationNotice
+        self.selectedProjectID = self.projects.first?.id ?? ""
         self.selectedFileID = self.projects.first?.files.first?.id
+        self.showsDashboard = self.projects.first?.checkout != nil
 
+    }
+
+    var selectedProject: RepositoryProject? {
+        self.projects.first { $0.id == self.selectedProjectID } ?? self.projects.first
     }
 
     var project: RepositoryProject {
-        self.projects.first { $0.id == self.selectedProjectID } ?? self.projects[0]
+
+        guard let selectedProject = self.selectedProject else {
+            preconditionFailure("A project-dependent screen was shown without a selected project.")
+        }
+
+        return selectedProject
+
     }
 
     var file: DiffFile? {
-        self.project.files.first { $0.id == self.selectedFileID }
+        self.selectedProject?.files.first { $0.id == self.selectedFileID }
     }
 
     var comparisonTitle: String {
@@ -82,9 +100,10 @@ final class WorkspaceViewModel: ViewModel {
         case .staged: "HEAD → Index"
         case .branches: "\(self.comparisonLeft) → \(self.comparisonRight)"
         case .commits: "\(self.comparisonLeft) → \(self.comparisonRight)"
-        case .folders: "Original folder → Updated folder"
         case .history: "Previous version → Selected version"
+        case .pullRequests: "Pull request base → Head"
         case .merge: "Base · Yours · Theirs"
+        case .folders: "Original folder → Updated folder"
 
         }
 
@@ -126,7 +145,13 @@ final class WorkspaceViewModel: ViewModel {
     }
 
     func selectMode(_ mode: ComparisonMode) {
+
+        guard self.selectedProject != nil else {
+            return
+        }
+
         requestNavigation(.mode(mode))
+
     }
 
     func showDashboard() {
@@ -318,7 +343,7 @@ final class WorkspaceViewModel: ViewModel {
         }
 
         self.pendingProject = NewProjectDraft(
-            directoryPath: path,
+            directoryURL: directoryURL.standardizedFileURL,
             bucketID: bucket?.id ?? "",
             name: directoryURL.lastPathComponent
         )
@@ -335,20 +360,31 @@ final class WorkspaceViewModel: ViewModel {
             return
         }
 
-        let record = LocalProjectRecord(
-            id: "local-\(UUID().uuidString)",
-            directoryPath: draft.directoryPath,
-            bucketID: draft.bucketID,
-            name: name,
-            symbol: draft.symbol
-        )
+        do {
 
-        self.localProjectRecords.append(record)
-        self.projects.append(record.project)
-        self.preferencesService.save(self.localProjectRecords, key: "projects.local.v1")
-        self.pendingProject = nil
-        selectProject(record.project)
-        self.notice = "Folder added to Diffy. Comparisons are not available for local folders yet."
+            let checkout = try self.workspaceService.makeCheckoutReference(for: draft.directoryURL)
+            let project = RepositoryProject(
+                id: "local-\(UUID().uuidString)",
+                name: name,
+                subtitle: "",
+                bucketID: draft.bucketID,
+                symbol: draft.symbol,
+                checkout: checkout,
+                gitHubLink: nil,
+                gitHubAccountID: nil,
+                addedAt: Date()
+            )
+            let updatedProjects = self.projects + [project]
+
+            try self.workspaceService.saveProjects(updatedProjects)
+            self.projects = updatedProjects
+            self.pendingProject = nil
+            selectProject(project)
+            self.notice = "Folder added to Diffy. Comparisons are not available for local folders yet."
+
+        } catch {
+            self.notice = "Diffy could not save this folder: \(error.localizedDescription)"
+        }
 
     }
 

@@ -58,7 +58,7 @@ struct WorkspaceScreen: View {
         }
         .frame(minWidth: 1050, minHeight: 650)
         .background(self.theme.background)
-        .navigationTitle("Diffy")
+        .navigationTitle(self.viewModel.runtime.windowTitle)
         .focusedSceneValue(\.workspace, self.viewModel)
         .toolbar { toolbarContent() }
         .sheet(item: self.$viewModel.selectedBucket) { bucket in
@@ -180,25 +180,63 @@ struct WorkspaceScreen: View {
 
     private func workspaceContent() -> some View {
 
-        VStack(spacing: 0) {
+        Group {
 
-            WorkspaceHeader(viewModel: self.viewModel)
-
-            if self.viewModel.showsDashboard {
-                ProjectDashboardScreen(workspace: self.viewModel)
-            } else if self.viewModel.mode == .workingTree {
-                ComparisonScreen(workspace: self.viewModel)
+            if self.viewModel.projects.isEmpty {
+                emptyWorkspace()
             } else {
 
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(self.theme.added.opacity(0.28))
-                    .padding(24)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(self.theme.background)
+                VStack(spacing: 0) {
+
+                    WorkspaceHeader(viewModel: self.viewModel)
+
+                    if self.viewModel.showsDashboard {
+                        ProjectDashboardScreen(workspace: self.viewModel)
+                    } else if self.viewModel.mode == .workingTree {
+                        ComparisonScreen(workspace: self.viewModel)
+                    } else {
+
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(self.theme.added.opacity(0.28))
+                            .padding(24)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(self.theme.background)
+
+                    }
+
+                }
 
             }
 
         }
+
+    }
+
+    private func emptyWorkspace() -> some View {
+
+        VStack(spacing: 18) {
+
+            DiffyEmptyState(
+                symbol: "folder.badge.plus",
+                title: "Add your first project",
+                message: "Choose a local folder to create Diffy's secure project reference. Live mode does not load sample repositories."
+            )
+            .frame(maxHeight: 280)
+
+            Button("Choose Project Folder") {
+
+                guard let directoryURL = ProjectDirectoryController().chooseDirectory() else {
+                    return
+                }
+
+                self.viewModel.prepareProject(directoryURL: directoryURL, in: nil)
+
+            }
+            .buttonStyle(.borderedProminent)
+
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(self.theme.background)
 
     }
 
@@ -222,15 +260,25 @@ struct WorkspaceScreen: View {
 
         ToolbarItem(placement: .principal) {
 
-            HStack(spacing: 8) {
+            if let project = self.viewModel.selectedProject {
 
-                Image(systemName: self.viewModel.project.directoryPath == nil ? "arrow.triangle.branch" : "folder")
-                Text(self.viewModel.project.directoryPath == nil ? self.viewModel.project.branch : "Local folder")
-                    .lineLimit(1)
+                HStack(spacing: 8) {
+
+                    Image(systemName: project.directoryPath == nil ? "arrow.triangle.branch" : "folder")
+                    Text(project.directoryPath == nil ? project.branch : "Local folder")
+                        .lineLimit(1)
+
+                }
+                .padding(.horizontal, 6)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(self.theme.secondaryText)
+
+            } else {
+                Text("No project selected")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(self.theme.secondaryText)
 
             }
-            .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(self.theme.secondaryText)
 
         }
 
@@ -242,6 +290,7 @@ struct WorkspaceScreen: View {
                 Label("Commands", systemImage: "command")
             }
             .help("Command palette · ⌘K")
+            .disabled(self.viewModel.projects.isEmpty)
 
             Button {
 
@@ -253,6 +302,7 @@ struct WorkspaceScreen: View {
                 Label("Review notes", systemImage: "text.bubble")
             }
             .help("Review notes · ⇧⌘R")
+            .disabled(self.viewModel.projects.isEmpty)
 
             SettingsLink {
                 Label("Settings", systemImage: "slider.horizontal.3")

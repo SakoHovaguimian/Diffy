@@ -6,9 +6,9 @@ final class AppAssembler {
     let services: ServiceAssembly
     let viewModels: ViewModelAssembly
 
-    init(isPreview: Bool = false) {
+    init(runtime: AppRuntime = .current) {
 
-        let services = ServiceAssembly(isPreview: isPreview)
+        let services = ServiceAssembly(runtime: runtime)
 
         self.services = services
         self.viewModels = ViewModelAssembly(services: services)

@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Diffy</string>
+    <string>$(DIFFY_DISPLAY_NAME)</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -22,6 +22,12 @@
     <string>$(MARKETING_VERSION)</string>
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>DiffyGitHubAppSlug</key>
+    <string>$(DIFFY_GITHUB_APP_SLUG)</string>
+    <key>DiffyGitHubClientID</key>
+    <string>$(DIFFY_GITHUB_CLIENT_ID)</string>
+    <key>DiffyGitHubHost</key>
+    <string>$(DIFFY_GITHUB_HOST)</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>NSPrincipalClass</key>

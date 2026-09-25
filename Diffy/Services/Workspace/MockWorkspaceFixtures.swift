@@ -2,6 +2,8 @@ import Foundation
 
 enum MockWorkspaceFixtures {
 
+    private static let addedAt = Date(timeIntervalSince1970: 1_700_000_000)
+
     static let buckets: [Bucket] = [
         Bucket(id: "ios", title: "iOS", subtitle: "Made for the everyday", symbol: "square.stack.3d.up", accentHex: "7862D9"),
         Bucket(id: "backend", title: "Backend", subtitle: "Behind the scenes", symbol: "server.rack", accentHex: "319B90"),
@@ -33,21 +35,87 @@ enum MockWorkspaceFixtures {
             subtitle: subtitle,
             bucketID: bucket,
             symbol: symbol,
-            branch: "feature/refine-the-details",
-            language: language,
-            updatedLabel: "12 minutes ago",
-            files: MockFileFixtures.files(projectID: id, language: language),
-            commits: self.commits,
-            directoryPath: nil
+            checkout: nil,
+            gitHubLink: nil,
+            gitHubAccountID: nil,
+            addedAt: self.addedAt
         )
 
     }
 
-    static let commits: [MockCommit] = [
-        MockCommit(id: "a7e2c91", title: "Give every detail a little more room", author: "Sako", date: "Today, 10:42", additions: 42, deletions: 18),
-        MockCommit(id: "b4f1d08", title: "Separate theme definitions from presentation", author: "Sako", date: "Yesterday, 16:18", additions: 126, deletions: 54),
-        MockCommit(id: "c9a6e32", title: "Refine navigation and keyboard focus", author: "Sako", date: "Sep 22, 09:30", additions: 67, deletions: 23),
-        MockCommit(id: "d0b8f64", title: "Introduce the first component collection", author: "Sako", date: "Sep 20, 14:06", additions: 284, deletions: 12)
+    static let commits: [RepositoryCommit] = [
+        commit("a7e2c91", title: "Give every detail a little more room", hoursAgo: 2, additions: 42, deletions: 18),
+        commit("b4f1d08", title: "Separate theme definitions from presentation", hoursAgo: 20, additions: 126, deletions: 54),
+        commit("c9a6e32", title: "Refine navigation and keyboard focus", hoursAgo: 52, additions: 67, deletions: 23),
+        commit("d0b8f64", title: "Introduce the first component collection", hoursAgo: 95, additions: 284, deletions: 12)
     ]
+
+    static func files(for projectID: String) -> [DiffFile] {
+        fileCollections[projectID] ?? []
+    }
+
+    static func branch(for projectID: String) -> String {
+        languages[projectID] == nil ? "" : "feature/refine-the-details"
+    }
+
+    private static let languages = [
+        "rune": "Swift",
+        "grimoire": "Swift",
+        "hatch": "Swift",
+        "joblens": "Swift",
+        "obelisk": "TypeScript",
+        "joblens-api": "TypeScript",
+        "stormkeep": "Swift"
+    ]
+
+    private static let fileCollections = Dictionary(uniqueKeysWithValues: languages.map { projectID, language in
+        (projectID, MockFileFixtures.files(projectID: projectID, language: language))
+    })
+
+    private static func commit(
+        _ id: String,
+        title: String,
+        hoursAgo: Int,
+        additions: Int,
+        deletions: Int
+    ) -> RepositoryCommit {
+
+        RepositoryCommit(
+            id: id,
+            title: title,
+            authorName: "Sako",
+            authoredAt: self.addedAt.addingTimeInterval(-Double(hoursAgo * 3_600)),
+            parentIDs: [],
+            additions: additions,
+            deletions: deletions
+        )
+
+    }
+
+}
+
+// MARK: - Prototype Presentation
+
+extension RepositoryProject {
+
+    var branch: String {
+        MockWorkspaceFixtures.branch(for: self.id)
+    }
+
+    var files: [DiffFile] {
+        MockWorkspaceFixtures.files(for: self.id)
+    }
+
+    var commits: [RepositoryCommit] {
+        self.files.isEmpty ? [] : MockWorkspaceFixtures.commits
+    }
+
+    var directoryPath: String? {
+        self.checkout?.lastKnownPath
+    }
+
+    var changeCount: Int {
+        self.files.filter { $0.status != .identical }.count
+    }
 
 }

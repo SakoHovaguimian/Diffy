@@ -1,5 +1,7 @@
 import Foundation
 
+/// The Milestone 0 folder reference saved under `projects.local.v1`. It stored a plain
+/// path without a security-scoped bookmark and is read only to migrate existing records.
 struct LocalProjectRecord: Codable, Identifiable {
 
     let id: String
@@ -8,20 +10,18 @@ struct LocalProjectRecord: Codable, Identifiable {
     var name: String
     var symbol: String
 
-    var project: RepositoryProject {
+    func migratedProject(checkout: LocalCheckoutReference, migratedAt: Date) -> RepositoryProject {
 
         RepositoryProject(
             id: self.id,
             name: self.name,
-            subtitle: self.directoryPath,
+            subtitle: "",
             bucketID: self.bucketID,
             symbol: self.symbol,
-            branch: "",
-            language: "",
-            updatedLabel: "",
-            files: [],
-            commits: [],
-            directoryPath: self.directoryPath
+            checkout: checkout,
+            gitHubLink: nil,
+            gitHubAccountID: nil,
+            addedAt: migratedAt
         )
 
     }

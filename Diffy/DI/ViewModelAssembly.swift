@@ -21,6 +21,7 @@ final class ViewModelAssembly {
     func workspaceViewModel() -> WorkspaceViewModel {
 
         WorkspaceViewModel(
+            runtime: self.services.runtime,
             workspaceService: self.services.workspaceService,
             preferencesService: self.services.preferencesService,
             fileNavigatorViewModel: FileNavigatorViewModel(preferencesService: self.services.preferencesService),

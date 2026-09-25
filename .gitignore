@@ -4,3 +4,4 @@ build/
 *.xcuserstate
 xcuserdata/
 .swiftlint-cache/
+Config/GitHub.local.xcconfig

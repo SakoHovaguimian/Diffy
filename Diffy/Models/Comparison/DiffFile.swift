@@ -1,6 +1,6 @@
 import Foundation
 
-struct DiffFile: Identifiable, Hashable {
+struct DiffFile: Codable, Identifiable, Hashable, Sendable {
 
     let id: String
     let path: String
@@ -8,9 +8,15 @@ struct DiffFile: Identifiable, Hashable {
     let status: FileChangeStatus
     let kind: ComparisonFileKind
     let isStaged: Bool
-    let updatedMinutesAgo: Int
+    let lastEditedAt: Date?
     let size: Int
     let lines: [DiffLine]
+
+    /// Summary counts from a listing, used before a file's lines are loaded.
+    var lineCounts: DiffLineCounts?
+
+    /// Live listings load each file's lines on demand. Fixtures are always loaded.
+    var isContentLoaded: Bool = true
 
     var name: String {
         (self.path as NSString).lastPathComponent
@@ -18,6 +24,16 @@ struct DiffFile: Identifiable, Hashable {
 
     var directory: String {
         (self.path as NSString).deletingLastPathComponent
+    }
+
+    var updatedMinutesAgo: Int {
+
+        guard let lastEditedAt = self.lastEditedAt else {
+            return .max
+        }
+
+        return max(0, Int(Date().timeIntervalSince(lastEditedAt) / 60))
+
     }
 
     var hasNoOriginalSource: Bool {
@@ -33,11 +49,23 @@ struct DiffFile: Identifiable, Hashable {
     }
 
     var additions: Int {
-        self.lines.filter { $0.status == .added }.count
+
+        guard self.isContentLoaded else {
+            return self.lineCounts?.additions ?? 0
+        }
+
+        return self.lines.filter { $0.status == .added }.count
+
     }
 
     var deletions: Int {
-        self.lines.filter { $0.status == .removed }.count
+
+        guard self.isContentLoaded else {
+            return self.lineCounts?.deletions ?? 0
+        }
+
+        return self.lines.filter { $0.status == .removed }.count
+
     }
 
     var changedLines: Int {
@@ -64,17 +92,31 @@ struct DiffFile: Identifiable, Hashable {
 
     func replacingLines(_ lines: [DiffLine]) -> DiffFile {
 
-        DiffFile(
+        var file = DiffFile(
             id: self.id,
             path: self.path,
             originalPath: self.originalPath,
             status: self.status,
             kind: self.kind,
             isStaged: self.isStaged,
-            updatedMinutesAgo: self.updatedMinutesAgo,
+            lastEditedAt: self.lastEditedAt,
             size: self.size,
             lines: lines
         )
+        file.lineCounts = self.lineCounts
+
+        return file
+
+    }
+
+    /// A listing entry suitable for the launch cache: summary data without source lines.
+    func withoutContent() -> DiffFile {
+
+        var file = replacingLines([])
+        file.lineCounts = DiffLineCounts(additions: self.additions, deletions: self.deletions)
+        file.isContentLoaded = false
+
+        return file
 
     }
 

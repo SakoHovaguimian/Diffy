@@ -88,6 +88,9 @@ final class MergeViewModel: ViewModel {
         case .both:
             self.results[self.conflict.id] = self.conflict.yours + "\n\n" + self.conflict.theirs
 
+        case .bothTheirsFirst:
+            self.results[self.conflict.id] = self.conflict.theirs + "\n\n" + self.conflict.yours
+
         case .base, .unresolved:
             self.results[self.conflict.id] = self.conflict.base
 

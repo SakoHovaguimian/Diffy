@@ -1,21 +1,29 @@
 import Foundation
 
-struct RepositoryProject: Identifiable, Hashable {
+/// A project in Diffy. Presentation, Bucket membership, the optional local checkout, and
+/// the optional GitHub link are independent. Remotes and status come from Git snapshots.
+struct RepositoryProject: Codable, Identifiable, Hashable, Sendable {
 
     let id: String
-    let name: String
-    let subtitle: String
-    let bucketID: String
-    let symbol: String
-    let branch: String
-    let language: String
-    let updatedLabel: String
-    let files: [DiffFile]
-    let commits: [MockCommit]
-    let directoryPath: String?
+    var name: String
+    var subtitle: String
+    var bucketID: String
+    var symbol: String
+    var checkout: LocalCheckoutReference?
+    var gitHubLink: GitHubRepositoryLink?
+    var gitHubAccountID: String?
+    let addedAt: Date
 
-    var changeCount: Int {
-        self.files.filter { $0.status != .identical }.count
+    var repositoryReference: GitRepositoryReference? {
+        self.checkout.map { GitRepositoryReference(projectID: self.id, checkout: $0) }
+    }
+
+    var displaySubtitle: String {
+        self.subtitle.isEmpty ? (self.checkout?.displayPath ?? "") : self.subtitle
+    }
+
+    var isGitHubLinked: Bool {
+        self.gitHubLink != nil
     }
 
 }

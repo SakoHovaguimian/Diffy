@@ -1,0 +1,16 @@
+// Diffy Live — public GitHub App settings, expanded into Info.plist.
+//
+// Never commit a real client ID here. Put it in Config/GitHub.local.xcconfig, which is
+// ignored by Git and included below when present:
+//
+//     DIFFY_GITHUB_CLIENT_ID = Iv23liExampleClientID
+//     DIFFY_GITHUB_APP_SLUG = your-app-slug
+//
+// Without a client ID, Diffy Live still provides every local Git feature and explains
+// that GitHub is not configured. See docs/GITHUB_SETUP.md.
+
+DIFFY_GITHUB_CLIENT_ID =
+DIFFY_GITHUB_HOST = github.com
+DIFFY_GITHUB_APP_SLUG =
+
+#include? "GitHub.local.xcconfig"

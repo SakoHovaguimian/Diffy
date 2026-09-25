@@ -9,7 +9,7 @@ final class MockAssembler {
 
     private init() {
 
-        self.assembler = AppAssembler(isPreview: true)
+        self.assembler = AppAssembler(runtime: .preview)
         self.assembler.viewModels.reviewViewModel.add(MockPreviewFixtures.annotation)
 
     }

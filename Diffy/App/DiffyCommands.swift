@@ -39,6 +39,7 @@ struct DiffyCommands: Commands {
                 Button(mode.rawValue) {
                     self.workspace?.selectMode(mode)
                 }
+                .disabled(self.workspace?.projects.isEmpty ?? true)
 
             }
 
@@ -50,11 +51,13 @@ struct DiffyCommands: Commands {
                 self.workspace?.showsReview.toggle()
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
+            .disabled(self.workspace?.projects.isEmpty ?? true)
 
             Button("Command Palette") {
                 self.workspace?.showsCommandPalette = true
             }
             .keyboardShortcut("k", modifiers: .command)
+            .disabled(self.workspace?.projects.isEmpty ?? true)
 
         }
 

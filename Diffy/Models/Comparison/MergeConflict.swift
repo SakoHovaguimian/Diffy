@@ -1,6 +1,6 @@
 import Foundation
 
-struct MergeConflict: Identifiable {
+struct MergeConflict: Hashable, Identifiable, Sendable {
 
     let id: Int
     let title: String

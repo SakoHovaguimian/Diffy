@@ -127,7 +127,7 @@ struct ProjectEditorScreen: View {
 
     ProjectEditorScreen(
         draft: NewProjectDraft(
-            directoryPath: "/Users/example/Projects/Rune",
+            directoryURL: URL(fileURLWithPath: "/Users/example/Projects/Rune", isDirectory: true),
             bucketID: "ios",
             name: "Rune"
         ),

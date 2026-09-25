@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "0E8A3AD980EC179856012B7E"
-               BuildableName = "Diffy.app"
-               BlueprintName = "Diffy"
+               BlueprintIdentifier = "FEAEA418E4AE2FDA97DE3E54"
+               BuildableName = "Diffy Mock.app"
+               BlueprintName = "Diffy Mock"
                ReferencedContainer = "container:Diffy.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -43,9 +43,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0E8A3AD980EC179856012B7E"
-            BuildableName = "Diffy.app"
-            BlueprintName = "Diffy"
+            BlueprintIdentifier = "FEAEA418E4AE2FDA97DE3E54"
+            BuildableName = "Diffy Mock.app"
+            BlueprintName = "Diffy Mock"
             ReferencedContainer = "container:Diffy.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -60,9 +60,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0E8A3AD980EC179856012B7E"
-            BuildableName = "Diffy.app"
-            BlueprintName = "Diffy"
+            BlueprintIdentifier = "FEAEA418E4AE2FDA97DE3E54"
+            BuildableName = "Diffy Mock.app"
+            BlueprintName = "Diffy Mock"
             ReferencedContainer = "container:Diffy.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -1,6 +1,6 @@
 import Foundation
 
-struct DiffLine: Identifiable, Hashable {
+struct DiffLine: Codable, Identifiable, Hashable, Sendable {
 
     let id: Int
     let oldNumber: Int?

@@ -187,7 +187,7 @@ struct ProjectDashboardScreen: View {
                             HStack(spacing: self.contentSize.scaled(8)) {
 
                                 Text(commit.id).font(self.contentSize.font(size: 10, design: .monospaced)).foregroundStyle(self.theme.accent)
-                                Text("\(commit.author) · \(commit.date)").font(self.contentSize.font(size: 10)).foregroundStyle(self.theme.secondaryText)
+                                Text("\(commit.authorName) · \(commit.authoredAt.formatted(date: .abbreviated, time: .shortened))").font(self.contentSize.font(size: 10)).foregroundStyle(self.theme.secondaryText)
 
                             }
 

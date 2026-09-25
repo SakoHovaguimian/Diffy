@@ -31,7 +31,7 @@ struct WorkspaceHeader: View {
                     Text(self.viewModel.project.name)
                         .font(self.contentSize.font(size: 20, weight: .semibold))
 
-                    Text(self.viewModel.project.subtitle)
+                    Text(self.viewModel.project.displaySubtitle)
                         .font(self.contentSize.font(size: 11))
                         .foregroundStyle(self.theme.secondaryText)
                         .lineLimit(1)
@@ -86,6 +86,7 @@ struct WorkspaceHeader: View {
         }
         .padding(.horizontal, self.contentSize.scaled(24))
         .padding(.top, self.contentSize.scaled(22))
+        .padding(.bottom, self.viewModel.project.directoryPath == nil ? 0 : self.contentSize.scaled(18))
         .background(self.theme.surface)
         .overlay(alignment: .bottom) { self.theme.border.frame(height: self.contentSize.scaled(1)) }
 

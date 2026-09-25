@@ -109,7 +109,10 @@ struct WorkspaceSidebar: View {
                 .tracking(-0.8)
 
             Spacer()
-            DiffyBadge(title: "PREVIEW", color: self.theme.secondaryText)
+
+            if let badgeTitle = self.viewModel.runtime.badgeTitle {
+                DiffyBadge(title: badgeTitle, color: self.theme.secondaryText)
+            }
 
         }
         .padding(.horizontal, 18)

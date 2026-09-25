@@ -60,7 +60,7 @@ enum MockFileFixtures {
             status: status,
             kind: kind,
             isStaged: staged,
-            updatedMinutesAgo: minutes,
+            lastEditedAt: Date().addingTimeInterval(-Double(minutes * 60)),
             size: max(256, lines.count * 72),
             lines: lines
         )

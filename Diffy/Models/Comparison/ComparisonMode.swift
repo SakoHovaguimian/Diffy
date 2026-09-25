@@ -6,9 +6,10 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
     case staged = "Staged changes"
     case branches = "Branches"
     case commits = "Commits"
-    case folders = "Folders"
     case history = "File history"
+    case pullRequests = "Pull requests"
     case merge = "Merge"
+    case folders = "Folders"
 
     var id: String { self.rawValue }
 
@@ -20,12 +21,35 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
         case .staged: "tray.and.arrow.down"
         case .branches: "arrow.triangle.branch"
         case .commits: "clock.arrow.circlepath"
-        case .folders: "folder"
         case .history: "clock"
+        case .pullRequests: "arrow.triangle.pull"
         case .merge: "arrow.triangle.merge"
+        case .folders: "folder"
 
         }
 
+    }
+
+    var tabTitle: String {
+
+        switch self {
+
+        case .workingTree: "Working tree"
+        case .staged: "Staged"
+        case .branches: "Branches"
+        case .commits: "Commits"
+        case .history: "History"
+        case .pullRequests: "Pull requests"
+        case .merge: "Conflicts"
+        case .folders: "Folders"
+
+        }
+
+    }
+
+    /// Modes whose comparison is chosen with the source bar.
+    var usesSourcePicker: Bool {
+        self == .branches || self == .commits
     }
 
 }
