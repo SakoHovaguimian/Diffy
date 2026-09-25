@@ -218,9 +218,7 @@ struct FileNavigatorScreen: View {
                 Button("Open comparison") { self.workspace.selectFile(file) }
                 Button("Copy relative path") { ExportController.copy(file.path) }
                 Button("Show file history") {
-
-                    self.workspace.selectFile(file)
-                    self.workspace.selectMode(.history)
+                    self.workspace.selectFile(file, mode: .history)
 
                 }
 

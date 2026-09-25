@@ -7,6 +7,9 @@ final class TextDiffViewModel: ViewModel {
     let loggerName = "TEXT_DIFF_VIEW_MODEL"
     private let diffBuilder: TextDiffBuilding
     private var preparedFileID: String?
+    private var appliedDrafts: [String: TextDiffDraftSnapshot] = [:]
+    private var appliedText = ""
+    private var appliedLines: [DiffLine] = []
     @Published var selectionStart: Int?
     @Published var selectionEnd: Int?
     @Published var selectedSide: SourceSide = .right
@@ -20,6 +23,10 @@ final class TextDiffViewModel: ViewModel {
     @Published var isEditing = false
     @Published private(set) var editingLineNumber: Int?
 
+    var hasUnappliedChanges: Bool {
+        self.preparedFileID != nil && self.draftText != self.appliedText
+    }
+
     init(diffBuilder: TextDiffBuilding) {
         self.diffBuilder = diffBuilder
     }
@@ -32,9 +39,16 @@ final class TextDiffViewModel: ViewModel {
             return
         }
 
+        let appliedDraft = self.appliedDrafts[file.id] ?? TextDiffDraftSnapshot(
+            text: file.updatedSource,
+            lines: file.lines
+        )
+
         self.preparedFileID = file.id
-        self.draftText = file.updatedSource
-        self.draftLines = file.lines
+        self.appliedText = appliedDraft.text
+        self.appliedLines = appliedDraft.lines
+        self.draftText = appliedDraft.text
+        self.draftLines = appliedDraft.lines
         self.isEditing = false
         self.editingLineNumber = nil
         clearSelection()
@@ -82,16 +96,42 @@ final class TextDiffViewModel: ViewModel {
 
     }
 
+    func applyChanges() {
+
+        guard let preparedFileID = self.preparedFileID else {
+            return
+        }
+
+        let appliedDraft = TextDiffDraftSnapshot(text: self.draftText, lines: self.draftLines)
+        self.appliedDrafts[preparedFileID] = appliedDraft
+        self.appliedText = appliedDraft.text
+        self.appliedLines = appliedDraft.lines
+        finishEditing()
+
+    }
+
+    func discardChanges() {
+
+        self.draftText = self.appliedText
+        self.draftLines = self.appliedLines
+        finishEditing()
+
+    }
+
     func resetDraft(file: DiffFile) {
 
-        self.draftText = file.updatedSource
-        self.draftLines = file.lines
+        guard self.preparedFileID == file.id else {
+            return
+        }
+
+        self.draftText = self.appliedText
+        self.draftLines = self.appliedLines
         clearSelection()
 
     }
 
     func isDraftModified(file: DiffFile) -> Bool {
-        self.preparedFileID == file.id && self.draftText != file.updatedSource
+        self.preparedFileID == file.id && self.hasUnappliedChanges
     }
 
     func updatedLineStatuses() -> [FileChangeStatus] {

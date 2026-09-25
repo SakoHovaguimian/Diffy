@@ -32,7 +32,7 @@ struct CommandPaletteScreen: View {
 
                     command("Open review notes", symbol: "text.bubble") { self.workspace.showsReview = true }
                     command("Create a Bucket", symbol: "folder.badge.plus") { self.workspace.addBucket() }
-                    command("Project overview", symbol: "square.grid.2x2") { self.workspace.showsDashboard = true }
+                    command("Project overview", symbol: "square.grid.2x2") { self.workspace.showDashboard() }
 
                     ForEach(ComparisonMode.allCases) { mode in
                         command("Compare · \(mode.rawValue)", symbol: mode.symbol) { self.workspace.selectMode(mode) }

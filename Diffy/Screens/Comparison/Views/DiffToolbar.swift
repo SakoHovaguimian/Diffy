@@ -121,7 +121,7 @@ struct DiffToolbar: View {
                 if self.viewModel.isDraftModified(file: self.file) {
 
                     Divider()
-                    Button("Reset editable draft") { self.viewModel.resetDraft(file: self.file) }
+                    Button("Discard unapplied changes") { self.viewModel.resetDraft(file: self.file) }
 
                 }
 
@@ -141,29 +141,6 @@ struct DiffToolbar: View {
                 .controlSize(.small)
                 .disabled(self.viewModel.selectionStart == nil)
                 .help("Annotate the selected line or range")
-
-            }
-
-            if compact, self.viewModel.isEditing {
-
-                DiffyIconButton(
-                    symbol: "checkmark",
-                    label: "Finish editing",
-                    isSelected: true
-                ) {
-                    self.viewModel.finishEditing()
-                }
-
-            } else if self.viewModel.isEditing {
-
-                Button {
-                    self.viewModel.finishEditing()
-                } label: {
-                    Label("Done", systemImage: "checkmark")
-                }
-                .font(self.contentSize.font(size: 10, weight: .medium))
-                .controlSize(.small)
-                .help("Finish editing the working copy")
 
             }
 

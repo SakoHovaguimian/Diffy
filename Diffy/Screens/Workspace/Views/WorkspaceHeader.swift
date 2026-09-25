@@ -64,7 +64,7 @@ struct WorkspaceHeader: View {
                         }
 
                         navigationButton("Overview", symbol: "square.grid.2x2", selected: self.viewModel.showsDashboard) {
-                            self.viewModel.showsDashboard = true
+                            self.viewModel.showDashboard()
                         }
 
                         ForEach(ComparisonMode.allCases.filter { $0 != .workingTree }) { mode in

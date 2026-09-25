@@ -40,7 +40,7 @@ struct ComparisonScreen: View {
                 TextDiffScreen(
                     file: file,
                     workspace: self.workspace,
-                    viewModel: self.workspace.makeTextDiffViewModel()
+                    viewModel: self.workspace.textDiffViewModel
                 )
                     .id(file.id)
 

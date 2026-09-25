@@ -11,8 +11,8 @@ final class WorkspaceViewModel: ViewModel {
     let loggerName = "WORKSPACE_VIEW_MODEL"
     @Published private(set) var projects: [RepositoryProject]
     let fileNavigatorViewModel: FileNavigatorViewModel
+    let textDiffViewModel: TextDiffViewModel
     private let preferencesService: PreferencesServiceProtocol
-    private let textDiffBuilder: TextDiffBuilding
     private var localProjectRecords: [LocalProjectRecord]
 
     @Published var buckets: [Bucket]
@@ -35,6 +35,7 @@ final class WorkspaceViewModel: ViewModel {
     @Published var comparisonRight = "feature/refine-the-details"
     @Published var pendingScrollLine: Int?
     @Published var pendingMergeConflict: Int?
+    @Published var pendingDiffNavigation: PendingDiffNavigation?
     @Published var notice: String?
     @Published private(set) var contentSizeScale = 1.0
 
@@ -51,7 +52,7 @@ final class WorkspaceViewModel: ViewModel {
         self.projects = workspaceService.projects + localProjects.map(\.project)
         self.preferencesService = preferencesService
         self.fileNavigatorViewModel = fileNavigatorViewModel
-        self.textDiffBuilder = textDiffBuilder
+        self.textDiffViewModel = TextDiffViewModel(diffBuilder: textDiffBuilder)
         self.buckets = (preferencesService.load([Bucket].self, key: "buckets.demo.v1") ?? workspaceService.buckets).map { bucket in
 
             var updated = bucket
@@ -71,10 +72,6 @@ final class WorkspaceViewModel: ViewModel {
 
     var file: DiffFile? {
         self.project.files.first { $0.id == self.selectedFileID }
-    }
-
-    func makeTextDiffViewModel() -> TextDiffViewModel {
-        TextDiffViewModel(diffBuilder: self.textDiffBuilder)
     }
 
     var comparisonTitle: String {
@@ -117,26 +114,144 @@ final class WorkspaceViewModel: ViewModel {
     // MARK: - Navigation
 
     func selectProject(_ project: RepositoryProject) {
+        requestNavigation(.project(projectID: project.id, opensWorkingTree: false))
+    }
+
+    func openWorkingTree(for project: RepositoryProject) {
+        requestNavigation(.project(projectID: project.id, opensWorkingTree: true))
+    }
+
+    func selectFile(_ file: DiffFile, mode: ComparisonMode = .workingTree) {
+        requestNavigation(.file(projectID: self.project.id, fileID: file.id, mode: mode))
+    }
+
+    func selectMode(_ mode: ComparisonMode) {
+        requestNavigation(.mode(mode))
+    }
+
+    func showDashboard() {
+        requestNavigation(.dashboard)
+    }
+
+    func resolvePendingDiffNavigation(_ decision: DiffNavigationDecision) {
+
+        guard let pendingDiffNavigation = self.pendingDiffNavigation else {
+            return
+        }
+
+        switch decision {
+
+        case .apply:
+            self.textDiffViewModel.applyChanges()
+
+        case .discard:
+            self.textDiffViewModel.discardChanges()
+
+        case .cancel:
+            self.pendingDiffNavigation = nil
+            return
+
+        }
+
+        self.pendingDiffNavigation = nil
+        performNavigation(pendingDiffNavigation.destination)
+
+    }
+
+    private func requestNavigation(_ destination: DiffNavigationDestination) {
+
+        guard !isCurrentDestination(destination) else {
+            return
+        }
+
+        guard self.textDiffViewModel.hasUnappliedChanges else {
+
+            performNavigation(destination)
+            return
+
+        }
+
+        self.pendingDiffNavigation = PendingDiffNavigation(destination: destination)
+
+    }
+
+    private func isCurrentDestination(_ destination: DiffNavigationDestination) -> Bool {
+
+        switch destination {
+
+        case .dashboard:
+            return self.showsDashboard
+
+        case let .file(projectID, fileID, mode):
+            return !self.showsDashboard && self.selectedProjectID == projectID && self.selectedFileID == fileID && self.mode == mode
+
+        case let .mode(mode):
+            return !self.showsDashboard && self.mode == mode
+
+        case let .project(projectID, opensWorkingTree):
+            return self.selectedProjectID == projectID && (opensWorkingTree ? !self.showsDashboard && self.mode == .workingTree : self.showsDashboard)
+
+        case .annotation:
+            return false
+
+        }
+
+    }
+
+    private func performNavigation(_ destination: DiffNavigationDestination) {
+
+        switch destination {
+
+        case .dashboard:
+            self.showsDashboard = true
+
+        case let .file(projectID, fileID, mode):
+            navigateToFile(projectID: projectID, fileID: fileID, mode: mode)
+
+        case let .mode(mode):
+            navigateToMode(mode)
+
+        case let .project(projectID, opensWorkingTree):
+            navigateToProject(projectID: projectID, opensWorkingTree: opensWorkingTree)
+
+        case let .annotation(annotation):
+            reveal(annotation)
+
+        }
+
+    }
+
+    private func navigateToProject(projectID: String, opensWorkingTree: Bool) {
+
+        guard let project = self.projects.first(where: { $0.id == projectID }) else {
+            return
+        }
 
         self.selectedProjectID = project.id
         self.fileNavigatorViewModel.restore(projectID: project.id)
         self.selectedFileID = project.files.first?.id
-        self.showsDashboard = true
+        self.mode = .workingTree
+        self.showsDashboard = !opensWorkingTree
         self.recentProjectIDs.removeAll { $0 == project.id }
         self.recentProjectIDs.insert(project.id, at: 0)
 
     }
 
-    func selectFile(_ file: DiffFile) {
+    private func navigateToFile(projectID: String, fileID: String, mode: ComparisonMode) {
 
-        self.selectedFileID = file.id
+        guard let project = self.projects.first(where: { $0.id == projectID }),
+              project.files.contains(where: { $0.id == fileID }) else {
+            return
+        }
+
+        self.selectedProjectID = projectID
+        self.selectedFileID = fileID
         self.showsDashboard = false
-
-        self.mode = .workingTree
+        self.mode = mode
 
     }
 
-    func selectMode(_ mode: ComparisonMode) {
+    private func navigateToMode(_ mode: ComparisonMode) {
 
         guard self.project.directoryPath == nil else {
 
@@ -412,6 +527,10 @@ final class WorkspaceViewModel: ViewModel {
     // MARK: - Review Navigation
 
     func revealAnnotation(_ annotation: CodeAnnotation) {
+        requestNavigation(.annotation(annotation))
+    }
+
+    private func reveal(_ annotation: CodeAnnotation) {
 
         guard let project = self.projects.first(where: { $0.id == annotation.projectID }),
               let file = project.files.first(where: { $0.path == annotation.filePath || $0.originalPath == annotation.filePath }) else {

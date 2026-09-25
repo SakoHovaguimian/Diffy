@@ -5,7 +5,7 @@ struct TextDiffScreen: View {
 
     let file: DiffFile
     @ObservedObject var workspace: WorkspaceViewModel
-    @StateObject private var viewModel: TextDiffViewModel
+    @ObservedObject private var viewModel: TextDiffViewModel
     @EnvironmentObject private var settings: SettingsViewModel
     @EnvironmentObject private var review: ReviewViewModel
     @Environment(\.diffyTheme) private var theme
@@ -32,7 +32,7 @@ struct TextDiffScreen: View {
 
         self.file = file
         self.workspace = workspace
-        self._viewModel = StateObject(wrappedValue: viewModel)
+        self.viewModel = viewModel
 
     }
 
@@ -45,31 +45,27 @@ struct TextDiffScreen: View {
                 createAnnotation()
             }
 
+            if self.viewModel.showsSearch, !self.viewModel.isEditing {
+                searchBar()
+            }
+
+            sourceHeaders()
+
+            if self.settings.editor.collapseUnchanged, !self.viewModel.isEditing {
+
+                Button("Showing changed regions · Show whole file") {
+                    self.settings.editor.collapseUnchanged = false
+                }
+                .font(self.contentSize.font(size: 10))
+                .buttonStyle(.plain)
+                .foregroundStyle(self.theme.secondaryText)
+                .padding(self.contentSize.scaled(10))
+
+            }
+
             if self.viewModel.isEditing {
-
-                editorHeader()
-                editableCodeCanvas()
-
+                inlineEditableCanvas()
             } else {
-
-                if self.viewModel.showsSearch {
-                    searchBar()
-                }
-
-                sourceHeaders()
-
-                if self.settings.editor.collapseUnchanged {
-
-                    Button("Showing changed regions · Show whole file") {
-                        self.settings.editor.collapseUnchanged = false
-                    }
-                    .font(self.contentSize.font(size: 10))
-                    .buttonStyle(.plain)
-                    .foregroundStyle(self.theme.secondaryText)
-                    .padding(self.contentSize.scaled(10))
-
-                }
-
                 codeCanvas()
 
             }
@@ -118,18 +114,22 @@ struct TextDiffScreen: View {
 
                 if self.comparisonFile.hasNoOriginalSource {
 
-                    sourceLabel("New file", detail: rightLabel(), dot: self.theme.added)
+                    sourceLabel(self.viewModel.isEditing ? "Editing new file" : "New file", detail: rightLabel(), dot: self.theme.added)
                         .frame(width: geometry.size.width)
 
                 } else {
 
-                    sourceLabel(self.settings.editor.unified ? "Unified comparison" : "Original", detail: leftLabel(), dot: self.theme.removed)
+                    sourceLabel(
+                        leftSourceTitle(),
+                        detail: leftSourceDetail(),
+                        dot: self.viewModel.isEditing && self.settings.editor.unified ? self.theme.added : self.theme.removed
+                    )
                         .frame(width: self.settings.editor.unified ? geometry.size.width : contentWidth * self.viewModel.paneRatio)
 
                     if !self.settings.editor.unified {
 
                         self.theme.background.frame(width: self.gutterWidth)
-                        sourceLabel("Updated", detail: rightLabel(), dot: self.theme.added)
+                        sourceLabel(self.viewModel.isEditing ? "Editing updated source" : "Updated", detail: rightLabel(), dot: self.theme.added)
                             .frame(width: contentWidth * (1 - self.viewModel.paneRatio))
 
                     }
@@ -171,6 +171,20 @@ struct TextDiffScreen: View {
 
     }
 
+    private func leftSourceTitle() -> String {
+
+        if self.settings.editor.unified {
+            return self.viewModel.isEditing ? "Editing updated source" : "Unified comparison"
+        }
+
+        return "Original"
+
+    }
+
+    private func leftSourceDetail() -> String {
+        self.viewModel.isEditing && self.settings.editor.unified ? rightLabel() : leftLabel()
+    }
+
     private func rightLabel() -> String {
 
         if [.branches, .commits, .history].contains(self.workspace.mode) {
@@ -183,40 +197,64 @@ struct TextDiffScreen: View {
 
     // MARK: - Synchronized Canvas
 
-    private func editorHeader() -> some View {
+    private func inlineEditableCanvas() -> some View {
 
-        HStack(spacing: self.contentSize.scaled(8)) {
+        GeometryReader { geometry in
 
-            Label("Editable working copy", systemImage: "pencil.line")
-                .font(self.contentSize.font(size: 10, weight: .semibold))
+            let contentWidth = geometry.size.width - (self.usesSingleSourceLayout ? 0 : self.gutterWidth)
 
-            Text("Diff colors update while you type")
-                .font(self.contentSize.font(size: 10))
-                .foregroundStyle(self.theme.secondaryText)
+            ZStack(alignment: .bottomTrailing) {
 
-            Spacer()
+                HStack(spacing: 0) {
 
-            if self.viewModel.isDraftModified(file: self.file) {
+                    if !self.usesSingleSourceLayout {
 
-                Text("Draft modified")
-                    .font(self.contentSize.font(size: 9, weight: .medium))
-                    .foregroundStyle(self.theme.modified)
+                        originalEditingPane(width: contentWidth * self.viewModel.paneRatio)
 
-                Button("Reset") { self.viewModel.resetDraft(file: self.file) }
-                    .font(self.contentSize.font(size: 10))
-                    .controlSize(.small)
+                        self.theme.background
+                            .frame(width: self.gutterWidth)
+                            .overlay(alignment: .leading) { self.theme.border.frame(width: self.contentSize.scaled(1)) }
+                            .overlay(alignment: .trailing) { self.theme.border.frame(width: self.contentSize.scaled(1)) }
+                            .contentShape(Rectangle())
+                            .gesture(paneResizeGesture(contentWidth: contentWidth))
+                            .help("Drag to resize comparison panes")
+
+                    }
+
+                    editableCodePane()
+                        .frame(width: self.usesSingleSourceLayout ? geometry.size.width : contentWidth * (1 - self.viewModel.paneRatio))
+
+                }
+
+                applyChangesButton()
 
             }
 
         }
-        .padding(.horizontal, self.contentSize.scaled(14))
-        .frame(height: self.contentSize.scaled(40))
-        .background(self.theme.surface)
-        .overlay(alignment: .bottom) { self.theme.border.frame(height: self.contentSize.scaled(1)) }
 
     }
 
-    private func editableCodeCanvas() -> some View {
+    private func originalEditingPane(width: CGFloat) -> some View {
+
+        ScrollView([.vertical, .horizontal]) {
+
+            LazyVStack(spacing: 0) {
+
+                ForEach(self.comparisonFile.lines) { line in
+                    codeLine(line, side: .left)
+                        .frame(width: width)
+                        .allowsHitTesting(false)
+                }
+
+            }
+            .frame(width: width, alignment: .topLeading)
+            .padding(.vertical, self.contentSize.scaled(12))
+
+        }
+
+    }
+
+    private func editableCodePane() -> some View {
 
         LiveDiffEditor(
             text: Binding(
@@ -227,6 +265,28 @@ struct TextDiffScreen: View {
             focusLine: self.viewModel.editingLineNumber
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+    }
+
+    private func applyChangesButton() -> some View {
+
+        Button {
+            self.viewModel.applyChanges()
+        } label: {
+            Label("Apply Changes", systemImage: "checkmark.circle.fill")
+                .font(self.contentSize.font(size: 12, weight: .semibold))
+                .padding(.horizontal, self.contentSize.scaled(8))
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .keyboardShortcut(.return, modifiers: .command)
+        .help("Apply this draft · ⌘Return")
+        .shadow(
+            color: Color.black.opacity(0.2),
+            radius: self.contentSize.scaled(12),
+            y: self.contentSize.scaled(4)
+        )
+        .padding(self.contentSize.scaled(20))
 
     }
 

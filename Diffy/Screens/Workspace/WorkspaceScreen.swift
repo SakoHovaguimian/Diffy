@@ -95,6 +95,30 @@ struct WorkspaceScreen: View {
                 .diffyStyle()
 
         }
+        .confirmationDialog(
+            "Apply changes before leaving?",
+            isPresented: Binding(
+                get: { self.viewModel.pendingDiffNavigation != nil },
+                set: { if !$0, self.viewModel.pendingDiffNavigation != nil { self.viewModel.resolvePendingDiffNavigation(.cancel) } }
+            ),
+            titleVisibility: .visible
+        ) {
+
+            Button("Apply Changes") {
+                self.viewModel.resolvePendingDiffNavigation(.apply)
+            }
+
+            Button("Discard Changes", role: .destructive) {
+                self.viewModel.resolvePendingDiffNavigation(.discard)
+            }
+
+            Button("Cancel", role: .cancel) {
+                self.viewModel.resolvePendingDiffNavigation(.cancel)
+            }
+
+        } message: {
+            Text("The current draft has unapplied edits. Apply them to Diffy's in-memory working copy, discard them, or stay on this comparison.")
+        }
         .alert("Review storage", isPresented: Binding(
             get: { self.review.errorMessage != nil },
             set: { if !$0 { self.review.errorMessage = nil } }

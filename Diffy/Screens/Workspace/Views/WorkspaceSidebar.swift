@@ -508,9 +508,7 @@ struct WorkspaceSidebar: View {
                 if let project = self.viewModel.projects.first(where: { $0.id == id }) {
 
                     Button {
-
-                        self.viewModel.selectProject(project)
-                        self.viewModel.selectMode(.workingTree)
+                        self.viewModel.openWorkingTree(for: project)
 
                     } label: {
 
