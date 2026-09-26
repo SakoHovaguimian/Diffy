@@ -20,7 +20,9 @@ struct WorkspaceSidebar: View {
 
             brand()
             overviewRow()
-            favorites()
+            if !self.viewModel.favoriteProjects.isEmpty {
+                favorites()
+            }
 
             self.theme.border
                 .frame(height: 1)
@@ -159,7 +161,7 @@ struct WorkspaceSidebar: View {
             .padding(.horizontal, 10)
             .padding(.bottom, 4)
 
-            ForEach(self.viewModel.projects.filter { self.viewModel.favorites.contains($0.id) }) { project in
+            ForEach(self.viewModel.favoriteProjects) { project in
                 projectRow(project)
             }
 

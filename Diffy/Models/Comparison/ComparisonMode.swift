@@ -25,7 +25,7 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
         case .history: "File History"
         case .pullRequests: "Pull Requests"
         case .merge: "Merge"
-        case .folders: "Folders"
+        case .folders: "Compare Folders"
 
         }
 
@@ -59,7 +59,7 @@ enum ComparisonMode: String, CaseIterable, Identifiable {
         case .history: "History"
         case .pullRequests: "Pull Requests"
         case .merge: "Conflicts"
-        case .folders: "Folders"
+        case .folders: "Compare Folders"
 
         }
 

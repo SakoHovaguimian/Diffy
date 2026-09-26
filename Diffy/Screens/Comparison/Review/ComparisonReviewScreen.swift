@@ -4,17 +4,15 @@ struct ComparisonReviewScreen: View {
 
     @StateObject var viewModel: ComparisonReviewViewModel
     @ObservedObject var workspace: WorkspaceViewModel
-    @EnvironmentObject private var settings: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var searchFocused: Bool
 
     var body: some View {
 
         VStack(spacing: 0) {
 
             header()
-            controls()
+            ComparisonReviewControls(viewModel: self.viewModel, navigator: self.viewModel.navigator)
             reviewContent()
 
         }
@@ -66,83 +64,6 @@ struct ComparisonReviewScreen: View {
 
     }
 
-    private func controls() -> some View {
-
-        VStack(spacing: 16) {
-
-            HStack(spacing: 16) {
-
-                Label("\(self.viewModel.files.count.formatted()) Changed Files", systemImage: "doc.on.doc")
-                    .font(.system(size: 12, weight: .medium))
-                DiffChangeSummary(counts: self.viewModel.counts)
-                if self.viewModel.hasUnavailableLineCounts {
-                    Text("Line totals exclude files without text counts")
-                        .font(.system(size: 10))
-                        .foregroundStyle(self.theme.secondaryText)
-                }
-                Spacer()
-                Text("\(self.viewModel.viewedCount) Of \(self.viewModel.files.count) Viewed")
-                    .font(.system(size: 11))
-                    .foregroundStyle(self.theme.secondaryText)
-
-                Picker("Diff Layout", selection: self.$settings.editor.unified) {
-
-                    Text("Split").tag(false)
-                    Text("Unified").tag(true)
-
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 150)
-
-            }
-            HStack(spacing: 14) {
-
-                HStack(spacing: 8) {
-
-                    Image(systemName: "magnifyingglass").foregroundStyle(self.theme.secondaryText)
-                    TextField("Filter Changed Files…", text: self.$viewModel.query)
-                        .textFieldStyle(.plain)
-                        .focused(self.$searchFocused)
-
-                    if !self.viewModel.query.isEmpty {
-
-                        Button {
-
-                            self.viewModel.query = ""
-                            self.searchFocused = true
-
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Clear File Filter")
-
-                    }
-
-                }
-                .padding(8)
-                .frame(maxWidth: 350)
-                .background(self.theme.elevated, in: RoundedRectangle(cornerRadius: 6))
-                Toggle("Unviewed Only", isOn: self.$viewModel.onlyUnviewed)
-                    .toggleStyle(.checkbox)
-                Spacer()
-                Button("Expand Shown") { self.viewModel.expandShown() }
-                Button("Collapse All") { self.viewModel.collapseAll() }
-
-            }
-            .font(.system(size: 11))
-
-        }
-        .controlSize(.small)
-        .padding(.horizontal, 24)
-        .padding(.bottom, 18)
-        .background(self.theme.surface)
-        .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
-        .disabled(self.viewModel.isLoading)
-
-    }
-
     @ViewBuilder
     private func reviewContent() -> some View {
 
@@ -163,6 +84,8 @@ struct ComparisonReviewScreen: View {
 
         } else if self.viewModel.files.isEmpty {
             DiffyEmptyState(symbol: "checkmark.circle", title: "No File Changes", message: self.viewModel.request.emptyMessage)
+        } else if self.viewModel.experience == .editor {
+            ComparisonReviewEditor(viewModel: self.viewModel, workspace: self.workspace)
         } else if self.viewModel.matchingFiles.isEmpty {
 
             VStack(spacing: 16) {
@@ -189,16 +112,22 @@ struct ComparisonReviewScreen: View {
 
                     if let selection = self.viewModel.request.selection {
 
-                        ForEach(self.viewModel.visibleFiles) { file in
+                        ForEach(self.viewModel.reviewEntries) { entry in
 
-                            ComparisonReviewFileRow(
-                                viewModel: file,
-                                workspace: self.workspace,
-                                presentation: TextDiffPresentation(selection: selection, mode: self.viewModel.request.mode),
-                                annotate: { self.viewModel.annotationDraft = $0 },
-                                navigateToLine: { proxy.scrollTo($0, anchor: .center) }
-                            )
-                            .id(file.id)
+                            if let summary = entry.file, let file = self.viewModel.fileViewModel(for: summary.id) {
+
+                                ComparisonReviewFileRow(
+                                    viewModel: file,
+                                    workspace: self.workspace,
+                                    presentation: TextDiffPresentation(selection: selection, mode: self.viewModel.request.mode),
+                                    annotate: { self.viewModel.annotationDraft = $0 },
+                                    navigateToLine: { proxy.scrollTo($0, anchor: .center) }
+                                )
+                                .id(file.id)
+
+                            } else if entry.file == nil {
+                                FileNavigatorGroupRow(entry: entry, viewModel: self.viewModel.navigator)
+                            }
 
                         }
 

@@ -28,10 +28,10 @@ struct RepositoryCommitsView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(self.theme.secondaryText)
                 Divider()
-                LazyVStack(alignment: .leading, spacing: 8) {
+                LazyVStack(alignment: .leading, spacing: 0) {
 
                     ForEach(Array(self.viewModel.branchCommits.enumerated()), id: \.element.id) { index, commit in
-                        RepositoryCommitRow(commit: commit, showsConnector: index < self.viewModel.branchCommits.count - 1) { self.viewModel.inspectCommit(commit) }
+                        RepositoryCommitRow(commit: commit, showsConnector: index < self.viewModel.branchCommits.count - 1, showsPreviousConnector: index > 0) { self.viewModel.inspectCommit(commit) }
                     }
 
                 }

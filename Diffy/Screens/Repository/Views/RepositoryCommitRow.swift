@@ -4,6 +4,7 @@ struct RepositoryCommitRow: View {
 
     let commit: RepositoryCommit
     let showsConnector: Bool
+    var showsPreviousConnector = false
     let action: () -> Void
     @Environment(\.diffyTheme) private var theme
 
@@ -11,15 +12,8 @@ struct RepositoryCommitRow: View {
 
         Button(action: self.action) {
 
-            HStack(alignment: .top, spacing: 14) {
+            DiffyTimelineRow(showsPreviousConnector: self.showsPreviousConnector, showsNextConnector: self.showsConnector) {
 
-                VStack(spacing: 5) {
-
-                    Circle().stroke(self.theme.accent, lineWidth: 2).frame(width: 9, height: 9)
-                    if self.showsConnector { self.theme.border.frame(width: 1, height: 38) }
-
-                }
-                .padding(.top, 4)
                 VStack(alignment: .leading, spacing: 8) {
 
                     Text(self.commit.title).font(.system(size: 13, weight: .medium)).lineLimit(2).multilineTextAlignment(.leading)
@@ -40,7 +34,6 @@ struct RepositoryCommitRow: View {
 
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 5)
             .contentShape(Rectangle())
 
         }

@@ -10,8 +10,14 @@ struct PullRequestFileNavigator: View {
 
         VStack(alignment: .leading, spacing: 12) {
 
-            searchField()
-            options()
+            FileNavigatorSearchField(query: self.$navigator.query)
+                .padding(.top, 12)
+            FileNavigatorOptions(
+                viewModel: self.navigator,
+                files: self.viewModel.navigationFiles,
+                mode: .pullRequests,
+                unavailableSortOrders: [.updated, .size]
+            )
             Text("\(self.viewModel.viewedPaths.count) / \(self.viewModel.details?.files.count ?? 0) Viewed Locally")
                 .font(.system(size: 11))
                 .foregroundStyle(self.theme.secondaryText)
@@ -44,74 +50,6 @@ struct PullRequestFileNavigator: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(self.theme.surface)
-
-    }
-
-    private func searchField() -> some View {
-
-        HStack(spacing: 6) {
-
-            TextField("Filter Files", text: self.$navigator.query)
-                .textFieldStyle(.roundedBorder)
-            if !self.navigator.query.isEmpty {
-
-                Button { self.navigator.query = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear File Search")
-
-            }
-
-        }
-        .padding([.horizontal, .top], 12)
-
-    }
-
-    private func options() -> some View {
-
-        HStack(spacing: 7) {
-
-            Menu {
-
-                Picker("Layout", selection: self.$navigator.layout) {
-                    ForEach(FileListLayout.allCases) { Text($0.displayName).tag($0) }
-                }
-                Divider()
-                Button("Expand All") { self.navigator.collapsedGroups.removeAll() }
-                Button("Collapse All") {
-
-                    self.navigator.collapsedGroups.removeAll()
-                    self.navigator.collapsedGroups = Set(self.navigator.entries(self.viewModel.navigationFiles, mode: .pullRequests).filter { $0.file == nil }.map(\.id))
-
-                }
-
-            } label: {
-                Label(self.navigator.layout == .tree ? "Tree" : self.navigator.layout.displayName, systemImage: "list.bullet.indent")
-            }
-            .help("Choose File Layout & Expand Folders")
-            Menu {
-
-                Picker("Sort By", selection: self.$navigator.sort) {
-
-                    ForEach(FileSortOrder.allCases) { order in
-                        Text(order.displayName).tag(order).disabled(order == .updated || order == .size)
-                    }
-
-                }
-                Toggle("Reverse Order", isOn: Binding(get: { !self.navigator.ascending }, set: { self.navigator.ascending = !$0 }))
-                Divider()
-                Text("Disk edit times and file sizes are unavailable for GitHub patches.")
-
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-            }
-            .accessibilityLabel("Sort Files")
-            .help("Sort Files · \(self.navigator.sort.displayName)")
-
-        }
-        .controlSize(.small)
-        .padding(.horizontal, 12)
 
     }
 

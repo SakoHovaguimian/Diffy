@@ -19,6 +19,7 @@ final class ComparisonReviewFileViewModel: ViewModel, Identifiable {
     @Published private(set) var images: ImageComparisonSources?
     private var hasLoaded = false
     private var requestID = UUID()
+    private var loadingTask: Task<Void, Never>?
 
     init(
         file: DiffFile,
@@ -52,6 +53,22 @@ final class ComparisonReviewFileViewModel: ViewModel, Identifiable {
     func load() async {
 
         guard !self.hasLoaded else { return }
+
+        if let loadingTask {
+            await loadingTask.value
+            return
+        }
+
+        // Changing experiences can remove a row while its file is still loading.
+        let task = Task { await self.loadContent() }
+        self.loadingTask = task
+        await task.value
+        self.loadingTask = nil
+
+    }
+
+    private func loadContent() async {
+
         let requestID = UUID()
         self.requestID = requestID
         self.isLoading = true

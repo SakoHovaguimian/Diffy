@@ -40,7 +40,14 @@ final class ViewModelAssembly {
 
         WorkspaceViewModel(
             runtime: self.services.runtime,
-            repositoryViewModel: RepositoryViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService, accounts: self.services.gitHubAccountService, diffBuilder: self.services.textDiffBuilder),
+            repositoryViewModel: RepositoryViewModel(
+                runtime: self.services.runtime,
+                git: self.services.gitService,
+                gitHub: self.services.gitHubService,
+                accounts: self.services.gitHubAccountService,
+                diffBuilder: self.services.textDiffBuilder,
+                preferencesService: self.services.preferencesService
+            ),
             overviewViewModel: WorkspaceOverviewViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService, diffBuilder: self.services.textDiffBuilder),
             workspaceService: self.services.workspaceService,
             preferencesService: self.services.preferencesService,

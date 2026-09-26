@@ -11,6 +11,7 @@ final class RepositoryViewModel: ViewModel {
     let accounts: GitHubAccountServiceProtocol
     let comparison: RepositoryComparisonViewModel
     let reviewDiffBuilder: TextDiffBuilding
+    let preferencesService: PreferencesServiceProtocol
     private var refreshID = UUID()
     var pathInventoryRequestID = UUID()
     var historyRequestID = UUID()
@@ -19,6 +20,7 @@ final class RepositoryViewModel: ViewModel {
     var patchTask: Task<Void, Never>?
     private var operationTask: Task<Void, Never>?
     private var drafts: [String: String] = [:]
+    var historyNavigatorDragStartWidth: CGFloat?
 
     @Published private(set) var project: RepositoryProject?
     @Published private(set) var snapshot: GitRepositorySnapshot?
@@ -57,6 +59,7 @@ final class RepositoryViewModel: ViewModel {
     @Published var historySort: RepositoryFileSort = .name
     @Published var historyExpandedFolders: Set<String> = []
     @Published var historyBranch = ""
+    @Published var historyNavigatorWidth: CGFloat = 300
     @Published var isLoadingHistoryFiles = false
     @Published var historyFilesError: String?
     @Published var folderEntries: [RepositoryPathEntry] = []
@@ -90,7 +93,8 @@ final class RepositoryViewModel: ViewModel {
         git: GitServiceProtocol,
         gitHub: GitHubServiceProtocol,
         accounts: GitHubAccountServiceProtocol,
-        diffBuilder: TextDiffBuilding
+        diffBuilder: TextDiffBuilding,
+        preferencesService: PreferencesServiceProtocol
     ) {
 
         self.runtime = runtime
@@ -98,6 +102,7 @@ final class RepositoryViewModel: ViewModel {
         self.gitHub = gitHub
         self.accounts = accounts
         self.reviewDiffBuilder = diffBuilder
+        self.preferencesService = preferencesService
         self.comparison = RepositoryComparisonViewModel(git: git)
 
     }

@@ -37,7 +37,7 @@ final class FileNavigatorViewModel: ViewModel {
 
     // MARK: - Project Preferences
 
-    func restore(projectID: String) {
+    func restore(projectID: String, initialLayout: FileListLayout? = nil) {
 
         self.isRestoring = true
         self.projectID = projectID
@@ -45,7 +45,7 @@ final class FileNavigatorViewModel: ViewModel {
         let preferences = self.preferencesService.load(FileNavigationPreferences.self, key: "navigation.\(projectID)") ?? FileNavigationPreferences()
 
         self.sort = preferences.sort
-        self.layout = preferences.layout
+        self.layout = initialLayout ?? preferences.layout
         self.ascending = preferences.ascending
         self.filter = preferences.filter
         self.query = ""
@@ -79,6 +79,7 @@ final class FileNavigatorViewModel: ViewModel {
         files.filter { file in
 
             let matchesQuery = self.query.isEmpty || file.path.localizedCaseInsensitiveContains(self.query)
+                || (file.originalPath?.localizedCaseInsensitiveContains(self.query) ?? false)
             let matchesStatus = self.filter == nil || file.status == self.filter
             let matchesStaging = mode != .staged || file.isStaged
 
@@ -222,6 +223,15 @@ final class FileNavigatorViewModel: ViewModel {
         } else {
             self.collapsedGroups.insert(id)
         }
+
+    }
+
+    func collapseAllGroups(in files: [DiffFile], mode: ComparisonMode) {
+
+        let previousGroups = self.collapsedGroups
+        self.collapsedGroups = []
+        let groups = entries(files, mode: mode).filter { $0.file == nil }.map(\.id)
+        self.collapsedGroups = previousGroups.union(groups)
 
     }
 

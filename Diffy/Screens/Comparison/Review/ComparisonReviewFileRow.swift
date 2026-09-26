@@ -17,8 +17,14 @@ struct ComparisonReviewFileRow: View {
 
             if self.viewModel.isExpanded {
 
-                expandedContent()
-                    .task { await self.viewModel.load() }
+                ComparisonReviewFileContent(
+                    viewModel: self.viewModel,
+                    workspace: self.workspace,
+                    presentation: self.presentation,
+                    annotate: self.annotate,
+                    navigateToLine: self.navigateToLine
+                )
+                .task { await self.viewModel.load() }
 
             }
 
@@ -100,51 +106,6 @@ struct ComparisonReviewFileRow: View {
         .background(self.viewModel.isViewed ? self.theme.selection.opacity(0.5) : self.theme.elevated)
         .overlay(alignment: .bottom) {
             if self.viewModel.isExpanded { self.theme.border.frame(height: 1) }
-        }
-
-    }
-
-    @ViewBuilder
-    private func expandedContent() -> some View {
-
-        if let error = self.viewModel.error {
-
-            VStack(spacing: 12) {
-
-                DiffyStatusBanner(message: error, isError: true)
-                Button("Retry File") { Task { await self.viewModel.load() } }
-
-            }
-            .padding(24)
-
-        } else if self.viewModel.isLoading || !self.viewModel.file.isContentLoaded {
-            DiffyLoadingState(title: "Reading File…")
-                .frame(maxWidth: .infinity)
-                .frame(height: 150)
-        } else {
-
-            switch self.viewModel.file.kind {
-
-            case .text:
-                TextDiffScreen(
-                    file: self.viewModel.file,
-                    workspace: self.workspace,
-                    viewModel: self.viewModel.textDiff,
-                    presentation: self.presentation,
-                    annotate: self.annotate,
-                    navigateToLine: self.navigateToLine
-                )
-
-            case .image:
-                ImageComparisonScreen(file: self.viewModel.file, sources: self.workspace.runtime.isLive ? self.viewModel.images : nil)
-                    .frame(height: 520)
-
-            case .binary:
-                DiffyEmptyState(symbol: "doc.zipper", title: "Binary File", message: "This file changed, but has no text representation to compare.")
-                    .frame(height: 160)
-
-            }
-
         }
 
     }

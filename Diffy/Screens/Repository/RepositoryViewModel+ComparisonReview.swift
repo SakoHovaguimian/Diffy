@@ -39,7 +39,12 @@ extension RepositoryViewModel {
     }
 
     func reviewViewModel(for request: ComparisonReviewRequest) -> ComparisonReviewViewModel {
-        ComparisonReviewViewModel(request: request, git: self.git, diffBuilder: self.reviewDiffBuilder)
+        ComparisonReviewViewModel(
+            request: request,
+            git: self.git,
+            diffBuilder: self.reviewDiffBuilder,
+            navigator: FileNavigatorViewModel(preferencesService: self.preferencesService)
+        )
     }
 
     func showComparisonReview(

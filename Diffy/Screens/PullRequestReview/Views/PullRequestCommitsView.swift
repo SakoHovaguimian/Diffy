@@ -27,7 +27,7 @@ struct PullRequestCommitsView: View {
                     LazyVStack(alignment: .leading, spacing: 0) {
 
                         ForEach(Array(commits.enumerated()), id: \.element.id) { index, commit in
-                            commitRow(commit, showsConnector: index < commits.count - 1)
+                            commitRow(commit, showsPreviousConnector: index > 0, showsConnector: index < commits.count - 1)
                         }
 
                     }
@@ -52,23 +52,13 @@ struct PullRequestCommitsView: View {
 
     }
 
-    private func commitRow(_ commit: PullRequestCommit, showsConnector: Bool) -> some View {
+    private func commitRow(_ commit: PullRequestCommit, showsPreviousConnector: Bool, showsConnector: Bool) -> some View {
 
         Button {
             self.selectedCommitID = self.selectedCommitID == commit.id ? nil : commit.id
         } label: {
 
-            HStack(alignment: .top, spacing: 14) {
-
-                VStack(spacing: 5) {
-
-                    Circle()
-                        .stroke(self.theme.accent, lineWidth: 2)
-                        .frame(width: 9, height: 9)
-                    if showsConnector { self.theme.border.frame(width: 1, height: 40) }
-
-                }
-                .padding(.top, 4)
+            DiffyTimelineRow(showsPreviousConnector: showsPreviousConnector, showsNextConnector: showsConnector) {
 
                 VStack(alignment: .leading, spacing: 7) {
 
@@ -97,7 +87,6 @@ struct PullRequestCommitsView: View {
 
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 7)
             .contentShape(Rectangle())
 
         }

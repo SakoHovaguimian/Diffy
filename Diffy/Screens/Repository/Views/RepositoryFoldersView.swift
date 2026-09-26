@@ -11,7 +11,10 @@ struct RepositoryFoldersView: View {
 
             VStack(alignment: .leading, spacing: 26) {
 
-                DiffyPageHeading(eyebrow: "Folder Comparison", title: "Two Folders. One Clear Picture.", detail: "Choose an original and an updated folder to inspect a read-only comparison, including files outside Git.")
+                DiffyPageHeading(eyebrow: "Folder Comparison", title: "Compare Two Folders", detail: "Compare two copies of a project, an exported version, or any directories on disk. Choose the original and updated folders to see added, removed, and changed files. This is read-only; the folders do not need to be Git repositories.")
+                if !self.viewModel.runtime.isLive {
+                    DiffyStatusBanner(message: "Folder comparison is available in Diffy Live.")
+                }
                 HStack(spacing: 16) {
 
                     folderPicker(title: "Original", url: self.viewModel.leftFolder) {

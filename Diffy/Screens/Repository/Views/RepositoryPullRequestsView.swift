@@ -17,8 +17,15 @@ struct RepositoryPullRequestsView: View {
 
                 if self.viewModel.availableAccounts.isEmpty || self.viewModel.linkedRepository == nil {
 
-                    DiffyEmptyState(symbol: "person.crop.circle.badge.plus", title: "Connect Your Repository", message: "Sign in through Settings → Accounts, then link this checkout. Existing GitHub remotes are detected automatically.")
-                    SettingsLink { Text("Open Settings") }.buttonStyle(.borderedProminent)
+                    VStack(spacing: 0) {
+
+                        DiffyEmptyState(symbol: "person.crop.circle.badge.plus", title: "Connect Your Repository", message: "Sign in through Settings → Accounts, then link this checkout. Existing GitHub remotes are detected automatically.")
+                        SettingsLink { Text("Open Settings") }
+                            .buttonStyle(.borderedProminent)
+                            .padding(.bottom, 28)
+
+                    }
+                    .frame(maxWidth: .infinity)
 
                 } else {
                     requests()

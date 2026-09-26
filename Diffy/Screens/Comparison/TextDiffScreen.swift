@@ -95,7 +95,7 @@ struct TextDiffScreen: View {
 
             if self.viewModel.isEditing {
                 inlineEditableCanvas()
-            } else if self.presentation != nil {
+            } else if self.presentation?.embedsInReviewList == true {
                 embeddedCodeCanvas()
             } else {
                 codeCanvas()
@@ -478,7 +478,8 @@ struct TextDiffScreen: View {
 
             ScrollView(.horizontal) {
 
-                LazyVStack(spacing: 0) {
+                // Intrinsic height must be stable before the outer review list measures this canvas.
+                VStack(spacing: 0) {
 
                     ForEach(regions) { region in
                         diffRegion(region, width: width)
@@ -493,7 +494,7 @@ struct TextDiffScreen: View {
 
                     } else if regions.isEmpty {
 
-                Text("No Visible Text Changes · Choose File To Show The Source")
+                        Text("No Visible Text Changes · Choose File To Show The Source")
                             .font(self.contentSize.font(size: 11))
                             .foregroundStyle(self.theme.secondaryText)
                             .padding(self.contentSize.scaled(24))
@@ -564,14 +565,20 @@ struct TextDiffScreen: View {
 
     private func diffRegion(_ region: DiffRegion, width: CGFloat) -> some View {
 
-        LazyVStack(spacing: 0) {
+        Group {
 
-            ForEach(region.lines) { line in
-                codeRow(line, width: width)
-                    .id(self.presentation.map { AnyHashable($0.lineAnchor(fileID: self.file.id, lineID: line.id)) } ?? AnyHashable(line.id))
-                if self.reviewContext?.visibleDiscussionLineIDs.contains(line.id) == true {
-                    self.reviewContext?.lineDiscussion(line)
+            if self.presentation?.embedsInReviewList == true {
+
+                VStack(spacing: 0) {
+                    diffRegionRows(region, width: width)
                 }
+
+            } else {
+
+                LazyVStack(spacing: 0) {
+                    diffRegionRows(region, width: width)
+                }
+
             }
 
         }
@@ -592,6 +599,30 @@ struct TextDiffScreen: View {
             }
 
         }
+
+    }
+
+    private func diffRegionRows(_ region: DiffRegion, width: CGFloat) -> some View {
+
+        ForEach(region.lines) { line in
+
+            codeRow(line, width: width)
+                .id(lineAnchor(line))
+            if self.reviewContext?.visibleDiscussionLineIDs.contains(line.id) == true {
+                self.reviewContext?.lineDiscussion(line)
+            }
+
+        }
+
+    }
+
+    private func lineAnchor(_ line: DiffLine) -> AnyHashable {
+
+        if let presentation, presentation.embedsInReviewList {
+            return AnyHashable(presentation.lineAnchor(fileID: self.file.id, lineID: line.id))
+        }
+
+        return AnyHashable(line.id)
 
     }
 

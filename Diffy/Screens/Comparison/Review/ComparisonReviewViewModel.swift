@@ -6,15 +6,21 @@ final class ComparisonReviewViewModel: ViewModel {
 
     let loggerName = "COMPARISON_REVIEW_VIEW_MODEL"
     let request: ComparisonReviewRequest
+    let navigator: FileNavigatorViewModel
     private let git: GitServiceProtocol
     private let diffBuilder: TextDiffBuilding
     private var fileObservations: [AnyCancellable] = []
+    private var navigatorObservation: AnyCancellable?
+    private var filterObservation: AnyCancellable?
     private var hasLoaded = false
+    private var navigatorDragStartWidth: CGFloat?
 
     @Published private(set) var files: [ComparisonReviewFileViewModel] = []
     @Published private(set) var isLoading = false
     @Published private(set) var error: String?
-    @Published var query = "" { didSet { self.visibleLimit = 50 } }
+    @Published var experience: ComparisonReviewExperience = .review
+    @Published var selectedFileID: String?
+    @Published var navigatorWidth: CGFloat = 245
     @Published var onlyUnviewed = false { didSet { self.visibleLimit = 50 } }
     @Published var visibleLimit = 50
     @Published var annotationDraft: AnnotationDraft?
@@ -22,21 +28,47 @@ final class ComparisonReviewViewModel: ViewModel {
     init(
         request: ComparisonReviewRequest,
         git: GitServiceProtocol,
-        diffBuilder: TextDiffBuilding
+        diffBuilder: TextDiffBuilding,
+        navigator: FileNavigatorViewModel
     ) {
 
         self.request = request
         self.git = git
         self.diffBuilder = diffBuilder
+        self.navigator = navigator
+        navigator.restore(projectID: request.repository.projectID, initialLayout: .flat)
+        self.navigatorObservation = navigator.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        self.filterObservation = navigator.$query.combineLatest(navigator.$filter, navigator.$sort, navigator.$ascending)
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.resetVisibleLimit() }
 
     }
 
     var matchingFiles: [ComparisonReviewFileViewModel] {
 
-        self.files.filter {
-            (!self.onlyUnviewed || !$0.isViewed) && (self.query.isEmpty || $0.file.path.localizedStandardContains(self.query) || ($0.file.originalPath?.localizedStandardContains(self.query) ?? false))
-        }
+        let matchingIDs = self.navigator.visibleFiles(self.navigationFiles, mode: self.request.mode).map(\.id)
+        let filesByID = Dictionary(uniqueKeysWithValues: self.files.map { ($0.id, $0) })
+        return matchingIDs.compactMap { filesByID[$0] }
 
+    }
+
+    var navigationFiles: [DiffFile] {
+        self.files.filter { !self.onlyUnviewed || !$0.isViewed }.map(\.file)
+    }
+
+    var reviewEntries: [FileTreeEntry] {
+        self.navigator.entries(self.visibleFiles.map(\.file), mode: self.request.mode)
+    }
+
+    var selectedFile: ComparisonReviewFileViewModel? {
+        self.matchingFiles.first { $0.id == self.selectedFileID }
+    }
+
+    func fileViewModel(for id: String) -> ComparisonReviewFileViewModel? {
+        self.files.first { $0.id == id }
     }
 
     var visibleFiles: [ComparisonReviewFileViewModel] {
@@ -56,7 +88,7 @@ final class ComparisonReviewViewModel: ViewModel {
     }
 
     func expandShown() {
-        self.visibleFiles.forEach { $0.isExpanded = true }
+        self.reviewEntries.compactMap(\.file).forEach { self.fileViewModel(for: $0.id)?.isExpanded = true }
     }
 
     func collapseAll() {
@@ -65,8 +97,15 @@ final class ComparisonReviewViewModel: ViewModel {
 
     func clearFilters() {
 
-        self.query = ""
+        self.navigator.clearFilters()
         self.onlyUnviewed = false
+
+    }
+
+    private func resetVisibleLimit() {
+
+        guard self.visibleLimit != 50 else { return }
+        self.visibleLimit = 50
 
     }
 
@@ -86,11 +125,14 @@ final class ComparisonReviewViewModel: ViewModel {
             }
             self.fileObservations = self.files.map { file in
 
-                file.objectWillChange.sink { [weak self] _ in
-                    self?.objectWillChange.send()
-                }
+                file.$isViewed.dropFirst()
+                    .map { _ in () }
+                    .merge(with: file.$file.dropFirst().map { _ in () })
+                    .receive(on: RunLoop.main)
+                    .sink { [weak self] _ in self?.objectWillChange.send() }
 
             }
+            self.selectedFileID = self.matchingFiles.first?.id
             self.hasLoaded = true
 
         } catch is CancellationError {
@@ -102,6 +144,25 @@ final class ComparisonReviewViewModel: ViewModel {
 
         }
 
+    }
+
+    func selectFile(_ file: DiffFile) {
+        self.selectedFileID = file.id
+    }
+
+    func resizeNavigator(by translation: CGFloat, maximumWidth: CGFloat) {
+
+        if self.navigatorDragStartWidth == nil {
+            self.navigatorDragStartWidth = min(self.navigatorWidth, maximumWidth)
+        }
+
+        let startingWidth = self.navigatorDragStartWidth ?? self.navigatorWidth
+        self.navigatorWidth = min(maximumWidth, max(205, startingWidth + translation))
+
+    }
+
+    func finishResizingNavigator() {
+        self.navigatorDragStartWidth = nil
     }
 
 }

@@ -7,7 +7,6 @@ struct WorkspaceHeader: View {
     @Environment(\.diffyTheme) private var theme
     @Environment(\.diffyContentSize) private var contentSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Namespace private var tabSelection
 
     private var selectedTabID: String {
         self.viewModel.showsDashboard ? "overview" : self.viewModel.mode.rawValue
@@ -62,25 +61,26 @@ struct WorkspaceHeader: View {
 
                     HStack(spacing: self.contentSize.scaled(20)) {
 
-                        navigationButton("Working Tree", symbol: ComparisonMode.workingTree.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == .workingTree) {
+                        navigationButton("Working Tree", id: ComparisonMode.workingTree.rawValue, symbol: ComparisonMode.workingTree.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == .workingTree) {
                             self.viewModel.selectMode(.workingTree)
                         }
 
-                        navigationButton("Overview", symbol: "square.grid.2x2", selected: self.viewModel.showsDashboard) {
+                        navigationButton("Overview", id: "overview", symbol: "square.grid.2x2", selected: self.viewModel.showsDashboard) {
                             self.viewModel.showDashboard()
                         }
 
                         ForEach(ComparisonMode.allCases.filter { $0 != .workingTree }) { mode in
 
-                            navigationButton(mode.tabTitle, symbol: mode.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == mode) {
+                            navigationButton(mode.tabTitle, id: mode.rawValue, symbol: mode.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == mode) {
                                 self.viewModel.selectMode(mode)
                             }
 
                         }
 
                     }
-                    // Both underline positions must share the same animation transaction.
-                    .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.3), value: self.selectedTabID)
+                    .overlayPreferenceValue(WorkspaceTabBoundsPreference.self) { bounds in
+                        selectionIndicator(bounds)
+                    }
 
                 }
 
@@ -97,6 +97,7 @@ struct WorkspaceHeader: View {
 
     private func navigationButton(
         _ title: String,
+        id: String,
         symbol: String,
         selected: Bool,
         available: Bool = true,
@@ -109,21 +110,33 @@ struct WorkspaceHeader: View {
                 .font(self.contentSize.font(size: 11, weight: .semibold))
                 .foregroundStyle(selected ? self.theme.accent : self.theme.secondaryText.opacity(available ? 1 : 0.65))
                 .padding(.bottom, self.contentSize.scaled(13))
-                .overlay(alignment: .bottom) {
-
-                    if selected {
-
-                        self.theme.accent
-                            .frame(height: self.contentSize.scaled(2))
-                            .matchedGeometryEffect(id: "selected-tab", in: self.tabSelection)
-
-                    }
-
-                }
 
         }
         .buttonStyle(.plain)
+        .anchorPreference(key: WorkspaceTabBoundsPreference.self, value: .bounds) { [id: $0] }
         .help(title)
+
+    }
+
+    private func selectionIndicator(_ bounds: [String: Anchor<CGRect>]) -> some View {
+
+        GeometryReader { geometry in
+
+            if let anchor = bounds[self.selectedTabID] {
+
+                let frame = geometry[anchor]
+                let height = self.contentSize.scaled(2)
+
+                self.theme.accent
+                    .frame(width: frame.width, height: height)
+                    .offset(x: frame.minX, y: frame.maxY - height)
+                    .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.3), value: frame)
+
+            }
+
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
 
     }
 

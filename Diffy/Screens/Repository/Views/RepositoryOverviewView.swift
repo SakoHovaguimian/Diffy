@@ -22,11 +22,13 @@ struct RepositoryOverviewView: View {
                         VStack(alignment: .leading, spacing: 18) {
 
                             sectionTitle("Latest Activity", detail: "The last \(min(5, snapshot.recentCommits.count)) commits")
-                            ForEach(Array(snapshot.recentCommits.prefix(5).enumerated()), id: \.element.id) { index, commit in
+                            VStack(alignment: .leading, spacing: 0) {
 
-                                RepositoryCommitRow(commit: commit, showsConnector: index < min(5, snapshot.recentCommits.count) - 1) {
+                                ForEach(Array(snapshot.recentCommits.prefix(5).enumerated()), id: \.element.id) { index, commit in
 
-                                    self.viewModel.inspectCommit(commit)
+                                    RepositoryCommitRow(commit: commit, showsConnector: index < min(5, snapshot.recentCommits.count) - 1, showsPreviousConnector: index > 0) {
+                                        self.viewModel.inspectCommit(commit)
+                                    }
 
                                 }
 

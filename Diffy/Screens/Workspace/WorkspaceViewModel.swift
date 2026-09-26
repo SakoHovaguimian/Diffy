@@ -96,6 +96,10 @@ final class WorkspaceViewModel: ViewModel {
 
     }
 
+    var favoriteProjects: [RepositoryProject] {
+        self.projects.filter { self.favorites.contains($0.id) }
+    }
+
     private func migrateStarterBucketsIfNeeded() {
 
         let migrationKey = "buckets.personalDefault.v1"
