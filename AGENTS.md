@@ -13,14 +13,14 @@ Diffy is a native macOS SwiftUI application. The active work is **live Git and G
 - Live Git operations and GitHub authentication are authorized for the current integration milestone. Keep every mutation user-triggered and keep Live process/network/credential implementations out of the Mock target. See [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md).
 - Preserve user changes. Inspect existing equivalents before creating services, models, components, or helpers.
 - Update live and mock composition when a service contract changes. Previews must remain isolated from persisted user data.
-- New Swift files need explicit target membership. Use `scripts/generate_project.py`, preserving deliberate project changes in that generator.
+- New Swift files need explicit target membership in `Diffy.xcodeproj`. Maintain project references and build settings directly. Include shared sources in Live and Mock; exclude files inside `Live/` folders from Mock.
 
 ## References
 
 | Task | Reference |
 | --- | --- |
 | Product scope and milestone boundaries | [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md) |
-| Current implementation and gaps | [docs/MILESTONE_0_STATUS.md](docs/MILESTONE_0_STATUS.md) |
+| Live integration and setup | [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md) |
 | Code style and source references | [DEVELOPMENT_STYLE.md](DEVELOPMENT_STYLE.md) |
 | Annotations and review export | [ANNOTATION_EXPORT.md](ANNOTATION_EXPORT.md) |
 | App construction | [AppAssembler.swift](Diffy/DI/AppAssembler.swift), [ServiceAssembly.swift](Diffy/DI/ServiceAssembly.swift), [ViewModelAssembly.swift](Diffy/DI/ViewModelAssembly.swift) |

@@ -38,7 +38,6 @@ final class RepositoryViewModel: ViewModel {
     @Published var showsAddRemote = false
     @Published var newRemoteName = "origin"
     @Published var newRemoteURL = ""
-    @Published var pullStrategy: GitPullStrategy = .fastForwardOnly
     @Published var branchBase = ""
     @Published var branchTarget = ""
     @Published var search = ""

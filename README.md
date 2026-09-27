@@ -4,7 +4,7 @@ A native macOS comparison workspace with live Git repositories, GitHub accounts,
 
 Open **Diffy.xcodeproj**, select **Diffy Live** or **Diffy Mock**, and use **My Mac** as the destination. The project targets macOS 14 and Swift 6. There are no third-party package dependencies. Xcode builds have not been run as part of this work.
 
-## Explore the prototype
+## Explore the Mock prototype
 
 1. The app opens Rune's text comparison. Switch between Split and Unified, resize the workspace, navigate changes, or adjust display options.
 2. Use the file navigator's menus to switch folder/flat/grouped views, sort by recency or change size, and filter statuses. Settings are remembered per project.
@@ -64,14 +64,8 @@ Run installed SwiftLint with:
 swiftlint lint --config .swiftlint.yml --strict --no-cache
 ```
 
-After adding or moving source files, refresh explicit project references with:
-
-```sh
-python3 scripts/generate_project.py
-```
-
-The generator only writes project metadata and the shared scheme. It does not build or launch the app. Preserve deliberate project-setting changes in the generator before refreshing it.
+After adding, moving, or removing source files, update references and target membership directly in `Diffy.xcodeproj`. Shared sources belong to both Live and Mock; files inside `Live/` folders belong only to Live. Maintain build settings and shared schemes directly in the project.
 
 ## Scope and remaining work
 
-The current scope includes Git/GitHub integration. Runtime and visual approval remain separate from source verification. See [Milestone 0 Status](docs/MILESTONE_0_STATUS.md) for implemented behavior and the remaining work. The full product specification is in [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), with [annotation export requirements](ANNOTATION_EXPORT.md) and [development style](DEVELOPMENT_STYLE.md).
+The current scope includes Git/GitHub integration. Runtime and visual approval remain separate from source verification. See [GitHub and Git setup](docs/GITHUB_SETUP.md) and [AI review setup](docs/AI_REVIEW.md) for current integration behavior. The full product specification is in [PRODUCT_BRIEF.md](PRODUCT_BRIEF.md), with [annotation export requirements](ANNOTATION_EXPORT.md) and [development style](DEVELOPMENT_STYLE.md).

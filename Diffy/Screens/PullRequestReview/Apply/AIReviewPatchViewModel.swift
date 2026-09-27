@@ -14,7 +14,6 @@ final class AIReviewPatchViewModel: ViewModel {
     @Published private(set) var isApplying = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var notice: String?
-    @Published private(set) var latestSnapshot: GitRepositorySnapshot?
 
     init(
         repository: GitRepositoryReference?,
@@ -40,7 +39,6 @@ final class AIReviewPatchViewModel: ViewModel {
         self.repository = repository
         self.errorMessage = nil
         self.notice = nil
-        self.latestSnapshot = nil
 
     }
 
@@ -118,9 +116,9 @@ final class AIReviewPatchViewModel: ViewModel {
             self.errorMessage = error.localizedDescription
         }
 
-        // Report actual state after every outcome; a process cancellation is not rollback.
+        // Refresh after every outcome; a process cancellation is not rollback.
         do {
-            self.latestSnapshot = try await self.git.snapshot(of: repository, scope: .status, previous: nil)
+            _ = try await self.git.snapshot(of: repository, scope: .status, previous: nil)
         } catch {
 
             if self.errorMessage == nil {

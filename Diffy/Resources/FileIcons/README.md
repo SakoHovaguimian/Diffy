@@ -55,7 +55,7 @@ its upstream Miguel Solorio notice. NewAge retains its contributors' notice,
 The six bundled artwork collections total 5,709 PNGs. Native Symbols uses system
 artwork. Settings previews 27 common file types plus closed and expanded folders.
 
-## Adaptations and regeneration
+## Adaptations and maintenance
 
 SVG artwork has been rasterized to transparent 64px PNG with resvg 2.6.2. Original
 colors and proportions are retained. The converted VSCode Icons artwork remains
@@ -68,18 +68,16 @@ for both appearances. Some themes rely on the editor for language associations.
 Diffy first supplements their explicit mappings with the built-in
 language associations from VS Code 1.139.0, then Material Icon Theme's additional
 path-to-language associations. Each theme's explicit mappings take precedence.
-The built-in language metadata snapshot is `scripts/file_icon_languages.json`,
-which records its source revision; its MIT license is `VSCode-LANGUAGE-LICENSE.txt`.
+The imported language associations are already stored in the bundled catalogs;
+their MIT license is `VSCode-LANGUAGE-LICENSE.txt`.
 Editor extension detection, user-defined packs, and project auto-detection are not
 executed. Unknown paths use the theme's generic file/folder icon.
 
-`scripts/import_file_icons.py` pins archive versions and SHA-256 hashes, reads only
-data, and produces these images and catalogs. Its docstring has regeneration
-instructions. `scripts/generate_project.py` adds the entire FileIcons resource
-folder to Live and Mock. Licenses and this attribution travel with both apps.
+The entire FileIcons folder is included as a resource in Live and Mock. Licenses
+and this attribution travel with both apps. The files are self-contained: end
+users do not need VS Code, Node.js, the extensions, or access to the developer's
+home directory.
 
-`scripts/import_installed_file_icons.py` imports the pinned installed collections
-listed in `scripts/installed_file_icon_packs.json`. Pass the same resvg module
-directory as above, optionally followed by `--extensions-directory <directory>`.
-The resulting files are self-contained: end users do not need VS Code, Node.js,
-the extensions, or access to the developer's home directory.
+The import tools have been removed. Future collection updates require manually
+rebuilding the PNG artwork and catalogs from the upstream sources listed above,
+preserving the license notices and updating provenance where provided.
