@@ -3,7 +3,7 @@ import Foundation
 extension RepositoryProject {
 
     enum CodingKeys: String, CodingKey {
-        case id, name, displayName, subtitle, bucketID, symbol, checkout, gitHubLink, gitHubAccountID, addedAt
+        case id, name, displayName, subtitle, bucketID, symbol, customIcon, accentHex, checkout, gitHubLink, gitHubAccountID, addedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -18,6 +18,8 @@ extension RepositoryProject {
             subtitle: try values.decode(String.self, forKey: .subtitle),
             bucketID: try values.decode(String.self, forKey: .bucketID),
             symbol: try values.decode(String.self, forKey: .symbol),
+            customIcon: try values.decodeIfPresent(WorkspaceCustomIcon.self, forKey: .customIcon),
+            accentHex: try values.decodeIfPresent(String.self, forKey: .accentHex),
             checkout: try values.decodeIfPresent(LocalCheckoutReference.self, forKey: .checkout),
             gitHubLink: try values.decodeIfPresent(GitHubRepositoryLink.self, forKey: .gitHubLink),
             gitHubAccountID: try values.decodeIfPresent(String.self, forKey: .gitHubAccountID),

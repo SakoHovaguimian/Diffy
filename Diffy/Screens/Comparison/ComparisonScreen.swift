@@ -3,6 +3,7 @@ import SwiftUI
 struct ComparisonScreen: View {
 
     @ObservedObject var workspace: WorkspaceViewModel
+    @Environment(\.diffyTheme) private var theme
     @State private var navigatorWidth: CGFloat = 245
     @State private var navigatorDragStartWidth: CGFloat?
 
@@ -19,7 +20,11 @@ struct ComparisonScreen: View {
                 FileNavigatorScreen(workspace: self.workspace, viewModel: self.workspace.fileNavigatorViewModel)
                     .frame(width: self.navigatorWidth)
 
-                HorizontalResizeHandle(label: "Drag To Resize Changed Files", resizeGesture: navigatorResizeGesture())
+                HorizontalResizeHandle(
+                    label: "Drag To Resize Changed Files",
+                    leftBackground: self.theme.isDark ? self.theme.surface : self.theme.sidebar,
+                    resizeGesture: navigatorResizeGesture()
+                )
 
                 comparisonContent()
                     .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
@@ -27,6 +32,7 @@ struct ComparisonScreen: View {
             }
 
         }
+        .onAppear { self.workspace.fileNavigatorViewModel.restoreSavedSelection() }
 
     }
 

@@ -16,9 +16,8 @@ struct ComparisonReviewScreen: View {
             reviewContent()
 
         }
-        .frame(minWidth: 720, idealWidth: 1440, maxWidth: .infinity, minHeight: 480, idealHeight: 900, maxHeight: .infinity)
         .background(self.theme.background)
-        .background(ComparisonModalSizingView())
+        .diffyDataModalFrame()
         .task { await self.viewModel.load() }
         .sheet(item: self.$viewModel.annotationDraft) { draft in
             AnnotationEditorScreen(draft: draft, workspace: self.workspace).diffyStyle()

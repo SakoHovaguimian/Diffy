@@ -37,6 +37,7 @@ struct AIReviewComposerView: View {
         }
         .frame(width: 470, height: 640)
         .background(self.theme.surface)
+        .diffyStatusAnimation(value: [self.viewModel.errorMessage, self.viewModel.persistenceMessage, self.viewModel.modelNotice, self.viewModel.modelError])
 
     }
 

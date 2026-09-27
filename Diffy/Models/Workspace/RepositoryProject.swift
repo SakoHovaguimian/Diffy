@@ -10,6 +10,8 @@ struct RepositoryProject: Codable, Identifiable, Hashable, Sendable {
     var subtitle: String
     var bucketID: String
     var symbol: String
+    var customIcon: WorkspaceCustomIcon?
+    var accentHex: String?
     var checkout: LocalCheckoutReference?
     var gitHubLink: GitHubRepositoryLink?
     var gitHubAccountID: String?
@@ -22,6 +24,8 @@ struct RepositoryProject: Codable, Identifiable, Hashable, Sendable {
         subtitle: String,
         bucketID: String,
         symbol: String,
+        customIcon: WorkspaceCustomIcon? = nil,
+        accentHex: String? = nil,
         checkout: LocalCheckoutReference?,
         gitHubLink: GitHubRepositoryLink?,
         gitHubAccountID: String?,
@@ -34,6 +38,8 @@ struct RepositoryProject: Codable, Identifiable, Hashable, Sendable {
         self.subtitle = subtitle
         self.bucketID = bucketID
         self.symbol = symbol
+        self.customIcon = customIcon
+        self.accentHex = accentHex
         self.checkout = checkout
         self.gitHubLink = gitHubLink
         self.gitHubAccountID = gitHubAccountID

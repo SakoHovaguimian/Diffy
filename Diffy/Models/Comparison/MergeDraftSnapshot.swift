@@ -4,5 +4,6 @@ struct MergeDraftSnapshot {
 
     let results: [Int: String]
     let decisions: [Int: MergeDecision]
+    let selectedIndex: Int
 
 }

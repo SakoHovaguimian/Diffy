@@ -9,7 +9,7 @@ struct PullRequestReviewHeaderView: View {
 
     var body: some View {
 
-        HStack(alignment: .top, spacing: 20) {
+        HStack(alignment: .center, spacing: 20) {
 
             VStack(alignment: .leading, spacing: 9) {
 
@@ -26,12 +26,23 @@ struct PullRequestReviewHeaderView: View {
 
             }
             Spacer(minLength: 8)
+            actions()
+
+        }
+        .padding(24)
+        .background(self.theme.surface)
+
+    }
+
+    private func actions() -> some View {
+
+        HStack(alignment: .center, spacing: 10) {
+
             Button {
                 self.aiWorkspace.openComposer()
             } label: {
                 Label("Ask AI", systemImage: "sparkles")
             }
-            .buttonStyle(.borderedProminent)
             .popover(isPresented: self.$aiWorkspace.showsComposer, arrowEdge: .bottom) {
                 AIReviewComposerView(viewModel: self.aiWorkspace)
                     .diffyStyle()
@@ -39,13 +50,14 @@ struct PullRequestReviewHeaderView: View {
             Link(destination: self.viewModel.request.webURL) {
                 Label("Open In GitHub", systemImage: "arrow.up.right")
             }
-            Button("Close", action: self.close)
-                .keyboardShortcut(.cancelAction)
-                .disabled(self.viewModel.isSubmitting)
+            Button(action: self.close) {
+                Label("Close", systemImage: "xmark")
+            }
+            .keyboardShortcut(.cancelAction)
+            .disabled(self.viewModel.isSubmitting)
 
         }
-        .padding(24)
-        .background(self.theme.surface)
+        .buttonStyle(DiffyActionButtonStyle())
 
     }
 

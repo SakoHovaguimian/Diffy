@@ -43,6 +43,7 @@ struct WorkspaceOverviewScreen: View {
 
         }
         .background(self.theme.background)
+        .diffyStatusAnimation(value: [self.viewModel.projectError, self.viewModel.assignedError, self.viewModel.reviewRequestedError])
         .task(id: self.refreshKey) {
             await self.viewModel.refresh(projects: self.workspace.projects, accounts: self.accounts.accounts)
         }

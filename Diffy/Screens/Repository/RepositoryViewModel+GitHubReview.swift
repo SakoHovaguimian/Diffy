@@ -17,6 +17,7 @@ extension RepositoryViewModel {
             accounts: self.availableAccounts,
             gitHub: self.gitHub,
             diffBuilder: self.reviewDiffBuilder,
+            preferencesService: self.preferencesService,
             localRepository: self.reference,
             projectID: self.project?.id
         )

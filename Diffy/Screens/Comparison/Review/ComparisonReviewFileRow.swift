@@ -97,7 +97,8 @@ struct ComparisonReviewFileRow: View {
                 Image(systemName: "ellipsis")
             }
             .menuStyle(.borderlessButton)
-            .frame(width: 18)
+            .frame(width: 40)
+            .fixedSize(horizontal: true, vertical: false)
             .accessibilityLabel("Actions For \(self.viewModel.file.path)")
 
         }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum RepositoryFileLayout: String, CaseIterable, Identifiable {
+enum RepositoryFileLayout: String, CaseIterable, Codable, Identifiable {
     case tree = "Tree"
     case flat = "Files"
 

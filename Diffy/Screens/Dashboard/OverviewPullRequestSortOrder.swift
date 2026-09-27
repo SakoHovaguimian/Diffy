@@ -1,6 +1,6 @@
 import Foundation
 
-enum OverviewPullRequestSortOrder: String, CaseIterable, Identifiable {
+enum OverviewPullRequestSortOrder: String, CaseIterable, Codable, Identifiable {
     case recentlyUpdated = "Recently Updated"
     case leastRecentlyUpdated = "Least Recently Updated"
     case repository = "Repository"

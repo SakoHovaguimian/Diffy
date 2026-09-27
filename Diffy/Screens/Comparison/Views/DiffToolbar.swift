@@ -142,7 +142,8 @@ struct DiffToolbar: View {
                 Image(systemName: "ellipsis")
             }
             .menuStyle(.borderlessButton)
-            .frame(width: self.contentSize.scaled(20))
+            .frame(width: self.contentSize.scaled(40))
+            .fixedSize(horizontal: true, vertical: false)
             .help("Comparison Options")
 
             if !compact, !self.viewModel.isEditing {

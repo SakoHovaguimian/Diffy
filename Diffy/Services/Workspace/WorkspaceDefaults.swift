@@ -25,6 +25,7 @@ enum WorkspaceDefaults {
                   bucket.title == legacy.title,
                   bucket.subtitle == legacy.subtitle,
                   bucket.symbol == legacy.symbol,
+                  bucket.customIcon == nil,
                   bucket.accentHex == legacy.accentHex,
                   bucket.defaultBranch == legacy.defaultBranch else {
                 return bucket

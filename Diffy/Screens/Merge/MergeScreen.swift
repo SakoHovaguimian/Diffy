@@ -22,22 +22,10 @@ struct MergeScreen: View {
         VStack(spacing: 0) {
 
             header()
-            conflictNavigation()
-
-            VSplitView {
-
-                HSplitView {
-
-                    sourcePane(.base, detail: "Shared Starting Point", source: self.viewModel.conflict.base, color: self.theme.secondaryText)
-                    sourcePane(.yours, detail: "feature/refine-the-details", source: self.viewModel.conflict.yours, color: self.theme.accent)
-                    sourcePane(.theirs, detail: "main", source: self.viewModel.conflict.theirs, color: self.theme.added)
-
-                }
-                .frame(minHeight: 140)
-
-                resultPane()
-                    .frame(minHeight: 200)
-
+            if self.viewModel.showsCompletion {
+                MergeCompletionView(viewModel: self.viewModel)
+            } else {
+                conflictEditor()
             }
 
             HStack {
@@ -70,11 +58,40 @@ struct MergeScreen: View {
 
             }
             Spacer()
-            DiffyBadge(title: "\(self.viewModel.conflicts.count - self.viewModel.resolvedCount) UNRESOLVED", color: self.theme.modified)
+            DiffyBadge(
+                title: self.viewModel.allConflictsResolved ? "All \(self.viewModel.conflicts.count) conflicts resolved" : self.viewModel.progressDescription,
+                color: self.viewModel.allConflictsResolved ? self.theme.added : self.theme.modified
+            )
 
         }
         .padding(self.contentSize.scaled(20))
         .background(self.theme.surface)
+
+    }
+
+    private func conflictEditor() -> some View {
+
+        VStack(spacing: 0) {
+
+            conflictNavigation()
+            VSplitView {
+
+                HSplitView {
+
+                    sourcePane(.base, detail: "Shared Starting Point", source: self.viewModel.conflict.base, color: self.theme.secondaryText)
+                    sourcePane(.yours, detail: "feature/refine-the-details", source: self.viewModel.conflict.yours, color: self.theme.accent)
+                    sourcePane(.theirs, detail: "main", source: self.viewModel.conflict.theirs, color: self.theme.added)
+
+                }
+                .frame(minHeight: 140)
+
+                resultPane()
+                    .frame(minHeight: 200)
+
+            }
+
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     }
 
@@ -85,25 +102,30 @@ struct MergeScreen: View {
             DiffyIconButton(symbol: "chevron.left", label: "Previous Conflict") { self.viewModel.navigate(-1) }
             DiffyIconButton(symbol: "chevron.right", label: "Next Conflict") { self.viewModel.navigate(1) }
 
-            Text(self.viewModel.conflict.title)
+            Text("Conflict \(self.viewModel.selectedIndex + 1) of \(self.viewModel.conflicts.count) · \(self.viewModel.conflict.title)")
                 .font(self.contentSize.font(size: 11, weight: .medium))
                 .lineLimit(1)
 
             Spacer()
+
+            if self.viewModel.allConflictsResolved {
+                Button("Done Reviewing") { self.viewModel.showCompletion() }
+                    .font(self.contentSize.font(size: 11))
+            }
 
             ForEach(self.viewModel.conflicts) { conflict in
 
                 Button { self.viewModel.selectedIndex = conflict.id } label: {
 
                     RoundedRectangle(cornerRadius: self.contentSize.scaled(3))
-                        .fill(self.viewModel.decisions[conflict.id] == nil || self.viewModel.decisions[conflict.id] == .unresolved ? self.theme.modified.opacity(0.4) : self.theme.added)
+                        .fill(self.viewModel.isResolved(conflict) ? self.theme.added : self.theme.modified.opacity(0.4))
                         .frame(width: self.contentSize.scaled(22), height: self.contentSize.scaled(7))
                         .overlay(RoundedRectangle(cornerRadius: self.contentSize.scaled(3)).stroke(self.viewModel.selectedIndex == conflict.id ? self.theme.text : .clear))
 
                 }
                 .buttonStyle(.plain)
-                .help("Conflict \(conflict.id + 1): \(conflict.title)")
-                .accessibilityLabel("Conflict \(conflict.id + 1)")
+                .help("Conflict \(conflict.id + 1): \(conflict.title) · \(self.viewModel.isResolved(conflict) ? "Resolved" : "Unresolved")")
+                .accessibilityLabel("Conflict \(conflict.id + 1): \(conflict.title) · \(self.viewModel.isResolved(conflict) ? "Resolved" : "Unresolved")")
 
             }
 
@@ -185,9 +207,11 @@ struct MergeScreen: View {
                     .font(self.contentSize.font(size: 10))
                     .foregroundStyle(self.theme.secondaryText)
                 Spacer()
-                Button("Mark Resolved") { self.viewModel.markResolved() }
+                Button(self.viewModel.allConflictsResolved ? "Resolved" : "Mark Resolved") { self.viewModel.markResolved() }
                     .font(self.contentSize.font(size: 11))
                     .buttonStyle(.borderedProminent)
+                    .disabled(self.viewModel.allConflictsResolved)
+                    .help("Mark this result as resolved and move to the next unresolved conflict")
 
             }
 
@@ -242,6 +266,9 @@ struct MergeScreen: View {
         }
 
         self.viewModel.selectedIndex = index
+        if self.viewModel.allConflictsResolved {
+            self.viewModel.reviewResolvedResults()
+        }
 
     }
 

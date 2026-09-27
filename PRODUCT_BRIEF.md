@@ -4,13 +4,13 @@
 
 ## 1. What we are building
 
-Diffy is a native macOS application for understanding changes in code, images, folders, and Git repositories, annotating a review, and eventually resolving merge conflicts.
+Diffy is a native macOS application for understanding changes in code, images, and Git repositories, annotating a review, and eventually resolving merge conflicts.
 
 The everyday workflow is simple:
 
 **Choose a Bucket → open a repository → choose what to compare → inspect and annotate changes → export the review.**
 
-Standalone file and folder comparisons should also be accessible without organizing a repository first.
+Standalone file comparisons should also be accessible without organizing a repository first.
 
 The product should combine the visual polish associated with Kaleidoscope, the approachable developer experience of Cursor, and the comparison and merge ambitions of Beyond Compare, Araxis Merge, and DeltaWalker. These are design references, not a requirement to reproduce every feature or layout.
 
@@ -35,7 +35,7 @@ GitHub becomes an optional network feature in a later milestone. Authentication 
 | --- | --- | --- |
 | Bucket | A customizable collection of projects | iOS, Backend, Personal |
 | Project / repository | A local folder tracked by the app; Git repositories gain Git features later | Rune, JobLens API, Obelisk |
-| Comparison | A selected pair of versions or locations, or a three-way merge session | Working tree vs HEAD, branch vs branch, folder vs folder |
+| Comparison | A selected pair of versions or locations, or a three-way merge session | Working tree vs HEAD, branch vs branch |
 | File view | The detailed text, image, binary summary, or merge presentation for a selected file | A side-by-side Swift diff |
 
 Favorites and Recents are shortcuts to existing projects and comparisons. They should not create duplicate project records.
@@ -49,7 +49,7 @@ The primary workspace has a sidebar, a contextual file list, and a main comparis
 | Sidebar | Buckets, projects, favorites, and recent comparisons |
 | Toolbar | Comparison sources, presentation mode, search, and previous/next change |
 | File list / diff tree | Changed files, folder hierarchy, sorting, grouping, and filters |
-| Main content | Project overview, text diff, image comparison, folder comparison, or merge |
+| Main content | Project overview, text diff, image comparison, or merge |
 | Optional inspector | File metadata, timestamps, comparison options, and secondary information |
 | Review Notes panel | All annotations in the chosen scope, with navigation and export |
 | Settings window | Themes, appearance, editor, diff, repository, and shortcut preferences |
@@ -70,11 +70,11 @@ Example organization:
 
 Users should be able to create, rename, reorder, hide, and customize Buckets, move projects between them, and favorite projects.
 
-Every expanded Bucket ends with a tinted outlined **Add New Project** row. It opens the macOS folder picker, then a project sheet for its name and icon. The project inherits its Bucket color. Projects can be dragged between any Buckets or detached into an Unassigned section, then assigned again by drag or menu. Detaching changes only Diffy's organization; it does not touch the folder.
+Every expanded Bucket ends with a tinted outlined **Add New Project** row. It opens the macOS folder picker, then a project sheet for its name and icon. The project inherits its Bucket color. Project and Bucket editors support SF Symbol presets, emoji, and uploaded image icons with rounded corners and a saved Fit or Fill layout within the same icon bounds as SF Symbols. Unassigned projects can choose the same color presets as Buckets or a custom background color. Their own color is retained while a Bucket color takes precedence. Projects can be dragged between any Buckets or detached into an Unassigned section, then assigned again by drag or menu. Detaching changes only Diffy's organization; it does not touch the folder.
 
 Bucket customization includes:
 
-- Identity: title, subtitle, icon, SF Symbol, or custom image.
+- Identity: title, subtitle, SF Symbol, emoji, or custom image.
 - Color: accent, tint, background treatment, and gradient.
 - Shape: border style and corner radius.
 - Layout: presentation layout and compact, normal, or expanded density.
@@ -110,7 +110,7 @@ This is a major product feature. A user should quickly find the most relevant fi
 | Sort | What comes first? | Name, path, last updated, change type, file type, lines changed, file size |
 | Filter | Which files are visible? | Added, removed, modified, renamed, moved, identical, conflicted; staged/unstaged where applicable; path/name search |
 
-Support ascending and descending order, folders-first ordering, expand/collapse all, and remembering the chosen presentation per project. Optional columns can expose path, status, additions/deletions, size, and date.
+Support ascending and descending order, folders-first ordering, expand/collapse all, and remembering layout and sort selections in UserDefaults across file sidebars. Optional columns can expose path, status, additions/deletions, size, and date.
 
 ### Make “last updated” explicit
 
@@ -169,9 +169,9 @@ Include side-by-side, overlay, slider, difference, and blink modes, with zoom, p
 
 Use bundled reference images and fixed comparison assets in Milestone 0. Interaction should be convincing: the slider moves, overlay opacity changes, zoom and pan respond, and the inspector identifies the selected pixel. A production image comparison engine belongs to Milestone 3.
 
-### Folder / repository diff
+### Repository diff
 
-Compare two folder structures using the file-navigation behaviors above. Selecting a file opens the appropriate text or image view; binary files receive an understandable metadata summary when a visual comparison is unavailable.
+Browse changed repository files using the file-navigation behaviors above. Selecting a file opens the appropriate text or image view; binary files receive an understandable metadata summary when a visual comparison is unavailable. Standalone folder comparison is outside the product scope.
 
 ### Commit and branch comparison
 
@@ -293,7 +293,7 @@ Simple persistence for theme and presentation preferences, local project folder 
 | --- | --- | --- |
 | 0A — Foundation | Theme reference review, native window, typography, surfaces, sidebar, toolbar, mock Buckets and projects | Does this look and feel like a premium Mac app? |
 | 0B — Main workflow | Project dashboard, comparison selection, sortable/filterable file tree, flagship text diff, line annotations, Review Notes, Markdown export | Can we find, understand, and explain a change quickly? |
-| 0C — Comparison coverage | Unified view, history and branch/commit screens, folder comparison, image modes, merge workspace | Does every major comparison have a coherent experience? |
+| 0C — Comparison coverage | Unified view, history and branch/commit screens, image modes, merge workspace | Does every major comparison have a coherent experience? |
 | 0D — Personalization | Bucket editor, theme selector, settings, keyboard customization, command palette | Is configuration useful and enjoyable? |
 | 0E — Interaction polish | Resizing, focus, keyboard flow, context menus, drag and drop, tabs/windows, empty states, accessibility | Does the experience hold together during normal use? |
 
@@ -335,7 +335,7 @@ Complete the visual review and address the resulting design issues before starti
 | 3 — Advanced diff | Improve comparison accuracy and performance | High-performance text diffing, word/character detail, moved blocks, rename detection, folder and image diff, binary awareness, optional semantic analysis. |
 | 4 — Merge | Resolve actual conflicts | Real three-way Git merge, editable output, accept left/right/both, conflict navigation, validation of resolution state, and saving the result. |
 | 5 — GitHub | Add optional remote context | GitHub sign-in/OAuth and organization SSO where applicable, repository discovery, cloning, open on GitHub, PR metadata and file comparisons, commit links, and branch links. Store credentials in macOS Keychain. |
-| 6 — Developer integrations | Open Diffy from existing workflows | Git difftool and mergetool support, CLI file/folder comparison, and integrations with Cursor, VS Code, Xcode, and terminal workflows. |
+| 6 — Developer integrations | Open Diffy from existing workflows | Git difftool and mergetool support, CLI file comparison, and integrations with Cursor, VS Code, Xcode, and terminal workflows. |
 
 Semantic comparisons in Milestone 3 supplement the deterministic text diff. For example, they may identify a moved Swift method or suggest that multiple replacements represent `fetchUser` becoming `fetchCurrentUser`. Present these as additional explanations with appropriate uncertainty, and keep the underlying textual changes inspectable.
 

@@ -10,6 +10,7 @@ struct WorkspaceScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var reviewWidth: CGFloat = 310
     @State private var reviewDragStartWidth: CGFloat?
+    @State private var dataModalSize = CGSize.zero
 
     init(viewModel: WorkspaceViewModel) {
 
@@ -40,7 +41,11 @@ struct WorkspaceScreen: View {
 
                     HStack(spacing: 0) {
 
-                        HorizontalResizeHandle(label: "Drag To Resize Review Notes", resizeGesture: reviewResizeGesture())
+                        HorizontalResizeHandle(
+                            label: "Drag To Resize Review Notes",
+                            leftBackground: self.theme.background,
+                            resizeGesture: reviewResizeGesture()
+                        )
 
                         ReviewScreen(workspace: self.viewModel)
                             .frame(width: self.reviewWidth)
@@ -58,6 +63,12 @@ struct WorkspaceScreen: View {
 
         }
         .frame(minWidth: 1050, minHeight: 650)
+        .onGeometryChange(for: CGSize.self) { geometry in
+            geometry.size
+        } action: { size in
+            self.dataModalSize = size
+        }
+        .environment(\.diffyDataModalSize, self.dataModalSize)
         .background(self.theme.background)
         .navigationTitle(self.viewModel.runtime.windowTitle)
         .focusedSceneValue(\.workspace, self.viewModel)
@@ -214,7 +225,9 @@ struct WorkspaceScreen: View {
 
                         }
                         .padding(.horizontal, 16)
-                        .padding(.top, 8)
+                        .padding(.vertical, 8)
+                        .id(notice)
+                        .transition(.blurReplace)
 
                     }
 
@@ -229,6 +242,7 @@ struct WorkspaceScreen: View {
                     }
 
                 }
+                .diffyStatusAnimation(value: self.viewModel.notice)
 
             }
 
@@ -255,24 +269,10 @@ struct WorkspaceScreen: View {
 
         }
 
-        ToolbarItem(placement: .principal) {
-
-            if let request = self.viewModel.activePullRequestReview?.request {
-                navigationContextPill("#\(request.number) · \(request.link.fullName)", symbol: "arrow.triangle.pull")
-            } else if self.viewModel.showsOverview {
-                navigationContextPill("Workspace Overview", symbol: "square.grid.2x2")
-            } else if self.viewModel.selectedProject != nil {
-
-                navigationContextPill(
-                    self.repository.snapshot?.head.displayName ?? "Local Project",
-                    symbol: "arrow.triangle.branch"
-                )
-
-            } else {
-                navigationContextPill("No Project Selected", symbol: "folder")
-
-            }
-
+        if #available(macOS 26.0, *) {
+            navigationContextToolbarItem.sharedBackgroundVisibility(.hidden)
+        } else {
+            navigationContextToolbarItem
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
@@ -306,6 +306,35 @@ struct WorkspaceScreen: View {
 
     }
 
+    private var navigationContextToolbarItem: some ToolbarContent {
+
+        ToolbarItem(placement: .principal) {
+            navigationContextLabel
+        }
+
+    }
+
+    @ViewBuilder
+    private var navigationContextLabel: some View {
+
+        if let request = self.viewModel.activePullRequestReview?.request {
+            navigationContextPill("#\(request.number) · \(request.link.fullName)", symbol: "arrow.triangle.pull")
+        } else if self.viewModel.showsOverview {
+            navigationContextPill("Workspace Overview", symbol: "square.grid.2x2")
+        } else if self.viewModel.selectedProject != nil {
+
+            navigationContextPill(
+                self.repository.snapshot?.head.displayName ?? "Local Project",
+                symbol: "arrow.triangle.branch"
+            )
+
+        } else {
+            navigationContextPill("No Project Selected", symbol: "folder")
+
+        }
+
+    }
+
     private func navigationContextPill(_ title: String, symbol: String) -> some View {
 
         HStack(spacing: 6) {
@@ -322,7 +351,7 @@ struct WorkspaceScreen: View {
 
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 2)
+        .frame(height: 22)
         .background {
             Capsule()
                 .fill(self.theme.elevated)
@@ -331,6 +360,7 @@ struct WorkspaceScreen: View {
             Capsule()
                 .strokeBorder(self.theme.border.opacity(self.theme.isDark ? 0.85 : 0.8), lineWidth: 0.75)
         }
+        .padding(.vertical, 2)
 
     }
 

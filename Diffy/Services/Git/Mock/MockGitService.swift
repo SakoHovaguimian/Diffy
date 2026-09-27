@@ -85,14 +85,6 @@ struct MockGitService: GitServiceProtocol {
         )
     }
 
-    func folderComparisonFiles(left: URL, right: URL) async throws -> [DiffFile] {
-        MockWorkspaceFixtures.files(for: "rune")
-    }
-
-    func folderFileComparison(left: URL, right: URL, file: DiffFile) async throws -> DiffFile {
-        file
-    }
-
     func patch(in repository: GitRepositoryReference, selection: ComparisonSelection) async throws -> String {
 
         let files = MockWorkspaceFixtures.files(for: repository.projectID).filter { selection.paths.isEmpty || selection.paths.contains($0.path) }
@@ -128,14 +120,6 @@ struct MockGitService: GitServiceProtocol {
             RepositoryPathEntry(path: $0.path, gitUpdatedAt: nil, diskUpdatedAt: $0.lastEditedAt, isTracked: true, prefersDiskTime: $0.status != .identical)
         }
 
-    }
-
-    func folderPatch(left: URL, right: URL) async throws -> String {
-        "Choose Diffy Live to compare folders on this Mac."
-    }
-
-    func folderFilePatch(left: URL, right: URL, path: String) async throws -> String {
-        "Choose Diffy Live to compare folders on this Mac."
     }
 
     func perform(_ request: GitOperationRequest, in repository: GitRepositoryReference, progress: @escaping @Sendable (GitOperationProgress) -> Void) async throws -> GitOperationResult {

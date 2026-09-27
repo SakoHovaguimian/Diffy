@@ -32,6 +32,7 @@ final class MergeViewModel: ViewModel {
     @Published var selectedIndex = 0
     @Published private(set) var results: [Int: String] = [:]
     @Published private(set) var decisions: [Int: MergeDecision] = [:]
+    @Published private(set) var isReviewingResolvedResults = false
     private var undoHistory: [MergeDraftSnapshot] = []
 
     var conflict: MergeConflict {
@@ -43,7 +44,35 @@ final class MergeViewModel: ViewModel {
     }
 
     var resolvedCount: Int {
-        self.decisions.values.filter { $0 != .unresolved }.count
+        self.conflicts.filter { isResolved($0) }.count
+    }
+
+    var unresolvedCount: Int {
+        self.conflicts.count - self.resolvedCount
+    }
+
+    var allConflictsResolved: Bool {
+        !self.conflicts.isEmpty && self.unresolvedCount == 0
+    }
+
+    var progressDescription: String {
+        "\(self.unresolvedCount) of \(self.conflicts.count) conflicts remaining"
+    }
+
+    var showsCompletion: Bool {
+        self.allConflictsResolved && !self.isReviewingResolvedResults
+    }
+
+    func reviewResolvedResults() {
+        self.isReviewingResolvedResults = true
+    }
+
+    func showCompletion() {
+        self.isReviewingResolvedResults = false
+    }
+
+    func isResolved(_ conflict: MergeConflict) -> Bool {
+        self.decisions[conflict.id].map { $0 != .unresolved } ?? false
     }
 
     var canUndo: Bool {
@@ -100,6 +129,7 @@ final class MergeViewModel: ViewModel {
         }
 
         self.decisions[self.conflict.id] = decision
+        self.isReviewingResolvedResults = false
 
     }
 
@@ -108,6 +138,7 @@ final class MergeViewModel: ViewModel {
         rememberState()
         self.results[self.conflict.id] = text
         self.decisions[self.conflict.id] = .unresolved
+        self.isReviewingResolvedResults = false
 
     }
 
@@ -115,11 +146,32 @@ final class MergeViewModel: ViewModel {
 
         rememberState()
         self.decisions[self.conflict.id] = .edited
+        self.isReviewingResolvedResults = false
+        advanceToNextUnresolvedConflict()
 
     }
 
     func navigate(_ direction: Int) {
         self.selectedIndex = (self.selectedIndex + direction + self.conflicts.count) % self.conflicts.count
+    }
+
+    private func advanceToNextUnresolvedConflict() {
+
+        guard self.unresolvedCount > 0 else { return }
+
+        for offset in 1..<self.conflicts.count {
+
+            let index = (self.selectedIndex + offset) % self.conflicts.count
+
+            if !isResolved(self.conflicts[index]) {
+
+                self.selectedIndex = index
+                return
+
+            }
+
+        }
+
     }
 
     func undo() {
@@ -130,6 +182,8 @@ final class MergeViewModel: ViewModel {
 
         self.results = snapshot.results
         self.decisions = snapshot.decisions
+        self.selectedIndex = snapshot.selectedIndex
+        self.isReviewingResolvedResults = false
 
     }
 
@@ -138,12 +192,14 @@ final class MergeViewModel: ViewModel {
         rememberState()
         self.results = [:]
         self.decisions = [:]
+        self.selectedIndex = 0
+        self.isReviewingResolvedResults = false
 
     }
 
     private func rememberState() {
 
-        self.undoHistory.append(MergeDraftSnapshot(results: self.results, decisions: self.decisions))
+        self.undoHistory.append(MergeDraftSnapshot(results: self.results, decisions: self.decisions, selectedIndex: self.selectedIndex))
 
         if self.undoHistory.count > 100 {
             self.undoHistory.removeFirst()

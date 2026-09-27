@@ -22,6 +22,7 @@ struct AINoteFixView: View {
 
         }
         .background(self.theme.background)
+        .diffyStatusAnimation(value: [self.applyError, self.applyNotice, self.viewModel.persistenceMessage])
         .confirmationDialog("Apply The Proposed Patch?", isPresented: self.$viewModel.showsApplyConfirmation, titleVisibility: .visible) {
 
             Button("Apply Proposed Patch") {

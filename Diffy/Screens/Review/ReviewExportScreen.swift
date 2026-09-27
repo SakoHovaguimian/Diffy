@@ -83,8 +83,8 @@ struct ReviewExportScreen: View {
 
         }
         .padding(28)
-        .frame(width: 780, height: 640)
         .background(self.theme.background)
+        .diffyDataModalFrame()
 
     }
 

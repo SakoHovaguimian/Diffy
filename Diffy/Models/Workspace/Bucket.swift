@@ -6,6 +6,7 @@ struct Bucket: Identifiable, Codable, Hashable {
     var title: String
     var subtitle: String
     var symbol: String
+    var customIcon: WorkspaceCustomIcon?
     var accentHex: String
     var usesGradient: Bool = true
     var cornerRadius: Double = 6

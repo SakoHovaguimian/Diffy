@@ -9,6 +9,8 @@ struct ProjectEditorDraft: Identifiable {
     let repositoryName: String
     var displayName: String
     var symbol: String
+    var customIcon: WorkspaceCustomIcon?
+    var accentHex: String?
 
     init(
         directoryURL: URL,
@@ -35,6 +37,8 @@ struct ProjectEditorDraft: Identifiable {
         self.repositoryName = project.gitHubLink?.fullName ?? project.repositoryName
         self.displayName = project.displayName
         self.symbol = project.symbol
+        self.customIcon = project.customIcon
+        self.accentHex = project.accentHex
 
     }
 

@@ -17,6 +17,7 @@ struct PullRequestFilesView: View {
                     .frame(width: min(self.viewModel.navigatorWidth, navigatorMaximumWidth(in: geometry.size.width)))
                 HorizontalResizeHandle(
                     label: "Drag To Resize Changed Files",
+                    leftBackground: self.theme.surface,
                     resizeGesture: navigatorResizeGesture(availableWidth: geometry.size.width)
                 )
                 selectedFileContent()

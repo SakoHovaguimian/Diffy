@@ -46,6 +46,7 @@ struct RepositoryHistoryFileNavigator: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .diffyStatusAnimation(value: self.viewModel.historyFilesError)
 
     }
 

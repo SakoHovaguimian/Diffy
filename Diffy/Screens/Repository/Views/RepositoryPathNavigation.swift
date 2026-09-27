@@ -27,8 +27,12 @@ struct RepositoryPathNavigation: View {
 
             HStack(spacing: 10) {
 
-                Picker("View", selection: self.$layout) {
+                Picker(selection: self.$layout) {
                     ForEach(RepositoryFileLayout.allCases) { Text($0.rawValue).tag($0) }
+                } label: {
+                    Text("View")
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .pickerStyle(.segmented)
                 .frame(maxWidth: 160)

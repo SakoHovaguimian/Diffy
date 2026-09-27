@@ -44,6 +44,10 @@ struct PullRequestReviewScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(self.theme.background)
+        .diffyStatusAnimation(value: [self.viewModel.errorMessage, self.viewModel.notice])
+        .diffyStatusAnimation(value: self.viewModel.hasPendingRemoteReview)
+        .diffyStatusAnimation(value: self.viewModel.details?.hasAllFiles)
+        .diffyStatusAnimation(value: self.viewModel.details?.hasAllCommits)
         .task { await self.viewModel.loadIfNeeded() }
         .task { await self.aiWorkspace.loadHistory() }
         .task { syncAnnotations() }
@@ -103,18 +107,23 @@ struct PullRequestReviewScreen: View {
             }
             if let error = self.viewModel.errorMessage {
                 DiffyStatusBanner(message: error, isError: true)
+                    .padding(.bottom, 8)
             }
             if let notice = self.viewModel.notice {
                 DiffyStatusBanner(message: notice)
+                    .padding(.bottom, 8)
             }
             if self.viewModel.hasPendingRemoteReview {
                 DiffyStatusBanner(message: "You have a pending review on GitHub. Open it there to finish or discard it, then refresh here.")
+                    .padding(.bottom, 8)
             }
             if let details = self.viewModel.details, !details.hasAllFiles {
                 DiffyStatusBanner(message: "GitHub returned \(details.files.count) of \(details.changedFileCount) files. Open GitHub to inspect the remaining files.")
+                    .padding(.bottom, 8)
             }
             if let details = self.viewModel.details, !details.hasAllCommits {
                 DiffyStatusBanner(message: "GitHub returned \(details.commits.count) of \(details.commitCount) commits. Open GitHub to inspect the remaining commits.")
+                    .padding(.bottom, 8)
             }
 
         }

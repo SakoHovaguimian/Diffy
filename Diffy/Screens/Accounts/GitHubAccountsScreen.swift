@@ -32,6 +32,7 @@ struct GitHubAccountsScreen: View {
 
         }
         .background(self.theme.background)
+        .diffyStatusAnimation(value: [self.viewModel.errorMessage, self.viewModel.notice])
         .task(id: self.viewModel.selectedAccountID) {
             await self.viewModel.loadRepositories()
         }
@@ -88,7 +89,8 @@ struct GitHubAccountsScreen: View {
                         Image(systemName: "ellipsis")
                     }
                     .menuStyle(.borderlessButton)
-                    .frame(width: 24)
+                    .frame(width: 40)
+                    .fixedSize(horizontal: true, vertical: false)
                     .disabled(self.viewModel.isSigningIn || self.viewModel.isImporting)
                     .accessibilityLabel("Manage \(account.handle)")
 

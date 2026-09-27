@@ -18,6 +18,7 @@ struct AIReviewWorkspaceView: View {
 
         }
         .background(self.theme.background)
+        .diffyStatusAnimation(value: [self.viewModel.errorMessage, self.viewModel.persistenceMessage])
 
     }
 

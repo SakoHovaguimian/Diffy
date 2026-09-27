@@ -9,13 +9,18 @@ final class WorkspaceOverviewViewModel: ViewModel {
     private let git: GitServiceProtocol
     private let gitHub: GitHubServiceProtocol
     private let diffBuilder: TextDiffBuilding
+    private let preferencesService: PreferencesServiceProtocol
     private var refreshID = UUID()
 
     @Published private(set) var activeProjects: [OverviewProjectChange] = []
     @Published private(set) var assignedPullRequests: [AssignedPullRequestSummary] = []
     @Published private(set) var reviewRequestedPullRequests: [AssignedPullRequestSummary] = []
-    @Published var assignedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated
-    @Published var reviewRequestedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated
+    @Published var assignedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated {
+        didSet { self.preferencesService.save(self.assignedSortOrder, key: "overview.assigned.sort") }
+    }
+    @Published var reviewRequestedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated {
+        didSet { self.preferencesService.save(self.reviewRequestedSortOrder, key: "overview.reviewRequested.sort") }
+    }
     @Published var collapsedAssignedGroups: Set<OverviewPullRequestGroupID> = []
     @Published var collapsedReviewRequestedGroups: Set<OverviewPullRequestGroupID> = []
     @Published private(set) var hasMoreAssignedPullRequests = false
@@ -44,13 +49,17 @@ final class WorkspaceOverviewViewModel: ViewModel {
         runtime: AppRuntime,
         git: GitServiceProtocol,
         gitHub: GitHubServiceProtocol,
-        diffBuilder: TextDiffBuilding
+        diffBuilder: TextDiffBuilding,
+        preferencesService: PreferencesServiceProtocol
     ) {
 
         self.runtime = runtime
         self.git = git
         self.gitHub = gitHub
         self.diffBuilder = diffBuilder
+        self.preferencesService = preferencesService
+        self.reviewRequestedSortOrder = preferencesService.load(OverviewPullRequestSortOrder.self, key: "overview.reviewRequested.sort") ?? .recentlyUpdated
+        self.assignedSortOrder = preferencesService.load(OverviewPullRequestSortOrder.self, key: "overview.assigned.sort") ?? .recentlyUpdated
 
     }
 
@@ -66,7 +75,7 @@ final class WorkspaceOverviewViewModel: ViewModel {
             link: GitHubRepositoryLink(coordinate: coordinate),
             preferredAccountID: request.accountID
         )
-        return PullRequestReviewViewModel(request: reviewRequest, accounts: accounts, gitHub: self.gitHub, diffBuilder: self.diffBuilder)
+        return PullRequestReviewViewModel(request: reviewRequest, accounts: accounts, gitHub: self.gitHub, diffBuilder: self.diffBuilder, preferencesService: self.preferencesService)
 
     }
 

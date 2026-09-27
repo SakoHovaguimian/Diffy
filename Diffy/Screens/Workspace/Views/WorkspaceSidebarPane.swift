@@ -5,6 +5,7 @@ struct WorkspaceSidebarPane: View {
     @ObservedObject var viewModel: WorkspaceViewModel
     let isOperating: Bool
     @EnvironmentObject private var settings: SettingsViewModel
+    @Environment(\.diffyTheme) private var theme
     @State private var widthDuringDrag: Double?
     @State private var dragStartWidth: Double?
 
@@ -16,7 +17,11 @@ struct WorkspaceSidebarPane: View {
                 .disabled(self.isOperating)
                 .frame(width: self.widthDuringDrag ?? max(214, self.settings.appearance.sidebarWidth))
 
-            HorizontalResizeHandle(label: "Drag To Resize Sidebar", resizeGesture: resizeGesture())
+            HorizontalResizeHandle(
+                label: "Drag To Resize Sidebar",
+                leftBackground: self.theme.sidebar,
+                resizeGesture: resizeGesture()
+            )
 
         }
 

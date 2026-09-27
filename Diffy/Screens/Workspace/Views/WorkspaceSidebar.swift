@@ -22,6 +22,7 @@ struct WorkspaceSidebar: View {
             overviewRow()
             if !self.viewModel.favoriteProjects.isEmpty {
                 favorites()
+                    .transition(.blurReplace)
             }
 
             self.theme.border
@@ -71,6 +72,7 @@ struct WorkspaceSidebar: View {
 
         }
         .background(self.theme.sidebar)
+        .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.26), value: self.viewModel.favorites)
         .confirmationDialog(
             "Delete \(self.bucketPendingDeletion?.title ?? "Bucket")?",
             isPresented: Binding(
@@ -163,6 +165,7 @@ struct WorkspaceSidebar: View {
 
             ForEach(self.viewModel.favoriteProjects) { project in
                 projectRow(project)
+                    .transition(.blurReplace)
             }
 
         }
@@ -190,7 +193,7 @@ struct WorkspaceSidebar: View {
                             .font(.system(size: 8, weight: .semibold))
                             .rotationEffect(.degrees(bucket.isExpanded ? 90 : 0))
                             .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.22), value: bucket.isExpanded)
-                        Image(systemName: bucket.symbol)
+                        WorkspaceIdentityIcon(symbol: bucket.symbol, customIcon: bucket.customIcon, size: 12)
                             .foregroundStyle(color)
                         Text(bucket.title.uppercased())
                             .tracking(1)
@@ -472,7 +475,7 @@ struct WorkspaceSidebar: View {
     private func projectRow(_ project: RepositoryProject) -> some View {
 
         let isSelected = self.viewModel.selectedProjectID == project.id
-        let color = self.viewModel.bucket(for: project).map { Color(hex: $0.accentHex) } ?? self.theme.secondaryText
+        let color = self.viewModel.bucket(for: project).map { Color(hex: $0.accentHex) } ?? project.accentHex.map { Color(hex: $0) } ?? self.theme.secondaryText
 
         return Button {
             self.viewModel.selectProject(project)
@@ -480,7 +483,7 @@ struct WorkspaceSidebar: View {
 
             HStack(spacing: 9) {
 
-                Image(systemName: project.symbol)
+                WorkspaceIdentityIcon(symbol: project.symbol, customIcon: project.customIcon, size: 17)
                     .font(.system(size: 12))
                     .foregroundStyle(color)
                     .frame(width: 17)
@@ -502,7 +505,14 @@ struct WorkspaceSidebar: View {
             }
             .padding(.horizontal, 10)
             .frame(height: self.projectRowHeight)
-            .background(isSelected ? color.opacity(self.theme.isDark ? 0.10 : 0.18) : .clear, in: RoundedRectangle(cornerRadius: 7))
+            .background {
+
+                let opacity = isSelected ? (self.theme.isDark ? 0.10 : 0.18) : 0.09
+                let hasCustomBackground = self.viewModel.bucket(for: project) == nil && project.accentHex != nil
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(isSelected || hasCustomBackground ? color.opacity(opacity) : .clear)
+
+            }
             .overlay(alignment: .leading) {
 
                 if isSelected && !self.theme.isDark {

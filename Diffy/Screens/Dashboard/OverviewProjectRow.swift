@@ -9,7 +9,7 @@ struct OverviewProjectRow: View {
     @Environment(\.diffyTheme) private var theme
 
     private var tint: Color {
-        self.bucket.map { Color(hex: $0.accentHex) } ?? self.theme.accent
+        self.bucket.map { Color(hex: $0.accentHex) } ?? self.change.project.accentHex.map { Color(hex: $0) } ?? self.theme.accent
     }
 
     private var accessibilitySummary: String {
@@ -28,7 +28,7 @@ struct OverviewProjectRow: View {
 
                 HStack(alignment: .top, spacing: 13) {
 
-                    Image(systemName: self.change.project.symbol)
+                    WorkspaceIdentityIcon(symbol: self.change.project.symbol, customIcon: self.change.project.customIcon, size: 18)
                         .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(self.tint)
                         .frame(width: 42, height: 42)

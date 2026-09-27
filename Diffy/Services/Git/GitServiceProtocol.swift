@@ -62,19 +62,6 @@ protocol GitServiceProtocol: Sendable {
     func suggestedPullStrategy(in repository: GitRepositoryReference) async -> GitPullStrategy
     func branchReview(in repository: GitRepositoryReference, branch: RepositoryBranch, base: String) async throws -> GitBranchReview
 
-    // MARK: - Folder Comparison
-
-    func folderComparisonFiles(
-        left: URL,
-        right: URL
-    ) async throws -> [DiffFile]
-
-    func folderFileComparison(
-        left: URL,
-        right: URL,
-        file: DiffFile
-    ) async throws -> DiffFile
-
     /// Read-only patch and file inventory for repository pages.
     func patch(in repository: GitRepositoryReference, selection: ComparisonSelection) async throws -> String
     func trackedPaths(in repository: GitRepositoryReference) async throws -> [String]
@@ -82,8 +69,6 @@ protocol GitServiceProtocol: Sendable {
         in repository: GitRepositoryReference,
         revision: String?
     ) async throws -> [RepositoryPathEntry]
-    func folderPatch(left: URL, right: URL) async throws -> String
-    func folderFilePatch(left: URL, right: URL, path: String) async throws -> String
 
     // MARK: - Explicit Actions
 

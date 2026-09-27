@@ -41,6 +41,7 @@ struct RepositoryPullRequestsView: View {
             Task { await self.viewModel.loadPullRequests() }
 
         }
+        .diffyStatusAnimation(value: self.viewModel.pullRequestError)
 
     }
 

@@ -13,7 +13,7 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     let accounts: [GitHubAccount]
     let gitHub: GitHubServiceProtocol
     let textDiff: TextDiffViewModel
-    let fileNavigator = FileNavigatorViewModel(preferencesService: PreferencesService(defaults: nil))
+    let fileNavigator: FileNavigatorViewModel
     private var navigationObservation: AnyCancellable?
     private var navigatorDragStartWidth: CGFloat?
 
@@ -49,10 +49,13 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         accounts: [GitHubAccount],
         gitHub: GitHubServiceProtocol,
         diffBuilder: TextDiffBuilding,
+        preferencesService: PreferencesServiceProtocol,
         localRepository: GitRepositoryReference? = nil,
         projectID: String? = nil
     ) {
 
+        self.fileNavigator = FileNavigatorViewModel(preferencesService: preferencesService)
+        self.fileNavigator.restore(projectID: projectID ?? request.link.fullName)
         self.request = request
         self.localRepository = localRepository
         self.projectID = projectID

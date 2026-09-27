@@ -14,16 +14,14 @@ struct RepositoryWorkspaceScreen: View {
             RepositoryActionBar(viewModel: self.viewModel)
 
             if let error = self.viewModel.errorMessage {
-                DiffyStatusBanner(message: error, isError: true).padding([.horizontal, .top], 16)
+                DiffyStatusBanner(message: error, isError: true).padding(16)
             } else if let notice = self.viewModel.notice {
-                DiffyStatusBanner(message: notice).padding([.horizontal, .top], 16)
+                DiffyStatusBanner(message: notice).padding(16)
             }
 
             if self.viewModel.snapshot == nil && self.viewModel.isRefreshing {
                 DiffyLoadingState(title: "Opening Repository…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if !self.workspace.showsDashboard && self.workspace.mode == .folders {
-                RepositoryFoldersView(viewModel: self.viewModel)
             } else if self.viewModel.snapshot == nil {
                 unavailableRepository()
             } else if self.workspace.showsDashboard {
@@ -36,6 +34,7 @@ struct RepositoryWorkspaceScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(self.theme.background)
+        .diffyStatusAnimation(value: [self.viewModel.errorMessage, self.viewModel.notice])
         .onAppear {
 
             if !self.workspace.showsDashboard { self.viewModel.activate(self.workspace.mode) }
@@ -92,8 +91,7 @@ struct RepositoryWorkspaceScreen: View {
                 RepositoryPatchView(viewModel: self.viewModel)
 
             }
-            .frame(minWidth: 800, idealWidth: 1280, maxWidth: .infinity, minHeight: 500, idealHeight: 800, maxHeight: .infinity)
-            .background(ComparisonModalSizingView())
+            .diffyDataModalFrame()
             .diffyStyle()
 
         }
@@ -111,7 +109,6 @@ struct RepositoryWorkspaceScreen: View {
         case .history: RepositoryHistoryView(viewModel: self.viewModel)
         case .pullRequests: RepositoryPullRequestsView(viewModel: self.viewModel, workspace: self.workspace)
         case .merge: RepositoryConflictsView(viewModel: self.viewModel)
-        case .folders: RepositoryFoldersView(viewModel: self.viewModel)
 
         }
 

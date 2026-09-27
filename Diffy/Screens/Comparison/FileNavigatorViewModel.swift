@@ -11,15 +11,15 @@ final class FileNavigatorViewModel: ViewModel {
 
     @Published var query = ""
     @Published var sort: FileSortOrder = .path {
-        didSet { persist() }
+        didSet { persistSelection(self.sort, key: "navigation.sort") }
     }
 
     @Published var layout: FileListLayout = .tree {
-        didSet { persist() }
+        didSet { persistSelection(self.layout, key: "navigation.layout") }
     }
 
     @Published var ascending = true {
-        didSet { persist() }
+        didSet { persistSelection(self.ascending, key: "navigation.ascending") }
     }
 
     @Published var filter: FileChangeStatus? {
@@ -44,13 +44,31 @@ final class FileNavigatorViewModel: ViewModel {
 
         let preferences = self.preferencesService.load(FileNavigationPreferences.self, key: "navigation.\(projectID)") ?? FileNavigationPreferences()
 
-        self.sort = preferences.sort
-        self.layout = initialLayout ?? preferences.layout
-        self.ascending = preferences.ascending
+        self.sort = self.preferencesService.load(FileSortOrder.self, key: "navigation.sort") ?? preferences.sort
+        self.layout = self.preferencesService.load(FileListLayout.self, key: "navigation.layout") ?? initialLayout ?? preferences.layout
+        self.ascending = self.preferencesService.load(Bool.self, key: "navigation.ascending") ?? preferences.ascending
         self.filter = preferences.filter
         self.query = ""
         self.collapsedGroups = []
         self.isRestoring = false
+
+    }
+
+    func restoreSavedSelection() {
+
+        self.isRestoring = true
+        self.sort = self.preferencesService.load(FileSortOrder.self, key: "navigation.sort") ?? self.sort
+        self.layout = self.preferencesService.load(FileListLayout.self, key: "navigation.layout") ?? self.layout
+        self.ascending = self.preferencesService.load(Bool.self, key: "navigation.ascending") ?? self.ascending
+        self.isRestoring = false
+
+    }
+
+    private func persistSelection<Value: Encodable>(_ value: Value, key: String) {
+
+        guard !self.isRestoring else { return }
+        self.preferencesService.save(value, key: key)
+        persist()
 
     }
 

@@ -48,7 +48,7 @@ final class ViewModelAssembly {
                 diffBuilder: self.services.textDiffBuilder,
                 preferencesService: self.services.preferencesService
             ),
-            overviewViewModel: WorkspaceOverviewViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService, diffBuilder: self.services.textDiffBuilder),
+            overviewViewModel: WorkspaceOverviewViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService, diffBuilder: self.services.textDiffBuilder, preferencesService: self.services.preferencesService),
             workspaceService: self.services.workspaceService,
             preferencesService: self.services.preferencesService,
             fileNavigatorViewModel: FileNavigatorViewModel(preferencesService: self.services.preferencesService),

@@ -37,6 +37,7 @@ struct AISettingsScreen: View {
 
         }
         .formStyle(.grouped)
+        .diffyStatusAnimation(value: [self.viewModel.errorMessage, self.viewModel.notice, self.viewModel.modelNotice, self.viewModel.modelError])
         .task { await self.viewModel.load() }
         .onDisappear { self.viewModel.apiKeyDraft = "" }
 

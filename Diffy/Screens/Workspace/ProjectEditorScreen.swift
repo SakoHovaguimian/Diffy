@@ -16,7 +16,7 @@ struct ProjectEditorScreen: View {
 
     var body: some View {
 
-        let accent = self.bucket.map { Color(hex: $0.accentHex) } ?? self.theme.accent
+        let accent = self.bucket.map { Color(hex: $0.accentHex) } ?? self.draft.accentHex.map { Color(hex: $0) } ?? self.theme.accent
 
         VStack(alignment: .leading, spacing: 20) {
 
@@ -29,7 +29,7 @@ struct ProjectEditorScreen: View {
 
             HStack(spacing: 12) {
 
-                Image(systemName: self.draft.symbol)
+                WorkspaceIdentityIcon(symbol: self.draft.symbol, customIcon: self.draft.customIcon, size: 22)
                     .font(.system(size: 22))
                     .foregroundStyle(accent)
                     .frame(width: 46, height: 46)
@@ -47,26 +47,23 @@ struct ProjectEditorScreen: View {
                 .tracking(1)
                 .foregroundStyle(self.theme.secondaryText)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 8) {
+            WorkspaceIconPicker(
+                symbol: self.$draft.symbol,
+                customIcon: self.$draft.customIcon,
+                symbols: self.symbols,
+                accent: accent
+            )
 
-                ForEach(self.symbols, id: \.self) { symbol in
+            if self.bucket == nil {
 
-                    Button {
-                        self.draft.symbol = symbol
-                    } label: {
-
-                        Image(systemName: symbol)
-                            .font(.system(size: 17))
-                            .foregroundStyle(self.draft.symbol == symbol ? accent : self.theme.secondaryText)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 42)
-                            .background(self.draft.symbol == symbol ? accent.opacity(0.12) : self.theme.surface, in: RoundedRectangle(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(self.draft.symbol == symbol ? accent : self.theme.border))
-
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(symbol)
-
+                Text("BACKGROUND COLOR")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1)
+                    .foregroundStyle(self.theme.secondaryText)
+                WorkspaceColorPicker(accentHex: self.projectColor)
+                if self.draft.accentHex != nil {
+                    Button("Use Default Color") { self.draft.accentHex = nil }
+                        .font(.system(size: 12))
                 }
 
             }
@@ -83,9 +80,13 @@ struct ProjectEditorScreen: View {
 
             HStack {
 
-                Label(self.bucket?.title ?? "Unassigned", systemImage: self.bucket?.symbol ?? "tray")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(accent)
+                Label {
+                    Text(self.bucket?.title ?? "Unassigned")
+                } icon: {
+                    WorkspaceIdentityIcon(symbol: self.bucket?.symbol ?? "tray", customIcon: self.bucket?.customIcon, size: 12)
+                }
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(accent)
 
                 Spacer()
                 Button("Cancel") { self.dismiss() }.keyboardShortcut(.cancelAction)
@@ -102,7 +103,17 @@ struct ProjectEditorScreen: View {
         .padding(28)
         .frame(width: 500)
         .background(self.theme.background)
+        .diffyStatusAnimation(value: self.errorMessage)
         .interactiveDismissDisabled()
+
+    }
+
+    private var projectColor: Binding<String> {
+
+        Binding(
+            get: { self.draft.accentHex ?? self.theme.accent.rgbHex ?? "7862D9" },
+            set: { self.draft.accentHex = $0 }
+        )
 
     }
 

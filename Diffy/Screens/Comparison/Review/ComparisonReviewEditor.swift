@@ -4,6 +4,7 @@ struct ComparisonReviewEditor: View {
 
     @ObservedObject var viewModel: ComparisonReviewViewModel
     @ObservedObject var workspace: WorkspaceViewModel
+    @Environment(\.diffyTheme) private var theme
 
     var body: some View {
 
@@ -23,6 +24,7 @@ struct ComparisonReviewEditor: View {
                 .frame(width: min(self.viewModel.navigatorWidth, navigatorMaximumWidth(in: geometry.size.width)))
                 HorizontalResizeHandle(
                     label: "Drag To Resize Changed Files",
+                    leftBackground: self.theme.isDark ? self.theme.surface : self.theme.sidebar,
                     resizeGesture: navigatorResizeGesture(availableWidth: geometry.size.width)
                 )
                 selectedFileContent()

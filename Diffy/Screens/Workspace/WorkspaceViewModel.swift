@@ -85,7 +85,6 @@ final class WorkspaceViewModel: ViewModel {
         self.notice = library.loadErrorMessage ?? library.migrationNotice
         self.selectedProjectID = self.projects.first?.id ?? ""
         self.selectedFileID = self.projects.first?.files.first?.id
-        self.showsDashboard = self.projects.first?.checkout != nil
 
         self.fileNavigatorViewModel.restore(projectID: self.selectedProjectID)
         self.comparisonObservation = repositoryViewModel.comparison.objectWillChange.sink { [weak self] _ in
@@ -174,7 +173,6 @@ final class WorkspaceViewModel: ViewModel {
         case .history: "Previous version → Selected version"
         case .pullRequests: "Pull request base → Head"
         case .merge: "Base · Yours · Theirs"
-        case .folders: "Original folder → Updated folder"
 
         }
 
@@ -206,7 +204,7 @@ final class WorkspaceViewModel: ViewModel {
     func selectProject(_ project: RepositoryProject) {
 
         guard !self.repositoryViewModel.isOperating else { return }
-        requestNavigation(.project(projectID: project.id, tab: .current))
+        requestNavigation(.project(projectID: project.id, tab: .workingTree))
     }
 
     func openProjectOverview(_ project: RepositoryProject) {
@@ -428,6 +426,7 @@ final class WorkspaceViewModel: ViewModel {
 
         case let .pullRequest(key):
             self.activePullRequestReview = self.pullRequestReviews[key]
+            self.activePullRequestReview?.fileNavigator.restoreSavedSelection()
 
         case let .annotation(annotation):
             reveal(annotation)
@@ -508,6 +507,7 @@ final class WorkspaceViewModel: ViewModel {
 
     private func navigateToMode(_ mode: ComparisonMode) {
 
+        self.fileNavigatorViewModel.restore(projectID: self.selectedProjectID)
         self.mode = mode
         self.showsOverview = false
         self.showsDashboard = false
@@ -654,6 +654,8 @@ final class WorkspaceViewModel: ViewModel {
 
         updatedProjects[index].displayName = draft.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         updatedProjects[index].symbol = draft.symbol
+        updatedProjects[index].customIcon = draft.customIcon
+        updatedProjects[index].accentHex = draft.accentHex
 
         do {
 
@@ -690,6 +692,8 @@ final class WorkspaceViewModel: ViewModel {
                 subtitle: "",
                 bucketID: draft.bucketID,
                 symbol: draft.symbol,
+                customIcon: draft.customIcon,
+                accentHex: draft.accentHex,
                 checkout: checkout,
                 gitHubLink: nil,
                 gitHubAccountID: nil,

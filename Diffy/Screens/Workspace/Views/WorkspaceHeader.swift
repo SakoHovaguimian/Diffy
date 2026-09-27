@@ -14,13 +14,13 @@ struct WorkspaceHeader: View {
 
     var body: some View {
 
-        let accent = self.viewModel.bucket(for: self.viewModel.project).map { Color(hex: $0.accentHex) } ?? self.theme.accent
+        let accent = self.viewModel.bucket(for: self.viewModel.project).map { Color(hex: $0.accentHex) } ?? self.viewModel.project.accentHex.map { Color(hex: $0) } ?? self.theme.accent
 
         VStack(alignment: .leading, spacing: self.contentSize.scaled(18)) {
 
             HStack(alignment: .center, spacing: self.contentSize.scaled(12)) {
 
-                Image(systemName: self.viewModel.project.symbol)
+                WorkspaceIdentityIcon(symbol: self.viewModel.project.symbol, customIcon: self.viewModel.project.customIcon, size: self.contentSize.scaled(19))
                     .font(self.contentSize.font(size: 19))
                     .foregroundStyle(accent)
                     .frame(width: self.contentSize.scaled(39), height: self.contentSize.scaled(39))
@@ -61,12 +61,12 @@ struct WorkspaceHeader: View {
 
                     HStack(spacing: self.contentSize.scaled(20)) {
 
-                        navigationButton("Working Tree", id: ComparisonMode.workingTree.rawValue, symbol: ComparisonMode.workingTree.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == .workingTree) {
-                            self.viewModel.selectMode(.workingTree)
-                        }
-
                         navigationButton("Overview", id: "overview", symbol: "square.grid.2x2", selected: self.viewModel.showsDashboard) {
                             self.viewModel.showDashboard()
+                        }
+
+                        navigationButton("Working Tree", id: ComparisonMode.workingTree.rawValue, symbol: ComparisonMode.workingTree.symbol, selected: !self.viewModel.showsDashboard && self.viewModel.mode == .workingTree) {
+                            self.viewModel.selectMode(.workingTree)
                         }
 
                         ForEach(ComparisonMode.allCases.filter { $0 != .workingTree }) { mode in

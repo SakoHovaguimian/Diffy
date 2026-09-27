@@ -10,25 +10,7 @@ struct BucketEditorScreen: View {
     @Environment(\.diffyTheme) private var theme
     @State private var showsDeleteConfirmation = false
 
-    private let accents = ["7862D9", "319B90", "D39553", "CD7293", "548FC5", "7C9D5B"]
     private let symbols = ["folder", "square.stack.3d.up", "server.rack", "sparkles", "leaf", "hammer", "moon.stars", "heart"]
-
-    private var customColor: Binding<Color> {
-
-        Binding(
-            get: { Color(hex: self.bucket.accentHex) },
-            set: { color in
-
-                guard let hex = color.rgbHex else {
-                    return
-                }
-
-                self.bucket.accentHex = hex
-
-            }
-        )
-
-    }
 
     var body: some View {
 
@@ -62,6 +44,7 @@ struct BucketEditorScreen: View {
 
                     self.bucket.accentHex = "7862D9"
                     self.bucket.symbol = "folder"
+                    self.bucket.customIcon = nil
 
                 }
 
@@ -103,44 +86,13 @@ struct BucketEditorScreen: View {
 
             TextField("Bucket Name", text: self.$bucket.title)
 
-            HStack(spacing: 8) {
-
-                ForEach(self.symbols, id: \.self) { symbol in
-
-                    Button { self.bucket.symbol = symbol } label: {
-
-                        Image(systemName: symbol)
-                            .frame(width: 28, height: 28)
-                            .foregroundStyle(self.bucket.symbol == symbol ? self.theme.accent : self.theme.secondaryText)
-                            .background(self.bucket.symbol == symbol ? self.theme.selection : .clear, in: RoundedRectangle(cornerRadius: 5))
-
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(symbol)
-
-                }
-
-            }
-
-            HStack(spacing: 12) {
-
-                ForEach(self.accents, id: \.self) { hex in
-
-                    Button { self.bucket.accentHex = hex } label: {
-
-                        Circle().fill(Color(hex: hex)).frame(width: 24, height: 24)
-                            .overlay(Circle().stroke(self.theme.text.opacity(self.bucket.accentHex == hex ? 0.6 : 0), lineWidth: 2).padding(-3))
-
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Accent \(hex)")
-
-                }
-
-            }
-            .padding(.vertical, 5)
-
-            ColorPicker("Custom Color", selection: self.customColor, supportsOpacity: false)
+            WorkspaceIconPicker(
+                symbol: self.$bucket.symbol,
+                customIcon: self.$bucket.customIcon,
+                symbols: self.symbols,
+                accent: Color(hex: self.bucket.accentHex)
+            )
+            WorkspaceColorPicker(accentHex: self.$bucket.accentHex)
 
         }
         .font(.system(size: 12))
@@ -161,7 +113,8 @@ struct BucketEditorScreen: View {
 
             VStack(alignment: .leading, spacing: 16) {
 
-                Image(systemName: self.bucket.symbol).font(.system(size: 24)).foregroundStyle(accent)
+                WorkspaceIdentityIcon(symbol: self.bucket.symbol, customIcon: self.bucket.customIcon, size: 24)
+                    .font(.system(size: 24)).foregroundStyle(accent)
                 Text(self.bucket.title).font(.system(size: 20, weight: .semibold))
                 Divider()
                 Label("Your Projects", systemImage: "folder").font(.system(size: 12))

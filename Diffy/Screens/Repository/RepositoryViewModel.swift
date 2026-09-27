@@ -55,18 +55,18 @@ final class RepositoryViewModel: ViewModel {
     @Published var selectedCommit: RepositoryCommit?
     @Published var trackedPaths: [String] = []
     @Published var pathEntries: [RepositoryPathEntry] = []
-    @Published var historyLayout: RepositoryFileLayout = .flat
-    @Published var historySort: RepositoryFileSort = .name
+    @Published var historyLayout: RepositoryFileLayout = .flat {
+        didSet { self.preferencesService.save(self.historyLayout, key: "navigation.history.layout") }
+    }
+
+    @Published var historySort: RepositoryFileSort = .name {
+        didSet { self.preferencesService.save(self.historySort, key: "navigation.history.sort") }
+    }
     @Published var historyExpandedFolders: Set<String> = []
     @Published var historyBranch = ""
     @Published var historyNavigatorWidth: CGFloat = 300
     @Published var isLoadingHistoryFiles = false
     @Published var historyFilesError: String?
-    @Published var folderEntries: [RepositoryPathEntry] = []
-    @Published var folderLayout: RepositoryFileLayout = .tree
-    @Published var folderSort: RepositoryFileSort = .name
-    @Published var folderExpandedFolders: Set<String> = []
-    @Published var selectedFolderPath: String?
     @Published var history: [RepositoryCommit] = []
     @Published var historyPath = ""
     @Published var historyLimit = 50
@@ -84,8 +84,6 @@ final class RepositoryViewModel: ViewModel {
     @Published var isLoadingMorePullRequests = false
     @Published var isLoadingPullRequestMetadata = false
     @Published var pullRequestError: String?
-    @Published var leftFolder: URL?
-    @Published var rightFolder: URL?
     @Published var currentMode: ComparisonMode = .workingTree
 
     init(
@@ -104,6 +102,7 @@ final class RepositoryViewModel: ViewModel {
         self.reviewDiffBuilder = diffBuilder
         self.preferencesService = preferencesService
         self.comparison = RepositoryComparisonViewModel(git: git)
+        restoreHistoryNavigationSelection()
 
     }
 
@@ -158,6 +157,8 @@ final class RepositoryViewModel: ViewModel {
 
         self.project?.displayName = project.displayName
         self.project?.symbol = project.symbol
+        self.project?.customIcon = project.customIcon
+        self.project?.accentHex = project.accentHex
 
     }
 
@@ -204,13 +205,8 @@ final class RepositoryViewModel: ViewModel {
         self.pullRequests = []
         self.trackedPaths = []
         self.pathEntries = []
-        self.folderEntries = []
         self.historyExpandedFolders = []
-        self.historyLayout = .flat
-        self.folderExpandedFolders = []
-        self.selectedFolderPath = nil
-        self.leftFolder = nil
-        self.rightFolder = nil
+        restoreHistoryNavigationSelection()
         self.notice = nil
         await refresh()
 
@@ -333,7 +329,7 @@ final class RepositoryViewModel: ViewModel {
             inspectChanges(path: nil)
 
         case .history:
-            self.historyLayout = .flat
+            restoreHistoryNavigationSelection()
             self.historyExpandedFolders = []
             Task { await loadPaths() }
 

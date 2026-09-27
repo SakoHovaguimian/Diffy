@@ -15,6 +15,7 @@ struct RepositoryHistoryView: View {
                     .frame(width: min(self.viewModel.historyNavigatorWidth, navigatorMaximumWidth(in: geometry.size.width)))
                 HorizontalResizeHandle(
                     label: "Drag To Resize Project Files",
+                    leftBackground: self.theme.background,
                     resizeGesture: navigatorResizeGesture(availableWidth: geometry.size.width)
                 )
                 ScrollView {
@@ -61,6 +62,7 @@ struct RepositoryHistoryView: View {
 
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .diffyStatusAnimation(value: self.viewModel.patchError)
 
     }
 

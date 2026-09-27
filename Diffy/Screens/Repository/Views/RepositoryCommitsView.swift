@@ -53,10 +53,10 @@ struct RepositoryCommitsView: View {
 
             }
             .padding(32)
-            .frame(maxWidth: 1000, alignment: .leading)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
         }
+        .diffyStatusAnimation(value: self.viewModel.commitsError)
 
     }
 
