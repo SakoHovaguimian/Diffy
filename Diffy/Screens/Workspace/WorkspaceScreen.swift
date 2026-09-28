@@ -95,6 +95,9 @@ struct WorkspaceScreen: View {
                 if self.viewModel.pendingPullProjectID == project.id {
                     self.viewModel.pendingPullProjectID = nil
                     self.repository.request(.pull(.fastForwardOnly))
+                } else if self.viewModel.pendingFetchProjectID == project.id {
+                    self.viewModel.pendingFetchProjectID = nil
+                    self.repository.request(.fetch(remote: self.repository.snapshot?.upstream?.remoteName))
                 }
                 if !self.viewModel.showsDashboard { self.repository.activate(self.viewModel.mode) }
 

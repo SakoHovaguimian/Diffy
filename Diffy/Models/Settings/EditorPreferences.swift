@@ -11,7 +11,7 @@ struct EditorPreferences: Codable, Equatable {
     var showWhitespace: Bool = false
     var ligatures: Bool = true
     var unified: Bool = false
-    var collapseUnchanged: Bool = false
+    var collapseUnchanged: Bool = true
     var ignoreWhitespace: Bool = false
     var ignoreComments: Bool = false
     var highlightLevel: String = "Word"

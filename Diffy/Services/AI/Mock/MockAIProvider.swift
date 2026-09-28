@@ -97,6 +97,9 @@ struct MockAIProvider: AIProvider {
                 uncertainty: "Preview data is illustrative."
             )
 
+        case .commitMessage:
+            value = AICommitMessageSuggestion(message: "Update staged changes")
+
         }
 
         guard let typed = value as? Response else {

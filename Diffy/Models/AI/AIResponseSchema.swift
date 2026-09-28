@@ -9,6 +9,7 @@ enum AIResponseSchema: String, Sendable {
     case riskMap
     case question
     case noteFix
+    case commitMessage
 
     var name: String { "diffy_\(self.rawValue)" }
 
@@ -120,6 +121,9 @@ enum AIResponseSchema: String, Sendable {
                 "explanation": Self.string,
                 "uncertainty": Self.string
             ])
+
+        case .commitMessage:
+            Self.object(["message": Self.string])
 
         }
 

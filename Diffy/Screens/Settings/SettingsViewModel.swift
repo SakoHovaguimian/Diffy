@@ -11,7 +11,10 @@ final class SettingsViewModel: ViewModel {
     @Published private(set) var hasSeenTutorial: Bool
 
     @Published var editor: EditorPreferences {
-        didSet { self.preferencesService.save(self.editor, key: "editor.v1") }
+        didSet {
+            self.preferencesService.save(self.editor, key: "editor.v1")
+            self.preferencesService.save(self.editor.collapseUnchanged, key: "defaultDiffView.changes.v1")
+        }
     }
 
     @Published var appearance: AppearancePreferences {
@@ -41,7 +44,9 @@ final class SettingsViewModel: ViewModel {
         self.ai = ai
         self.hasSeenTutorial = preferencesService.load(Bool.self, key: "tutorial.completed.v1") ?? false
         self.fileIconTheme = preferencesService.load(FileIconTheme.self, key: "fileIcons.theme.v1") ?? .material
-        self.editor = preferencesService.load(EditorPreferences.self, key: "editor.v1") ?? EditorPreferences()
+        var editor = preferencesService.load(EditorPreferences.self, key: "editor.v1") ?? EditorPreferences()
+        editor.collapseUnchanged = preferencesService.load(Bool.self, key: "defaultDiffView.changes.v1") ?? true
+        self.editor = editor
         var appearance = preferencesService.load(AppearancePreferences.self, key: "appearance.v1") ?? AppearancePreferences()
         appearance.sidebarWidth = max(214, appearance.sidebarWidth)
         self.appearance = appearance

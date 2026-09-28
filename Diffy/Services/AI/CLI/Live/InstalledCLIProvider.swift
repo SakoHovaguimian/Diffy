@@ -93,7 +93,7 @@ struct InstalledCLIProvider: AIProvider {
         let prompt = """
         \(request.systemPrompt)
 
-        Analyze only the provided PR context. Do not read files, invoke tools, browse, or change anything.
+        Use only the provided context. Do not read files, invoke tools, browse, or change anything.
         Return exactly one JSON object matching this schema, without Markdown fences:
         \(schema)
 

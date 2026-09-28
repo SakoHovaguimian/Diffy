@@ -8,6 +8,8 @@
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
     <string>$(DIFFY_DISPLAY_NAME)</string>
+    <key>CFBundleIconFile</key>
+    <string>$(DIFFY_ICON_FILE)</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>

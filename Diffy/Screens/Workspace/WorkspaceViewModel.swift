@@ -47,6 +47,7 @@ final class WorkspaceViewModel: ViewModel {
     @Published var pendingDiffNavigation: PendingDiffNavigation?
     @Published var notice: String?
     @Published var pendingPullProjectID: String?
+    @Published var pendingFetchProjectID: String?
     @Published private(set) var activePullRequestReview: PullRequestReviewViewModel?
     @Published private(set) var contentSizeScale = 1.0
 
@@ -227,6 +228,13 @@ final class WorkspaceViewModel: ViewModel {
 
     }
 
+    func fetchFromOverview(for project: RepositoryProject) {
+
+        self.pendingFetchProjectID = project.id
+        selectProject(project)
+
+    }
+
     func selectFile(_ file: DiffFile, mode: ComparisonMode = .workingTree) {
         requestNavigation(.file(projectID: self.project.id, fileID: file.id, mode: mode))
     }
@@ -331,6 +339,8 @@ final class WorkspaceViewModel: ViewModel {
 
         case .cancel:
             self.pendingDiffNavigation = nil
+            self.pendingPullProjectID = nil
+            self.pendingFetchProjectID = nil
             return
 
         }

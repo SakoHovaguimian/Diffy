@@ -106,11 +106,19 @@ struct WorkspaceSidebar: View {
 
         HStack(spacing: 10) {
 
-            Image(systemName: "square.stack.3d.up.fill")
-                .font(.system(size: 21))
-                .foregroundStyle(self.theme.accent)
+            Image(self.viewModel.runtime.isLive ? "DiffyLive" : "DiffyMock")
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 34, height: 34)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(self.theme.border.opacity(0.65), lineWidth: 1)
+                }
+                .accessibilityHidden(true)
 
-            Text("diffy")
+            Text("Diffy")
                 .font(.system(size: 24, weight: .semibold, design: .rounded))
                 .tracking(-0.8)
 

@@ -46,6 +46,7 @@ final class ViewModelAssembly {
                 gitHub: self.services.gitHubService,
                 accounts: self.services.gitHubAccountService,
                 diffBuilder: self.services.textDiffBuilder,
+                aiCommitMessageService: self.services.aiCommitMessageService,
                 preferencesService: self.services.preferencesService,
                 changeMonitor: self.services.makeRepositoryChangeMonitor()
             ),

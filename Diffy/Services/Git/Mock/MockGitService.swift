@@ -42,6 +42,14 @@ struct MockGitService: GitServiceProtocol {
         return snapshot.branches
     }
 
+    func upstreamRemoteState(
+        for upstream: GitUpstreamStatus,
+        branch: String,
+        in repository: GitRepositoryReference
+    ) async -> GitUpstreamRemoteState {
+        .current
+    }
+
     func comparisonFiles(in repository: GitRepositoryReference, selection: ComparisonSelection) async throws -> [DiffFile] {
         MockWorkspaceFixtures.files(for: repository.projectID)
     }

@@ -192,6 +192,53 @@ actor LiveGitService: GitServiceProtocol {
 
     }
 
+    func upstreamRemoteState(
+        for upstream: GitUpstreamStatus,
+        branch: String,
+        in repository: GitRepositoryReference
+    ) async -> GitUpstreamRemoteState {
+
+        guard let remote = upstream.remoteName, !remote.isEmpty else { return .unavailable }
+        if remote == "." { return .current }
+
+        do {
+
+            let selectedURL = try self.access.beginAccess(projectID: repository.projectID, checkout: repository.checkout)
+            defer { self.access.endAccess(projectID: repository.projectID) }
+            let root = try await repositoryRoot(at: selectedURL)
+            let branchRef = "refs/heads/\(branch)"
+            let mergeRef = try await self.runner.run(
+                ["for-each-ref", "--format=%(upstream:remoteref)", branchRef],
+                directory: root
+            )
+            guard mergeRef.trimmed.hasPrefix("refs/") else { return .unavailable }
+
+            let tracking = try await self.runner.run(["rev-parse", "--verify", "@{upstream}"], directory: root)
+            let remoteTip = try await self.runner.run(
+                ["ls-remote", "--exit-code", "--refs", "--", remote, mergeRef.trimmed],
+                directory: root,
+                acceptsFailure: true,
+                timeout: 40
+            )
+            guard remoteTip.status == 0 else { return .unavailable }
+
+            let fields = remoteTip.trimmed.split(separator: "\t", maxSplits: 1).map(String.init)
+            guard fields.count == 2, fields[1] == mergeRef.trimmed else { return .unavailable }
+            guard fields[0] == tracking.trimmed else { return .changed }
+
+            let currentBranch = try await self.runner.run(["symbolic-ref", "--quiet", "--short", "HEAD"], directory: root)
+            guard currentBranch.trimmed == branch else { return .unavailable }
+            let counts = try await self.runner.run(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"], directory: root)
+            let values = counts.trimmed.split(whereSeparator: \.isWhitespace).compactMap { Int($0) }
+            guard values.count == 2, values[0] == upstream.ahead, values[1] == upstream.behind else { return .unavailable }
+            return .current
+
+        } catch {
+            return .unavailable
+        }
+
+    }
+
     private func remotes(at root: URL) async throws -> [GitRemote] {
 
         let result = try await self.runner.run(["remote"], directory: root)

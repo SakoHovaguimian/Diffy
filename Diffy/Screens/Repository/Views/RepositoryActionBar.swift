@@ -99,17 +99,17 @@ struct RepositoryActionBar: View {
             .disabled(!self.viewModel.canMutate)
             Menu {
 
-                Button("Push") { self.viewModel.request(.push(GitPushOptions())) }
+                Button("Push") { self.viewModel.preparePush(GitPushOptions()) }
                     .disabled(self.viewModel.snapshot?.upstream == nil)
                 Menu("Publish Branch To") {
 
                     ForEach(self.viewModel.snapshot?.remotes ?? []) { remote in
-                        Button(remote.name) { self.viewModel.request(.push(GitPushOptions(remote: remote.name, setsUpstream: true))) }
+                        Button(remote.name) { self.viewModel.preparePush(GitPushOptions(remote: remote.name, setsUpstream: true)) }
                     }
 
                 }
                 Divider()
-                Button("Force Push With Lease…") { self.viewModel.request(.push(GitPushOptions(forceWithLease: true))) }
+                Button("Force Push With Lease…") { self.viewModel.preparePush(GitPushOptions(forceWithLease: true)) }
                     .disabled(self.viewModel.snapshot?.upstream == nil)
 
             } label: {

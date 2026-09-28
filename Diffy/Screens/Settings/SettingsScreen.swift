@@ -103,7 +103,13 @@ struct SettingsScreen: View {
             Section("Presentation") {
 
                 Toggle("Use Unified Comparison", isOn: self.$viewModel.editor.unified)
-                Toggle("Collapse Unchanged Regions", isOn: self.$viewModel.editor.collapseUnchanged)
+                Picker("Default Diff View", selection: self.$viewModel.editor.collapseUnchanged) {
+                    Text("Changes").tag(true)
+                    Text("Whole File").tag(false)
+                }
+                Text("Show changed lines with context or the whole file. This updates open diffs right away.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Stepper("Context Lines: \(self.viewModel.editor.contextLines)", value: self.$viewModel.editor.contextLines, in: 0...12)
 
                 Picker("Inline Highlighting", selection: self.$viewModel.editor.highlightLevel) {

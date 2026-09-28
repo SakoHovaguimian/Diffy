@@ -7,7 +7,8 @@ struct OverviewProjectChange: Identifiable, Sendable {
     let lineCounts: DiffLineCounts?
     let hasConflicts: Bool
     var upstream: GitUpstreamStatus?
-    var lastFetchAt: Date?
+    var upstreamRemoteState: GitUpstreamRemoteState = .current
+    var remoteCheckedAt: Date?
 
     var id: String {
         self.project.id

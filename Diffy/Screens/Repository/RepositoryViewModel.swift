@@ -13,6 +13,7 @@ final class RepositoryViewModel: ViewModel {
     let accounts: GitHubAccountServiceProtocol
     let comparison: RepositoryComparisonViewModel
     let reviewDiffBuilder: TextDiffBuilding
+    let aiCommitMessageService: any AICommitMessageServiceProtocol
     let preferencesService: PreferencesServiceProtocol
     private let changeMonitor: (any RepositoryChangeMonitoring)?
     private var refreshID = UUID()
@@ -28,6 +29,8 @@ final class RepositoryViewModel: ViewModel {
 
     @Published private(set) var project: RepositoryProject?
     @Published private(set) var snapshot: GitRepositorySnapshot?
+    @Published private(set) var upstreamRemoteState: GitUpstreamRemoteState = .checking
+    @Published private(set) var upstreamCheckedAt: Date?
     @Published private(set) var unstagedLineCounts: DiffLineCounts?
     @Published private(set) var isRefreshing = false
     @Published private(set) var isLoadingMoreBranches = false
@@ -37,6 +40,12 @@ final class RepositoryViewModel: ViewModel {
     @Published private(set) var notice: String?
     @Published var pendingAction: GitActionConfirmation?
     @Published var commitMessage = ""
+    @Published var pushCommitMessage = ""
+    @Published var pushOptions = GitPushOptions()
+    @Published var showsPushComposer = false
+    @Published private(set) var canSuggestCommitMessage = false
+    @Published private(set) var isSuggestingCommitMessage = false
+    @Published var commitSuggestionError: String?
     @Published var newBranchName = ""
     @Published var selectedRemote = ""
     @Published var showsAddRemote = false
@@ -95,6 +104,7 @@ final class RepositoryViewModel: ViewModel {
         gitHub: GitHubServiceProtocol,
         accounts: GitHubAccountServiceProtocol,
         diffBuilder: TextDiffBuilding,
+        aiCommitMessageService: any AICommitMessageServiceProtocol,
         preferencesService: PreferencesServiceProtocol,
         changeMonitor: (any RepositoryChangeMonitoring)? = nil
     ) {
@@ -104,6 +114,7 @@ final class RepositoryViewModel: ViewModel {
         self.gitHub = gitHub
         self.accounts = accounts
         self.reviewDiffBuilder = diffBuilder
+        self.aiCommitMessageService = aiCommitMessageService
         self.preferencesService = preferencesService
         self.changeMonitor = changeMonitor
         self.comparison = RepositoryComparisonViewModel(git: git)
@@ -180,6 +191,8 @@ final class RepositoryViewModel: ViewModel {
         self.refreshID = UUID()
         self.project = project
         self.snapshot = nil
+        self.upstreamRemoteState = .checking
+        self.upstreamCheckedAt = nil
         self.unstagedLineCounts = nil
         self.commitMessage = self.drafts[project.id] ?? ""
         self.search = ""
@@ -234,6 +247,8 @@ final class RepositoryViewModel: ViewModel {
             try Task.checkCancellation()
             guard self.refreshID == request else { return }
             self.snapshot = snapshot
+            self.upstreamRemoteState = .checking
+            self.upstreamCheckedAt = nil
             startMonitoringChanges(in: reference, location: snapshot.location)
             self.isLoadingMoreBranches = self.runtime.isLive
             self.unstagedLineCounts = snapshot.unstagedChanges.isEmpty ? DiffLineCounts(additions: 0, deletions: 0) : nil
@@ -268,6 +283,22 @@ final class RepositoryViewModel: ViewModel {
             self.errorMessage = error.localizedDescription
 
         }
+
+    }
+
+    func checkUpstreamRemote() async {
+
+        guard let reference, let snapshot,
+              let upstream = snapshot.upstream,
+              let branch = snapshot.head.branchName,
+              !self.isOperating else { return }
+
+        let capturedAt = snapshot.capturedAt
+        self.upstreamRemoteState = .checking
+        let state = await self.git.upstreamRemoteState(for: upstream, branch: branch, in: reference)
+        guard !Task.isCancelled, self.reference == reference, self.snapshot?.capturedAt == capturedAt, !self.isOperating else { return }
+        self.upstreamRemoteState = state
+        self.upstreamCheckedAt = Date()
 
     }
 
@@ -507,6 +538,68 @@ final class RepositoryViewModel: ViewModel {
 
     }
 
+    func preparePush(_ options: GitPushOptions) {
+
+        guard self.canMutate else { return }
+        self.pushOptions = options
+        self.pushCommitMessage = self.commitMessage
+        self.commitSuggestionError = nil
+        self.showsPushComposer = true
+        refreshCommitSuggestionAvailability()
+
+    }
+
+    func submitPush() {
+
+        guard self.canMutate else { return }
+        let hasStagedChanges = !(self.snapshot?.stagedChanges.isEmpty ?? true)
+        let message = self.pushCommitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !hasStagedChanges || !message.isEmpty else { return }
+
+        self.showsPushComposer = false
+        request(.push(self.pushOptions))
+
+    }
+
+    func dismissNotice() {
+        self.notice = nil
+    }
+
+    func refreshCommitSuggestionAvailability() {
+
+        Task {
+            self.canSuggestCommitMessage = await self.aiCommitMessageService.isAvailable()
+        }
+
+    }
+
+    func suggestCommitMessage(forPush: Bool) {
+
+        guard !self.isSuggestingCommitMessage, let reference = self.reference else { return }
+        self.isSuggestingCommitMessage = true
+        self.commitSuggestionError = nil
+
+        Task {
+
+            defer { self.isSuggestingCommitMessage = false }
+
+            do {
+                let patch = try await self.git.patch(in: reference, selection: .staged)
+                let message = try await self.aiCommitMessageService.suggestMessage(for: patch)
+                guard self.reference == reference else { return }
+                if forPush {
+                    self.pushCommitMessage = message
+                } else {
+                    self.commitMessage = message
+                }
+            } catch {
+                self.commitSuggestionError = error.localizedDescription
+            }
+
+        }
+
+    }
+
     func confirmAction() {
 
         guard let pending = self.pendingAction else { return }
@@ -522,14 +615,27 @@ final class RepositoryViewModel: ViewModel {
         self.operationTitle = action.title
         self.errorMessage = nil
         self.notice = nil
+        let stagedMessage: String?
+        if case .push = action, !(self.snapshot?.stagedChanges.isEmpty ?? true) {
+            stagedMessage = self.pushCommitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            stagedMessage = nil
+        }
         self.operationTask = Task {
 
             var operationComparison: GitOperationComparison?
+            var committedBeforePush = false
 
             do {
 
+                if let stagedMessage {
+                    _ = try await self.git.perform(.commit(message: stagedMessage), in: reference) { _ in }
+                    committedBeforePush = true
+                    self.commitMessage = ""
+                }
+
                 let result = try await self.git.perform(action, in: reference) { _ in }
-                self.notice = result.message
+                self.notice = committedBeforePush ? "Committed and pushed changes." : result.message
                 operationComparison = result.comparison
 
                 if case .commit = action {
@@ -541,7 +647,9 @@ final class RepositoryViewModel: ViewModel {
                 self.notice = "Operation stopped. Refreshing Git's state; completed changes are preserved."
             } catch {
                 self.notice = nil
-                self.errorMessage = error.localizedDescription
+                self.errorMessage = committedBeforePush
+                    ? "Commit created locally. Push failed: \(error.localizedDescription)"
+                    : error.localizedDescription
             }
 
             let operationError = self.errorMessage

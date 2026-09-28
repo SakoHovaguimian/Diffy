@@ -5,6 +5,7 @@ struct DiffToolbar: View {
     @ObservedObject var viewModel: TextDiffViewModel
     let file: DiffFile
     var reviewLayout: Binding<Bool>? = nil
+    var contentOverride: Binding<Bool>? = nil
     let annotate: () -> Void
     @EnvironmentObject private var settings: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
@@ -15,7 +16,7 @@ struct DiffToolbar: View {
     }
 
     private var contentSelection: Binding<Bool> {
-        self.$settings.editor.collapseUnchanged
+        self.contentOverride ?? self.$settings.editor.collapseUnchanged
     }
 
     private var comparisonFile: DiffFile {

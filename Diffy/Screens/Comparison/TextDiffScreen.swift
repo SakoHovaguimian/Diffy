@@ -15,6 +15,19 @@ struct TextDiffScreen: View {
     @Environment(\.diffyTheme) private var theme
     @Environment(\.diffyContentSize) private var contentSize
     @State private var paneDragStartRatio: Double?
+    @State private var revealsWholeFile = false
+
+    private var showsOnlyChanges: Bool {
+        self.settings.editor.collapseUnchanged && !self.revealsWholeFile
+    }
+
+    private var visibleEditorPreferences: EditorPreferences {
+
+        var preferences = self.settings.editor
+        preferences.collapseUnchanged = self.showsOnlyChanges
+        return preferences
+
+    }
 
     private var gutterWidth: CGFloat {
         self.contentSize.scaled(44)
@@ -71,7 +84,13 @@ struct TextDiffScreen: View {
                 fileHeader()
             }
 
-            DiffToolbar(viewModel: self.viewModel, file: self.file, reviewLayout: self.reviewContext?.layout) {
+            DiffToolbar(viewModel: self.viewModel, file: self.file, reviewLayout: self.reviewContext?.layout, contentOverride: Binding(
+                get: { self.showsOnlyChanges },
+                set: { value in
+                    self.revealsWholeFile = false
+                    self.settings.editor.collapseUnchanged = value
+                }
+            )) {
                 createAnnotation()
             }
 
@@ -81,7 +100,7 @@ struct TextDiffScreen: View {
 
             sourceHeaders()
 
-            if self.settings.editor.collapseUnchanged, !self.viewModel.isEditing {
+            if self.showsOnlyChanges, !self.viewModel.isEditing {
 
                 Button(self.reviewContext == nil ? "Showing Changed Regions · Show Whole File" : "Showing Changed Regions · Show All Patch Lines") {
                     self.settings.editor.collapseUnchanged = false
@@ -108,8 +127,10 @@ struct TextDiffScreen: View {
         .background(self.theme.background)
         .onAppear { self.viewModel.prepare(file: self.file, allowsEditing: self.allowsEditing) }
         .onChange(of: self.file) { _, file in
+            self.revealsWholeFile = false
             self.viewModel.prepare(file: file, allowsEditing: self.allowsEditing)
         }
+        .onChange(of: self.settings.editor.collapseUnchanged) { _, _ in self.revealsWholeFile = false }
 
     }
 
@@ -375,7 +396,7 @@ struct TextDiffScreen: View {
 
         let regions = self.viewModel.visibleRegions(
             self.comparisonFile,
-            preferences: self.settings.editor,
+            preferences: self.visibleEditorPreferences,
             retaining: self.reviewContext?.visibleDiscussionLineIDs ?? [],
             splittingAtLineGaps: self.reviewContext != nil
         )
@@ -427,7 +448,7 @@ struct TextDiffScreen: View {
 
                         if let target = self.pendingScrollLine {
 
-                            self.settings.editor.collapseUnchanged = false
+                            self.revealsWholeFile = true
                             proxy.scrollTo(target, anchor: .center)
 
                         }
@@ -438,7 +459,7 @@ struct TextDiffScreen: View {
                         if let target {
 
                             if self.comparisonFile.lines.first(where: { $0.id == target })?.isChanged == false {
-                                self.settings.editor.collapseUnchanged = false
+                                self.revealsWholeFile = true
                             }
 
                             proxy.scrollTo(target, anchor: .center)
@@ -450,7 +471,7 @@ struct TextDiffScreen: View {
 
                         if let target {
 
-                            self.settings.editor.collapseUnchanged = false
+                            self.revealsWholeFile = true
                             proxy.scrollTo(target, anchor: .center)
 
                         }
@@ -469,8 +490,8 @@ struct TextDiffScreen: View {
 
     private func embeddedCodeCanvas() -> some View {
 
-        let regions = self.viewModel.visibleRegions(self.comparisonFile, preferences: self.settings.editor, limit: self.viewModel.reviewLineLimit)
-        let totalLines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.settings.editor).count
+        let regions = self.viewModel.visibleRegions(self.comparisonFile, preferences: self.visibleEditorPreferences, limit: self.viewModel.reviewLineLimit)
+        let totalLines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences).count
 
         return GeometryReader { geometry in
 
@@ -540,13 +561,13 @@ struct TextDiffScreen: View {
     private func revealReviewLine(_ target: Int?) {
 
         guard let target else { return }
-        let visible = self.viewModel.visibleLines(self.comparisonFile, preferences: self.settings.editor)
+        let visible = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences)
 
         if !visible.contains(where: { $0.id == target }) {
-            self.settings.editor.collapseUnchanged = false
+            self.revealsWholeFile = true
         }
 
-        let lines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.settings.editor)
+        let lines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences)
 
         if let index = lines.firstIndex(where: { $0.id == target }) {
             self.viewModel.reviewLineLimit = max(self.viewModel.reviewLineLimit, index + 100)

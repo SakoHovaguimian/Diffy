@@ -20,6 +20,17 @@ struct RepositoryCommitComposer: View {
                 .lineLimit(3...6)
                 .textFieldStyle(.roundedBorder)
                 .disabled(self.viewModel.isOperating)
+            if self.viewModel.canSuggestCommitMessage {
+                Button {
+                    self.viewModel.suggestCommitMessage(forPush: false)
+                } label: {
+                    Label(self.viewModel.isSuggestingCommitMessage ? "Writing…" : "Suggest Short Message", systemImage: "sparkles")
+                }
+                .disabled(self.viewModel.isSuggestingCommitMessage || (self.viewModel.snapshot?.stagedChanges.isEmpty ?? true))
+            }
+            if let error = self.viewModel.commitSuggestionError {
+                Text(error).font(.caption).foregroundStyle(self.theme.removed)
+            }
             Button {
                 self.viewModel.request(.commit(message: self.viewModel.commitMessage))
             } label: {
@@ -33,6 +44,7 @@ struct RepositoryCommitComposer: View {
         }
         .padding(16)
         .background(self.theme.surface)
+        .onAppear { self.viewModel.refreshCommitSuggestionAvailability() }
 
     }
 

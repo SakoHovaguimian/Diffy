@@ -14,9 +14,9 @@ struct RepositoryWorkspaceScreen: View {
             RepositoryActionBar(viewModel: self.viewModel)
 
             if let error = self.viewModel.errorMessage {
-                DiffyStatusBanner(message: error, isError: true).padding(16)
+                DiffyStatusBanner(message: error, isError: true) { self.viewModel.errorMessage = nil }.padding(16)
             } else if let notice = self.viewModel.notice {
-                DiffyStatusBanner(message: notice).padding(16)
+                DiffyStatusBanner(message: notice) { self.viewModel.dismissNotice() }.padding(16)
             }
 
             if self.viewModel.snapshot == nil && self.viewModel.isRefreshing {
@@ -71,6 +71,10 @@ struct RepositoryWorkspaceScreen: View {
             .diffyStyle()
             .diffyContentSize(self.workspace.contentSizeScale)
 
+        }
+        .sheet(isPresented: self.$viewModel.showsPushComposer) {
+            RepositoryPushComposer(viewModel: self.viewModel)
+                .diffyStyle()
         }
         .sheet(isPresented: self.$viewModel.showsPatch) {
 

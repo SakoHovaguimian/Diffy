@@ -231,8 +231,17 @@ final class WorkspaceOverviewViewModel: ViewModel {
         do {
 
             let snapshot = try await git.snapshot(of: reference, scope: .status, previous: nil)
-            let isBehind = (snapshot.upstream?.behind ?? 0) > 0
-            guard !snapshot.isClean || isBehind else { return .project(nil) }
+            let remoteState: GitUpstreamRemoteState
+
+            if let upstream = snapshot.upstream, let branch = snapshot.head.branchName {
+                remoteState = await git.upstreamRemoteState(for: upstream, branch: branch, in: reference)
+            } else {
+                remoteState = .current
+            }
+
+            let hasUnpublishedCommits = remoteState == .current && (snapshot.upstream?.ahead ?? 0) > 0
+            let hasIncomingCommits = remoteState == .current && (snapshot.upstream?.behind ?? 0) > 0
+            guard !snapshot.isClean || hasUnpublishedCommits || hasIncomingCommits || remoteState == .changed || remoteState == .unavailable else { return .project(nil) }
 
             let counts: DiffLineCounts?
 
@@ -259,7 +268,8 @@ final class WorkspaceOverviewViewModel: ViewModel {
                 lineCounts: counts,
                 hasConflicts: !snapshot.conflicts.isEmpty,
                 upstream: snapshot.upstream,
-                lastFetchAt: snapshot.lastFetchAt
+                upstreamRemoteState: remoteState,
+                remoteCheckedAt: snapshot.upstream == nil ? nil : Date()
             ))
 
         } catch {

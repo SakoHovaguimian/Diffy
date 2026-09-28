@@ -18,6 +18,7 @@ final class ServiceAssembly {
     let aiCredentialStore: any AICredentialStoreProtocol
     let aiHistoryStore: any AIHistoryStoreProtocol
     let aiReviewService: any AIReviewServiceProtocol
+    let aiCommitMessageService: any AICommitMessageServiceProtocol
     let aiCommandAvailability: any AICommandAvailabilityServiceProtocol
     let aiModelCatalog: any AIModelCatalogServiceProtocol
 
@@ -57,6 +58,13 @@ final class ServiceAssembly {
             )
             self.aiCommandAvailability = InstalledAICommandLocator()
             self.aiModelCatalog = LiveAIModelCatalogService(credentialStore: aiCredentials)
+            self.aiCommitMessageService = AICommitMessageService(
+                apiProvider: LiveAIProvider(credentialStore: aiCredentials),
+                cliProvider: InstalledCLIProvider(),
+                settingsStore: self.aiSettingsStore,
+                credentialStore: aiCredentials,
+                commandAvailability: self.aiCommandAvailability
+            )
 
         } else {
 
@@ -72,6 +80,13 @@ final class ServiceAssembly {
             self.aiReviewService = AIReviewService(apiProvider: MockAIProvider(), cliProvider: MockAIProvider())
             self.aiCommandAvailability = MockAICommandAvailabilityService()
             self.aiModelCatalog = MockAIModelCatalogService()
+            self.aiCommitMessageService = AICommitMessageService(
+                apiProvider: MockAIProvider(),
+                cliProvider: MockAIProvider(),
+                settingsStore: self.aiSettingsStore,
+                credentialStore: self.aiCredentialStore,
+                commandAvailability: self.aiCommandAvailability
+            )
 
         }
         #else
@@ -87,6 +102,13 @@ final class ServiceAssembly {
         self.aiReviewService = AIReviewService(apiProvider: MockAIProvider(), cliProvider: MockAIProvider())
         self.aiCommandAvailability = MockAICommandAvailabilityService()
         self.aiModelCatalog = MockAIModelCatalogService()
+        self.aiCommitMessageService = AICommitMessageService(
+            apiProvider: MockAIProvider(),
+            cliProvider: MockAIProvider(),
+            settingsStore: self.aiSettingsStore,
+            credentialStore: self.aiCredentialStore,
+            commandAvailability: self.aiCommandAvailability
+        )
         #endif
 
         self.exportService = ReviewExportService()

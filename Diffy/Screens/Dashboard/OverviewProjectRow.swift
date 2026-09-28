@@ -6,6 +6,7 @@ struct OverviewProjectRow: View {
     let bucket: Bucket?
     let open: () -> Void
     var pull: (() -> Void)?
+    var fetch: (() -> Void)?
     @Environment(\.diffyTheme) private var theme
 
     private var tint: Color {
@@ -16,7 +17,22 @@ struct OverviewProjectRow: View {
 
         let counts = self.change.lineCounts.map { ", plus \($0.additions) lines, minus \($0.deletions) lines" } ?? ", line counts unavailable"
         let conflicts = self.change.hasConflicts ? ", conflicts" : ""
-        return "\(self.change.project.displayName), \(self.change.changedFileCount) changed files\(counts)\(conflicts)"
+        let remote: String
+
+        if let upstream = self.change.upstream {
+
+            remote = switch self.change.upstreamRemoteState {
+            case .current: ", \(upstream.ahead) ahead and \(upstream.behind) behind \(upstream.name)"
+            case .checking: ", checking \(upstream.name)"
+            case .changed: ", \(upstream.name) changed on the remote; fetch for counts"
+            case .unavailable: ", could not verify \(upstream.name)"
+            }
+
+        } else {
+            remote = ""
+        }
+
+        return "\(self.change.project.displayName), \(self.change.changedFileCount) changed files\(counts)\(conflicts)\(remote)"
 
     }
 
@@ -58,15 +74,15 @@ struct OverviewProjectRow: View {
 
                         HStack(spacing: 12) {
 
-                            Text("\(self.change.changedFileCount) Changed Files")
+                            Text(self.change.changedFileCount == 0 ? "Working Tree Clean" : "\(self.change.changedFileCount) Changed Files")
                                 .foregroundStyle(self.theme.secondaryText)
 
-                            if let counts = self.change.lineCounts {
+                            if self.change.changedFileCount > 0, let counts = self.change.lineCounts {
 
                                 Text("+\(counts.additions)").foregroundStyle(self.theme.added)
                                 Text("−\(counts.deletions)").foregroundStyle(self.theme.removed)
 
-                            } else {
+                            } else if self.change.changedFileCount > 0 {
                                 Text("Line Counts Unavailable").foregroundStyle(self.theme.secondaryText)
                             }
 
@@ -77,11 +93,32 @@ struct OverviewProjectRow: View {
                         }
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
 
-                        if let upstream = self.change.upstream, upstream.behind > 0 {
-                            Text("\(upstream.behind) behind \(upstream.name) in local tracking data · \(self.change.lastFetchAt.map { "last fetch recorded \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown")")
-                                .font(.system(size: 10))
-                                .foregroundStyle(self.theme.secondaryText)
-                                .fixedSize(horizontal: false, vertical: true)
+                        if let upstream = self.change.upstream {
+
+                            switch self.change.upstreamRemoteState {
+
+                            case .current:
+                                if upstream.ahead > 0 || upstream.behind > 0 {
+                                    Text("\(upstream.ahead) ahead · \(upstream.behind) behind \(upstream.name) · checked \(self.change.remoteCheckedAt?.formatted(date: .omitted, time: .shortened) ?? "recently")")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(self.theme.secondaryText)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                            case .changed:
+                                Text("\(upstream.name) changed on the remote. Fetch for exact counts.")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(self.theme.secondaryText)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                            case .unavailable, .checking:
+                                Text("Couldn’t verify \(upstream.name). Fetch to update branch counts.")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(self.theme.secondaryText)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                            }
+
                         }
 
                     }
@@ -95,12 +132,18 @@ struct OverviewProjectRow: View {
             .help("Open Working Tree For \(self.change.project.displayName)")
             .accessibilityLabel(self.accessibilitySummary)
 
-            if let pull = self.pull, (self.change.upstream?.behind ?? 0) > 0 {
+            if let pull = self.pull, self.change.upstreamRemoteState == .current, (self.change.upstream?.behind ?? 0) > 0 {
                 Button("Pull", action: pull)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                     .padding(.trailing, 18)
                     .help("Pull \(self.change.upstream?.name ?? "Tracked Upstream") & Review Changes")
+            } else if let fetch = self.fetch, self.change.upstream != nil, self.change.upstreamRemoteState != .current {
+                Button("Fetch", action: fetch)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .padding(.trailing, 18)
+                    .help("Fetch \(self.change.upstream?.name ?? "Tracked Upstream") To Update Counts")
             }
 
         }

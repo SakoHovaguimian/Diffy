@@ -54,7 +54,7 @@ struct RepositoryOverviewView: View {
                         Button("Show In Finder") { ExternalLinkController().reveal(snapshot.location.rootPath) }
 
                     }
-                    Text("Updated \(snapshot.capturedAt.formatted(date: .omitted, time: .standard)). Remote counts use locally fetched tracking refs; \(snapshot.lastFetchAt.map { "last fetch recorded \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown").")
+                    Text("Updated \(snapshot.capturedAt.formatted(date: .omitted, time: .standard)). Branch counts appear after the remote tip is verified against local tracking refs.")
                         .font(.system(size: 10)).foregroundStyle(self.theme.secondaryText)
 
                 }
@@ -64,6 +64,9 @@ struct RepositoryOverviewView: View {
 
             }
 
+        }
+        .task(id: self.viewModel.snapshot?.capturedAt) {
+            await self.viewModel.checkUpstreamRemote()
         }
 
     }
@@ -130,11 +133,41 @@ struct RepositoryOverviewView: View {
 
             sectionTitle("Branch Position", detail: snapshot.upstream.map { "\($0.name) · \(snapshot.lastFetchAt.map { "last fetched \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "fetch time unknown")" } ?? "No Upstream Configured")
             if let upstream = snapshot.upstream {
-                HStack(spacing: 24) {
-                    Label("\(upstream.ahead) Ahead", systemImage: "arrow.up")
-                    Label("\(upstream.behind) Behind", systemImage: "arrow.down")
+
+                switch self.viewModel.upstreamRemoteState {
+
+                case .current:
+                    HStack(spacing: 24) {
+                        Label("\(upstream.ahead) Ahead", systemImage: "arrow.up")
+                        Label("\(upstream.behind) Behind", systemImage: "arrow.down")
+                    }
+                    .font(.system(size: 12, weight: .medium))
+
+                    if let checkedAt = self.viewModel.upstreamCheckedAt {
+                        Text("Remote checked \(checkedAt.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.system(size: 10))
+                            .foregroundStyle(self.theme.secondaryText)
+                    }
+
+                case .checking:
+                    Label("Checking remote…", systemImage: "arrow.clockwise")
+                        .font(.system(size: 11))
+                        .foregroundStyle(self.theme.secondaryText)
+
+                case .changed, .unavailable:
+                    Text(self.viewModel.upstreamRemoteState == .changed
+                         ? "The remote branch moved. Fetch to get exact ahead and behind counts."
+                         : "Couldn’t verify the remote branch. Fetch to update its tracking data.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(self.theme.secondaryText)
+
+                    Button("Fetch Upstream") {
+                        self.viewModel.request(.fetch(remote: upstream.remoteName))
+                    }
+                    .disabled(!self.viewModel.canMutate)
+
                 }
-                .font(.system(size: 12, weight: .medium))
+
             } else {
                 Text("Choose a tracking branch from Pull to see remote position.")
                     .font(.system(size: 11))

@@ -22,6 +22,13 @@ protocol GitServiceProtocol: Sendable {
         previous: GitRepositorySnapshot?
     ) async throws -> GitRepositorySnapshot
 
+    /// Checks the remote branch tip without changing local refs or the working tree.
+    func upstreamRemoteState(
+        for upstream: GitUpstreamStatus,
+        branch: String,
+        in repository: GitRepositoryReference
+    ) async -> GitUpstreamRemoteState
+
     func branches(in repository: GitRepositoryReference) async throws -> [RepositoryBranch]
 
     func comparisonFiles(

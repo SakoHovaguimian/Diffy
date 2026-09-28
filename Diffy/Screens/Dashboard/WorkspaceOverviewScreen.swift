@@ -133,7 +133,7 @@ struct WorkspaceOverviewScreen: View {
                 if self.workspace.runtime.isLive && !self.workspace.projects.contains(where: { $0.repositoryReference != nil }) {
                     sectionEmpty(symbol: "folder.badge.plus", title: "No Local Checkouts", detail: "Add a local Git folder to see its changes here.")
                 } else {
-                    sectionEmpty(symbol: "checkmark.circle", title: "Nothing Pending", detail: "No local changes or branches behind their last fetched upstream.")
+                    sectionEmpty(symbol: "checkmark.circle", title: "Nothing Pending", detail: "No local changes or verified branches behind their upstream.")
                 }
 
             } else {
@@ -146,7 +146,8 @@ struct WorkspaceOverviewScreen: View {
                             change: change,
                             bucket: self.workspace.bucket(for: change.project),
                             open: { self.workspace.openWorkingTree(for: change.project) },
-                            pull: { self.workspace.pullFromOverview(for: change.project) }
+                            pull: { self.workspace.pullFromOverview(for: change.project) },
+                            fetch: { self.workspace.fetchFromOverview(for: change.project) }
                         )
 
                         if change.id != self.viewModel.activeProjects.last?.id {
