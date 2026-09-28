@@ -5,6 +5,7 @@ struct WorkspaceScreen: View {
     @StateObject var viewModel: WorkspaceViewModel
     @EnvironmentObject private var review: ReviewViewModel
     @EnvironmentObject private var accounts: GitHubAccountsViewModel
+    @EnvironmentObject private var settings: SettingsViewModel
     @ObservedObject private var repository: RepositoryViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -69,6 +70,18 @@ struct WorkspaceScreen: View {
             self.dataModalSize = size
         }
         .environment(\.diffyDataModalSize, self.dataModalSize)
+        .onAppear {
+            if self.viewModel.runtime != .preview && !self.settings.hasSeenTutorial {
+                self.viewModel.showsTutorial = true
+            }
+        }
+        .sheet(isPresented: self.$viewModel.showsTutorial) {
+            WelcomeTutorialScreen {
+                self.settings.completeTutorial()
+                self.viewModel.showsTutorial = false
+            }
+            .diffyStyle()
+        }
         .background(self.theme.background)
         .navigationTitle(self.viewModel.runtime.windowTitle)
         .focusedSceneValue(\.workspace, self.viewModel)

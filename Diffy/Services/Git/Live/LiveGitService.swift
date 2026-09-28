@@ -3,8 +3,12 @@ import Foundation
 actor LiveGitService: GitServiceProtocol {
 
     var executable = "/usr/bin/git"
-    let access = SecurityScopedAccessController()
+    let access: SecurityScopedAccessController
     var activeRepositories = Set<String>()
+
+    init(access: SecurityScopedAccessController) {
+        self.access = access
+    }
 
     var runner: GitProcessRunner {
         GitProcessRunner(executable: self.executable)

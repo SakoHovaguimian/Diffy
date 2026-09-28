@@ -7,10 +7,16 @@ struct PullRequestReviewScreen: View {
     @ObservedObject var aiWorkspace: AIReviewWorkspaceViewModel
     @ObservedObject var patchReview: AIReviewPatchViewModel
     @EnvironmentObject private var review: ReviewViewModel
+    @EnvironmentObject private var settings: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
 
     private var matchingNotes: [CodeAnnotation] {
         self.viewModel.matchingAnnotations(in: self.review.annotations)
+    }
+
+    private var notesNeedingReviewCount: Int {
+        self.viewModel.outdatedAnnotationIDs(in: self.review.annotations).count
+            + self.matchingNotes.filter(\.needsReview).count
     }
 
     private var isShowingAIContent: Bool {
@@ -32,6 +38,24 @@ struct PullRequestReviewScreen: View {
                 notesCount: self.matchingNotes.count
             )
             messages()
+            if self.notesNeedingReviewCount > 0 {
+
+                HStack(spacing: 10) {
+
+                    Label("\(self.notesNeedingReviewCount) notes need another look", systemImage: "arrow.triangle.2.circlepath")
+                    Spacer()
+                    Button("Open Review Notes") {
+                        self.workspace.closePullRequest()
+                        self.workspace.showsReview = true
+                    }
+
+                }
+                .font(.system(size: 11))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 9)
+                .background(self.theme.modified.opacity(0.10))
+
+            }
             if self.viewModel.showsNotes {
                 PullRequestReviewNotesView(
                     viewModel: self.viewModel,
@@ -51,8 +75,14 @@ struct PullRequestReviewScreen: View {
         .task { await self.viewModel.loadIfNeeded() }
         .task { await self.aiWorkspace.loadHistory() }
         .task { syncAnnotations() }
+        .onChange(of: self.settings.fileNavigationDefaults) { _, _ in
+            self.viewModel.fileNavigator.restoreNavigationDefaults()
+        }
         .onChange(of: self.review.annotations) { _, _ in syncAnnotations() }
-        .onChange(of: self.viewModel.noteSource) { _, _ in syncAnnotations() }
+        .onChange(of: self.viewModel.noteSource) { _, _ in
+            syncAnnotations()
+            markOutdatedNotes()
+        }
         .onChange(of: self.aiWorkspace.requestedVisualization) { _, requested in
 
             guard let requested else { return }
@@ -74,8 +104,13 @@ struct PullRequestReviewScreen: View {
         }
         .sheet(item: self.$viewModel.noteDraft) { draft in
 
-            PullRequestNoteEditor(draft: draft) { comment in
-                self.review.add(self.viewModel.annotation(from: draft, comment: comment))
+            PullRequestNoteEditor(draft: draft) { comment, priority, acceptanceCriteria in
+                self.review.add(self.viewModel.annotation(
+                    from: draft,
+                    comment: comment,
+                    priority: priority,
+                    acceptanceCriteria: acceptanceCriteria
+                ))
                 self.viewModel.noteDraft = nil
             }
             .diffyStyle()
@@ -94,6 +129,15 @@ struct PullRequestReviewScreen: View {
         } message: {
             Text("Refreshing loads the current revision. Draft line comments cannot be moved safely to changed code.")
         }
+
+    }
+
+    private func markOutdatedNotes() {
+
+        guard let source = self.viewModel.noteSource else { return }
+        let outdatedIDs = self.viewModel.outdatedAnnotationIDs(in: self.review.annotations)
+        let targets = Dictionary(uniqueKeysWithValues: outdatedIDs.map { ($0, source) })
+        self.review.markNeedsReview(ids: outdatedIDs, reason: .sourceChanged, targetSourceByID: targets)
 
     }
 

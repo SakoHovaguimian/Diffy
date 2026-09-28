@@ -27,6 +27,22 @@ extension PullRequestReviewViewModel {
 
     }
 
+    func outdatedAnnotationIDs(in annotations: [CodeAnnotation]) -> Set<UUID> {
+
+        guard let source = self.noteSource else { return [] }
+        let prefix = source.split(separator: "/").dropLast(2).joined(separator: "/") + "/"
+
+        return Set(annotations.filter {
+            ($0.projectID == self.noteProjectID || $0.projectID == self.fallbackNoteProjectID)
+                && $0.source.hasPrefix(prefix)
+                && $0.source != source
+                && $0.lastReviewedSource != source
+                && !$0.isResolved
+        }
+        .map(\.id))
+
+    }
+
     // MARK: - Creating Notes
 
     func beginNote(line: Int, side: String, snippet: String) {
@@ -48,7 +64,12 @@ extension PullRequestReviewViewModel {
 
     }
 
-    func annotation(from draft: PullRequestNoteDraft, comment: String) -> CodeAnnotation {
+    func annotation(
+        from draft: PullRequestNoteDraft,
+        comment: String,
+        priority: AnnotationPriority,
+        acceptanceCriteria: String?
+    ) -> CodeAnnotation {
 
         CodeAnnotation(
             id: UUID(),
@@ -65,7 +86,9 @@ extension PullRequestReviewViewModel {
             createdAt: Date(),
             comment: comment,
             isResolved: false,
-            comparisonMode: ComparisonMode.pullRequests.rawValue
+            comparisonMode: ComparisonMode.pullRequests.rawValue,
+            priority: priority,
+            acceptanceCriteria: acceptanceCriteria
         )
 
     }

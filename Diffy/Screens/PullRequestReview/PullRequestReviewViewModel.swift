@@ -55,7 +55,10 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     ) {
 
         self.fileNavigator = FileNavigatorViewModel(preferencesService: preferencesService)
-        self.fileNavigator.restore(projectID: projectID ?? request.link.fullName)
+        self.fileNavigator.restore(
+            projectID: projectID ?? request.link.fullName,
+            unavailableSortOrders: [.updated, .size]
+        )
         self.request = request
         self.localRepository = localRepository
         self.projectID = projectID

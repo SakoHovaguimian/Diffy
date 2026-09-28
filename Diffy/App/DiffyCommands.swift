@@ -51,7 +51,7 @@ struct DiffyCommands: Commands {
                 self.workspace?.showsReview.toggle()
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
-            .disabled(self.workspace?.projects.isEmpty ?? true)
+            .disabled(self.workspace == nil)
 
             Button("Command Palette") {
                 self.workspace?.showsCommandPalette = true
@@ -84,6 +84,15 @@ struct DiffyCommands: Commands {
                 self.workspace?.resetContentSize()
             }
             .keyboardShortcut("0", modifiers: .command)
+
+        }
+
+        CommandGroup(after: .help) {
+
+            Button("Welcome to Diffy") {
+                self.workspace?.showsTutorial = true
+            }
+            .disabled(self.workspace == nil)
 
         }
 

@@ -3,8 +3,10 @@ import SwiftUI
 struct PullRequestNoteEditor: View {
 
     let draft: PullRequestNoteDraft
-    let save: (String) -> Void
+    let save: (String, AnnotationPriority, String?) -> Void
     @State private var comment = ""
+    @State private var priority: AnnotationPriority = .normal
+    @State private var acceptanceCriteria = ""
     @FocusState private var commentFocused: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.diffyTheme) private var theme
@@ -31,6 +33,14 @@ struct PullRequestNoteEditor: View {
                 .focused(self.$commentFocused)
                 .accessibilityLabel("Review Note")
 
+            Picker("Priority", selection: self.$priority) {
+                ForEach(AnnotationPriority.allCases) { priority in
+                    Text(priority.title).tag(priority)
+                }
+            }
+
+            TextField("Done when… (optional)", text: self.$acceptanceCriteria)
+
             HStack {
 
                 Spacer()
@@ -38,7 +48,11 @@ struct PullRequestNoteEditor: View {
                     .keyboardShortcut(.cancelAction)
                 Button("Save Review Note") {
 
-                    self.save(self.comment.trimmingCharacters(in: .whitespacesAndNewlines))
+                    self.save(
+                        self.comment.trimmingCharacters(in: .whitespacesAndNewlines),
+                        self.priority,
+                        self.trimmedAcceptanceCriteria
+                    )
                     self.dismiss()
 
                 }
@@ -53,6 +67,13 @@ struct PullRequestNoteEditor: View {
         .frame(width: 560)
         .background(self.theme.background)
         .onAppear { self.commentFocused = true }
+
+    }
+
+    private var trimmedAcceptanceCriteria: String? {
+
+        let text = self.acceptanceCriteria.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
 
     }
 }

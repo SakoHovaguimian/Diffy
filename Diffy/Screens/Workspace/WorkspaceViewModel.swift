@@ -29,6 +29,7 @@ final class WorkspaceViewModel: ViewModel {
     @Published var showsDashboard = false
     @Published var showsReview = false
     @Published var showsCommandPalette = false
+    @Published var showsTutorial = false
     @Published var showsSidebar = true
     @Published var favorites: Set<String> = ["rune", "obelisk"]
     @Published var recentProjectIDs: [String] = ["rune", "obelisk", "grimoire"]
@@ -426,7 +427,7 @@ final class WorkspaceViewModel: ViewModel {
 
         case let .pullRequest(key):
             self.activePullRequestReview = self.pullRequestReviews[key]
-            self.activePullRequestReview?.fileNavigator.restoreSavedSelection()
+            self.activePullRequestReview?.fileNavigator.restoreNavigationDefaults()
 
         case let .annotation(annotation):
             reveal(annotation)

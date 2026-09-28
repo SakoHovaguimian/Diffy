@@ -4,6 +4,8 @@ import Combine
 @MainActor
 final class RepositoryViewModel: ViewModel {
 
+    private static let automaticRefreshUnavailable = "Automatic file updates are unavailable. Use Refresh Changed Files to reload."
+
     let loggerName = "REPOSITORY_VIEW_MODEL"
     let runtime: AppRuntime
     let git: GitServiceProtocol
@@ -12,7 +14,9 @@ final class RepositoryViewModel: ViewModel {
     let comparison: RepositoryComparisonViewModel
     let reviewDiffBuilder: TextDiffBuilding
     let preferencesService: PreferencesServiceProtocol
+    private let changeMonitor: (any RepositoryChangeMonitoring)?
     private var refreshID = UUID()
+    private var changeRefreshTask: Task<Void, Never>?
     var pathInventoryRequestID = UUID()
     var historyRequestID = UUID()
     var commitsRequestID = UUID()
@@ -91,7 +95,8 @@ final class RepositoryViewModel: ViewModel {
         gitHub: GitHubServiceProtocol,
         accounts: GitHubAccountServiceProtocol,
         diffBuilder: TextDiffBuilding,
-        preferencesService: PreferencesServiceProtocol
+        preferencesService: PreferencesServiceProtocol,
+        changeMonitor: (any RepositoryChangeMonitoring)? = nil
     ) {
 
         self.runtime = runtime
@@ -100,6 +105,7 @@ final class RepositoryViewModel: ViewModel {
         self.accounts = accounts
         self.reviewDiffBuilder = diffBuilder
         self.preferencesService = preferencesService
+        self.changeMonitor = changeMonitor
         self.comparison = RepositoryComparisonViewModel(git: git)
         restoreHistoryNavigationSelection()
 
@@ -164,6 +170,8 @@ final class RepositoryViewModel: ViewModel {
     func load(_ project: RepositoryProject) async {
 
         guard !self.isOperating else { return }
+        self.changeRefreshTask?.cancel()
+        self.changeMonitor?.stopMonitoring()
         if let previous = self.project { self.drafts[previous.id] = self.commitMessage }
         self.patchTask?.cancel()
         self.comparison.reset()
@@ -226,6 +234,7 @@ final class RepositoryViewModel: ViewModel {
             try Task.checkCancellation()
             guard self.refreshID == request else { return }
             self.snapshot = snapshot
+            startMonitoringChanges(in: reference, location: snapshot.location)
             self.isLoadingMoreBranches = self.runtime.isLive
             self.unstagedLineCounts = snapshot.unstagedChanges.isEmpty ? DiffLineCounts(additions: 0, deletions: 0) : nil
             if !snapshot.unstagedChanges.isEmpty, snapshot.unstagedChanges.filter(\.isUntracked).count <= 100 {
@@ -257,6 +266,46 @@ final class RepositoryViewModel: ViewModel {
 
             guard self.refreshID == request else { return }
             self.errorMessage = error.localizedDescription
+
+        }
+
+    }
+
+    private func startMonitoringChanges(in reference: GitRepositoryReference, location: GitRepositoryLocation) {
+
+        do {
+
+            try self.changeMonitor?.startMonitoring(reference: reference, location: location) { [weak self] in
+
+                Task { @MainActor [weak self] in
+                    self?.scheduleChangeRefresh()
+                }
+
+            }
+
+            if self.notice == Self.automaticRefreshUnavailable {
+                self.notice = nil
+            }
+
+        } catch {
+
+            if self.notice == nil {
+                self.notice = Self.automaticRefreshUnavailable
+            }
+
+        }
+
+    }
+
+    private func scheduleChangeRefresh() {
+
+        guard let reference = self.reference else { return }
+        self.changeRefreshTask?.cancel()
+        self.changeRefreshTask = Task { [weak self] in
+
+            try? await Task.sleep(for: .milliseconds(650))
+            guard !Task.isCancelled, let self, self.reference == reference else { return }
+            await self.refresh()
 
         }
 

@@ -16,6 +16,25 @@ struct EditAnnotationScreen: View {
                 .font(.body)
                 .frame(height: 180)
 
+            Picker("Priority", selection: Binding(
+                get: { self.annotation.priority ?? .normal },
+                set: { self.annotation.priority = $0 }
+            )) {
+                ForEach(AnnotationPriority.allCases) { priority in
+                    Text(priority.title).tag(priority)
+                }
+            }
+
+            TextField("Done when… (optional)", text: Binding(
+                get: { self.annotation.acceptanceCriteria ?? "" },
+                set: {
+
+                    let text = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                    self.annotation.acceptanceCriteria = text.isEmpty ? nil : text
+
+                }
+            ))
+
             HStack {
 
                 Spacer()

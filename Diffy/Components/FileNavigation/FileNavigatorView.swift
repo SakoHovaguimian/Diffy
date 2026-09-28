@@ -8,6 +8,7 @@ struct FileNavigatorView: View {
     let isLoading: Bool
     let isLive: Bool
     let selectFile: (DiffFile) -> Void
+    var refresh: (() -> Void)? = nil
     var showFileHistory: ((DiffFile) -> Void)? = nil
     @ObservedObject var viewModel: FileNavigatorViewModel
     @Environment(\.diffyTheme) private var theme
@@ -79,6 +80,19 @@ struct FileNavigatorView: View {
 
             Text("\(self.viewModel.visibleFiles(self.files, mode: self.mode).count)")
                 .font(self.contentSize.font(size: 10, design: .monospaced))
+
+            if let refresh {
+
+                Button(action: refresh) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(self.contentSize.font(size: 10, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .help("Refresh Changed Files")
+                .accessibilityLabel("Refresh Changed Files")
+                .disabled(self.isLoading)
+
+            }
 
         }
         .foregroundStyle(self.theme.secondaryText)

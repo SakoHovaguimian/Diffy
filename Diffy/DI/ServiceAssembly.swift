@@ -4,6 +4,7 @@ import Foundation
 final class ServiceAssembly {
 
     let gitService: GitServiceProtocol
+    let makeRepositoryChangeMonitor: () -> (any RepositoryChangeMonitoring)?
     let gitHubService: GitHubServiceProtocol
     let gitHubAccountService: GitHubAccountServiceProtocol
     let runtime: AppRuntime
@@ -38,7 +39,9 @@ final class ServiceAssembly {
                 paths: paths,
                 preferencesService: preferencesService
             )
-            self.gitService = LiveGitService()
+            let gitAccess = SecurityScopedAccessController()
+            self.gitService = LiveGitService(access: gitAccess)
+            self.makeRepositoryChangeMonitor = { LiveRepositoryChangeMonitor(access: gitAccess) }
             let configuration = GitHubAppConfiguration.bundled()
             let resolver = GitHubCredentialResolver(configuration: configuration)
             self.gitHubService = LiveGitHubService(configuration: configuration, resolver: resolver)
@@ -59,6 +62,7 @@ final class ServiceAssembly {
 
             self.workspaceService = MockWorkspaceService()
             self.gitService = MockGitService()
+            self.makeRepositoryChangeMonitor = { nil }
             self.gitHubService = MockGitHubService()
             self.gitHubAccountService = MockGitHubAccountService()
             notesURL = nil
@@ -73,6 +77,7 @@ final class ServiceAssembly {
         #else
         self.workspaceService = MockWorkspaceService()
         self.gitService = MockGitService()
+        self.makeRepositoryChangeMonitor = { nil }
         self.gitHubService = MockGitHubService()
         self.gitHubAccountService = MockGitHubAccountService()
         notesURL = isPreview ? nil : Self.annotationsURL()

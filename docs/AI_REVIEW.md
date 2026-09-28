@@ -49,6 +49,8 @@ CLI requests run in private temporary directories with minimal environments and 
 
 The PR line note action captures revision, path, side, line, code, language, and comment. Select notes and choose **Ask AI To Address Notes** to generate a saved plan, file list, uncertainty, and proposed patch.
 
+Review notes also accept an optional priority and “Done when” criterion. Those fields accompany selected notes in AI context. After a proposed patch is applied, the selected notes enter the local **Needs Review** queue; Diffy does not resolve them automatically. The complete Markdown export contains every saved note and field, while an AI generation request still uses the bounded context and records omissions described above.
+
 **Apply Proposed Patch** requires explicit confirmation. Apply first rechecks the current GitHub base/head. The Git service then verifies exact checkout HEAD, permitted paths, clean affected files, safe destinations, and `git apply --check`. Apply changes only the working tree; it never stages, commits, pushes, fetches, or checks out. Binary, rename, link, and mode changes require manual handling. Cancellation is not rollback; inspect the refreshed checkout after an interrupted operation.
 
 Mock and previews use in-memory AI services and immutable fixtures. Network, Keychain, process, and durable AI storage implementations are excluded from Mock via `Live/` target membership.

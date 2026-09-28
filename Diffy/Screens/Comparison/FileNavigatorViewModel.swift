@@ -7,16 +7,13 @@ final class FileNavigatorViewModel: ViewModel {
     let loggerName = "FILE_NAVIGATOR_VIEW_MODEL"
     private let preferencesService: PreferencesServiceProtocol
     private var projectID = "rune"
+    private var initialLayout: FileListLayout = .tree
+    private var unavailableSortOrders: Set<FileSortOrder> = []
     private var isRestoring = false
 
     @Published var query = ""
-    @Published var sort: FileSortOrder = .path {
-        didSet { persistSelection(self.sort, key: "navigation.sort") }
-    }
-
-    @Published var layout: FileListLayout = .tree {
-        didSet { persistSelection(self.layout, key: "navigation.layout") }
-    }
+    @Published var sort: FileSortOrder = .path
+    @Published var layout: FileListLayout = .tree
 
     @Published var ascending = true {
         didSet { persistSelection(self.ascending, key: "navigation.ascending") }
@@ -37,15 +34,20 @@ final class FileNavigatorViewModel: ViewModel {
 
     // MARK: - Project Preferences
 
-    func restore(projectID: String, initialLayout: FileListLayout? = nil) {
+    func restore(
+        projectID: String,
+        initialLayout: FileListLayout = .tree,
+        unavailableSortOrders: Set<FileSortOrder> = []
+    ) {
 
         self.isRestoring = true
         self.projectID = projectID
+        self.initialLayout = initialLayout
+        self.unavailableSortOrders = unavailableSortOrders
 
         let preferences = self.preferencesService.load(FileNavigationPreferences.self, key: "navigation.\(projectID)") ?? FileNavigationPreferences()
 
-        self.sort = self.preferencesService.load(FileSortOrder.self, key: "navigation.sort") ?? preferences.sort
-        self.layout = self.preferencesService.load(FileListLayout.self, key: "navigation.layout") ?? initialLayout ?? preferences.layout
+        applyNavigationDefaults()
         self.ascending = self.preferencesService.load(Bool.self, key: "navigation.ascending") ?? preferences.ascending
         self.filter = preferences.filter
         self.query = ""
@@ -54,13 +56,20 @@ final class FileNavigatorViewModel: ViewModel {
 
     }
 
-    func restoreSavedSelection() {
+    func restoreNavigationDefaults() {
 
         self.isRestoring = true
-        self.sort = self.preferencesService.load(FileSortOrder.self, key: "navigation.sort") ?? self.sort
-        self.layout = self.preferencesService.load(FileListLayout.self, key: "navigation.layout") ?? self.layout
+        applyNavigationDefaults()
         self.ascending = self.preferencesService.load(Bool.self, key: "navigation.ascending") ?? self.ascending
         self.isRestoring = false
+
+    }
+
+    private func applyNavigationDefaults() {
+
+        let defaults = self.preferencesService.load(FileNavigationDefaults.self, key: FileNavigationDefaults.storageKey) ?? FileNavigationDefaults()
+        self.layout = defaults.layout ?? self.initialLayout
+        self.sort = self.unavailableSortOrders.contains(defaults.sort) ? .path : defaults.sort
 
     }
 
@@ -78,7 +87,7 @@ final class FileNavigatorViewModel: ViewModel {
             return
         }
 
-        let preferences = FileNavigationPreferences(sort: self.sort, layout: self.layout, ascending: self.ascending, filter: self.filter)
+        let preferences = FileNavigationPreferences(ascending: self.ascending, filter: self.filter)
         self.preferencesService.save(preferences, key: "navigation.\(self.projectID)")
 
     }

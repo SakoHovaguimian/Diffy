@@ -1,5 +1,13 @@
 # Diffy — Code Annotations and Review Export
 
+## Current review workflow
+
+Review Notes groups saved annotations by project and comparison. An individual note or a project's notes can be deleted, and the panel's actions menu can delete the complete local note library. Each deletion has one undo opportunity before another deletion replaces it.
+
+**Export Everything** always includes every saved note from every project, including resolved notes and notes hidden by search or panel filters. **Export Current Scope** is a separate action when a comparison or project scope is selected. The Markdown preview shows the full content that Copy for LLM and Save Markdown use. It includes each stored identity, source, range, captured snippet, exact comment, priority, optional completion criterion, status, timestamps, and review-again details.
+
+Notes from older pull request revisions and local notes whose captured lines differ from the loaded comparison enter **Needs Review**. Applying a proposed AI note fix also puts its associated notes there. A note retains its captured source; the user reviews the current code and explicitly marks it reviewed or resolved. Current code shown at the saved line numbers is labeled as an unverified location.
+
 ## 1. Purpose
 
 Let a user capture their reasoning while inspecting code, then export the complete review with enough context for an LLM or another person to understand each comment without having Diffy open.

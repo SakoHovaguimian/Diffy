@@ -14,6 +14,9 @@ struct FileNavigatorScreen: View {
             isLoading: self.workspace.runtime.isLive && self.workspace.repositoryViewModel.comparison.isLoadingFiles,
             isLive: self.workspace.runtime.isLive,
             selectFile: { self.workspace.selectFile($0, mode: self.workspace.mode) },
+            refresh: {
+                Task { await self.workspace.repositoryViewModel.refresh() }
+            },
             showFileHistory: self.workspace.showFileHistory,
             viewModel: self.viewModel
         )

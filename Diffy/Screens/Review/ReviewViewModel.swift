@@ -44,7 +44,14 @@ final class ReviewViewModel: ViewModel {
             return
         }
 
-        self.annotations[index] = annotation
+        var updated = annotation
+        updated.updatedAt = Date()
+        if updated.isResolved {
+            updated.needsReviewReason = nil
+            updated.needsReviewSince = nil
+            updated.reviewTargetSource = nil
+        }
+        self.annotations[index] = updated
         persist()
 
     }
@@ -78,6 +85,80 @@ final class ReviewViewModel: ViewModel {
         self.deletedAnnotations = self.annotations.filter { $0.projectID == projectID }
         self.annotations.removeAll { $0.projectID == projectID }
         persist()
+
+    }
+
+    func removeAll() {
+
+        guard !self.annotations.isEmpty else { return }
+        self.deletedAnnotations = self.annotations
+        self.annotations.removeAll()
+        persist()
+
+    }
+
+    func markNeedsReview(
+        ids: Set<UUID>,
+        reason: AnnotationReviewReason,
+        targetSourceByID: [UUID: String] = [:]
+    ) {
+
+        guard !ids.isEmpty else { return }
+        var didChange = false
+
+        for index in self.annotations.indices where ids.contains(self.annotations[index].id) {
+
+            let target = targetSourceByID[self.annotations[index].id]
+            guard !self.annotations[index].isResolved,
+                  target == nil || self.annotations[index].lastReviewedSource != target,
+                  self.annotations[index].needsReviewReason != reason || self.annotations[index].reviewTargetSource != target else { continue }
+            self.annotations[index].needsReviewReason = reason
+            self.annotations[index].needsReviewSince = Date()
+            self.annotations[index].reviewTargetSource = target
+            self.annotations[index].updatedAt = Date()
+            didChange = true
+
+        }
+
+        if didChange { persist() }
+
+    }
+
+    func markReviewed(_ annotation: CodeAnnotation) {
+
+        var updated = annotation
+        updated.lastReviewedSource = updated.reviewTargetSource ?? updated.lastReviewedSource
+        updated.needsReviewReason = nil
+        updated.needsReviewSince = nil
+        updated.reviewTargetSource = nil
+        update(updated)
+
+    }
+
+    func markChangedSources(projectID: String, comparison: String, files: [DiffFile]) {
+
+        guard !files.isEmpty else { return }
+        let filesByPath = Dictionary(files.map { ($0.path, $0) }, uniquingKeysWith: { first, _ in first })
+        let changed = self.annotations.compactMap { annotation -> (UUID, String)? in
+
+            guard annotation.projectID == projectID,
+                  annotation.comparison == comparison,
+                  annotation.source.hasPrefix("git/"),
+                  !annotation.isResolved,
+                  let file = filesByPath[annotation.filePath] ?? files.first(where: { $0.originalPath == annotation.filePath }),
+                  let currentSource = AnnotationSourceMatcher.currentSnippet(for: annotation, in: file),
+                  currentSource != annotation.snippet,
+                  currentSource != annotation.lastReviewedSource else { return nil }
+
+            return (annotation.id, currentSource)
+
+        }
+
+        markNeedsReview(
+            ids: Set(changed.map(\.0)),
+            reason: .sourceChanged,
+            targetSourceByID: Dictionary(uniqueKeysWithValues: changed)
+        )
 
     }
 

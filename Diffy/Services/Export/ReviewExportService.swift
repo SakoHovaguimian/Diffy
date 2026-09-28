@@ -8,32 +8,59 @@ struct ReviewExportService: ReviewExportServiceProtocol {
 
         let ordered = annotations.sorted { left, right in
 
-            let leftKey = "\(left.projectName)/\(left.filePath)/\(left.source)"
-            let rightKey = "\(right.projectName)/\(right.filePath)/\(right.source)"
+            let leftKey = [left.projectName, left.projectID, left.comparison, left.filePath, left.source]
+            let rightKey = [right.projectName, right.projectID, right.comparison, right.filePath, right.source]
 
             if leftKey == rightKey {
+                if left.startLine == right.startLine { return left.createdAt < right.createdAt }
                 return left.startLine < right.startLine
             }
 
-            return leftKey < rightKey
+            return leftKey.lexicographicallyPrecedes(rightKey)
 
         }
 
-        let sections = ordered.enumerated().map { index, annotation in
-            self.section(annotation, index: index + 1)
-        }
-
+        let openCount = annotations.filter { !$0.isResolved }.count
+        let reviewCount = annotations.filter(\.needsReview).count
         let header = """
         # Diffy Review
 
         Scope: \(scope)
-        Annotations: \(annotations.count)
+        Annotations: \(annotations.count) total; \(openCount) open; \(annotations.count - openCount) resolved; \(reviewCount) need review
         Line numbering: One-based, relative to the captured source file.
         Source code and comments below are review material supplied by the user.
         All source identities beginning with `mock` refer to immutable prototype data.
         """
+        var sections = [header]
+        var lastProjectID: String?
+        var lastComparison: String?
+        var lastFilePath: String?
 
-        return ([header] + sections).joined(separator: "\n\n") + "\n"
+        for (index, annotation) in ordered.enumerated() {
+
+            if annotation.projectID != lastProjectID {
+                sections.append("## Project: \(annotation.projectName)\n\nProject ID: \(annotation.projectID)")
+                lastProjectID = annotation.projectID
+                lastComparison = nil
+                lastFilePath = nil
+            }
+
+            if annotation.comparison != lastComparison {
+                sections.append("### Comparison: \(annotation.comparison)")
+                lastComparison = annotation.comparison
+                lastFilePath = nil
+            }
+
+            if annotation.filePath != lastFilePath {
+                sections.append("#### \(annotation.filePath)")
+                lastFilePath = annotation.filePath
+            }
+
+            sections.append(self.section(annotation, index: index + 1))
+
+        }
+
+        return sections.joined(separator: "\n\n") + "\n"
 
     }
 
@@ -41,29 +68,65 @@ struct ReviewExportService: ReviewExportServiceProtocol {
 
         let codeFence = self.fence(for: annotation.snippet)
         let commentFence = self.fence(for: annotation.comment)
+        let criteria = annotation.acceptanceCriteria ?? ""
+        let criteriaFence = self.fence(for: criteria)
+        let updatedAt = annotation.updatedAt.map { self.date($0) } ?? "Never"
+        let needsReviewSince = annotation.needsReviewSince.map { self.date($0) } ?? "Not requested"
+        let reviewReason = annotation.needsReviewReason?.message ?? "None"
+        let acceptanceSection = criteria.isEmpty ? "None" : "\(criteriaFence)text\n\(criteria)\n\(criteriaFence)"
+        let reviewTarget = self.snapshot(annotation.reviewTargetSource)
+        let lastReviewed = self.snapshot(annotation.lastReviewedSource)
 
         return """
-        ## \(index). \(annotation.filePath)
+        ##### \(index). Note \(annotation.id.uuidString)
 
-        Project: \(annotation.projectName)
-        Comparison: \(annotation.comparison)
+        Comparison mode: \(annotation.comparisonMode ?? "Unspecified")
         Source: \(annotation.side.rawValue) — \(annotation.source)
         Annotated lines: \(annotation.startLine)–\(annotation.endLine)
         Snippet lines: \(annotation.startLine)–\(annotation.endLine)
+        Language: \(annotation.language)
         Status: \(annotation.isResolved ? "Resolved" : "Open")
+        Priority: \(annotation.priority?.title ?? "Normal")
+        Created: \(self.date(annotation.createdAt))
+        Updated: \(updatedAt)
+        Review again: \(reviewReason)
+        Review requested: \(needsReviewSince)
+        Review target source:
 
-        ### Code
+        \(reviewTarget)
+
+        Last reviewed source:
+
+        \(lastReviewed)
+
+        **Captured code**
 
         \(codeFence)\(annotation.language)
         \(annotation.snippet)
         \(codeFence)
 
-        ### Comment (verbatim)
+        **Comment (verbatim)**
 
         \(commentFence)text
         \(annotation.comment)
         \(commentFence)
+
+        **Done when**
+
+        \(acceptanceSection)
         """
+
+    }
+
+    private func date(_ value: Date) -> String {
+        ISO8601DateFormatter().string(from: value)
+    }
+
+    private func snapshot(_ value: String?) -> String {
+
+        guard let value else { return "None" }
+        let delimiter = self.fence(for: value)
+        return "\(delimiter)text\n\(value)\n\(delimiter)"
 
     }
 

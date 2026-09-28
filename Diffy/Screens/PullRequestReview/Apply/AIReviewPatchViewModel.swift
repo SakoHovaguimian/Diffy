@@ -9,6 +9,7 @@ final class AIReviewPatchViewModel: ViewModel {
     private let git: any GitServiceProtocol
     private let request: PullRequestReviewRequest
     private let latestPullRequest: @MainActor () async throws -> PullRequestSummary
+    private let onPatchApplied: @MainActor ([UUID]) -> Void
     private var appliedEntryIDs = Set<UUID>()
 
     @Published private(set) var isApplying = false
@@ -19,13 +20,15 @@ final class AIReviewPatchViewModel: ViewModel {
         repository: GitRepositoryReference?,
         git: any GitServiceProtocol,
         request: PullRequestReviewRequest,
-        latestPullRequest: @escaping @MainActor () async throws -> PullRequestSummary
+        latestPullRequest: @escaping @MainActor () async throws -> PullRequestSummary,
+        onPatchApplied: @escaping @MainActor ([UUID]) -> Void
     ) {
 
         self.repository = repository
         self.git = git
         self.request = request
         self.latestPullRequest = latestPullRequest
+        self.onPatchApplied = onPatchApplied
 
     }
 
@@ -108,6 +111,7 @@ final class AIReviewPatchViewModel: ViewModel {
             )
             try await self.git.applyReviewedAIPatch(request, in: repository)
             self.appliedEntryIDs.insert(entry.id)
+            self.onPatchApplied(entry.annotationIDs)
             self.notice = "Applied the reviewed patch to \(fix.affectedFiles.count) working-tree files. Review the local diff before staging or committing."
 
         } catch is CancellationError {

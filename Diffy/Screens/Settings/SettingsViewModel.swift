@@ -8,6 +8,7 @@ final class SettingsViewModel: ViewModel {
     private let preferencesService: PreferencesServiceProtocol
     let fileIconService: FileIconServiceProtocol
     let ai: AISettingsViewModel
+    @Published private(set) var hasSeenTutorial: Bool
 
     @Published var editor: EditorPreferences {
         didSet { self.preferencesService.save(self.editor, key: "editor.v1") }
@@ -25,6 +26,10 @@ final class SettingsViewModel: ViewModel {
         didSet { self.preferencesService.save(self.diffVisualization, key: "diffVisualization.v1") }
     }
 
+    @Published var fileNavigationDefaults: FileNavigationDefaults {
+        didSet { self.preferencesService.save(self.fileNavigationDefaults, key: FileNavigationDefaults.storageKey) }
+    }
+
     init(
         preferencesService: PreferencesServiceProtocol,
         fileIconService: FileIconServiceProtocol,
@@ -34,16 +39,26 @@ final class SettingsViewModel: ViewModel {
         self.preferencesService = preferencesService
         self.fileIconService = fileIconService
         self.ai = ai
+        self.hasSeenTutorial = preferencesService.load(Bool.self, key: "tutorial.completed.v1") ?? false
         self.fileIconTheme = preferencesService.load(FileIconTheme.self, key: "fileIcons.theme.v1") ?? .material
         self.editor = preferencesService.load(EditorPreferences.self, key: "editor.v1") ?? EditorPreferences()
         var appearance = preferencesService.load(AppearancePreferences.self, key: "appearance.v1") ?? AppearancePreferences()
         appearance.sidebarWidth = max(214, appearance.sidebarWidth)
         self.appearance = appearance
         self.diffVisualization = preferencesService.load(DiffVisualizationPreferences.self, key: "diffVisualization.v1") ?? DiffVisualizationPreferences()
+        self.fileNavigationDefaults = preferencesService.load(FileNavigationDefaults.self, key: FileNavigationDefaults.storageKey) ?? FileNavigationDefaults()
 
     }
 
     // MARK: - Defaults
+
+    func completeTutorial() {
+
+        guard !self.hasSeenTutorial else { return }
+        self.hasSeenTutorial = true
+        self.preferencesService.save(true, key: "tutorial.completed.v1")
+
+    }
 
     func resetAppearance() {
 
@@ -54,6 +69,7 @@ final class SettingsViewModel: ViewModel {
 
     func resetEditor() {
         self.editor = EditorPreferences()
+        self.fileNavigationDefaults = FileNavigationDefaults()
     }
 
 }

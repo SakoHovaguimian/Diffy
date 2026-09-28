@@ -8,6 +8,8 @@ struct AnnotationEditorScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.diffyTheme) private var theme
     @State private var comment = ""
+    @State private var priority: AnnotationPriority = .normal
+    @State private var acceptanceCriteria = ""
     @FocusState private var commentFocused: Bool
 
     var body: some View {
@@ -63,6 +65,20 @@ struct AnnotationEditorScreen: View {
 
             }
 
+            HStack(alignment: .firstTextBaseline, spacing: 14) {
+
+                Picker("Priority", selection: self.$priority) {
+                    ForEach(AnnotationPriority.allCases) { priority in
+                        Text(priority.title).tag(priority)
+                    }
+                }
+                .frame(width: 180)
+
+                TextField("Done when… (optional)", text: self.$acceptanceCriteria)
+                    .textFieldStyle(.roundedBorder)
+
+            }
+
             HStack {
 
                 Text("Your note stays with this captured version of the code.")
@@ -103,12 +119,21 @@ struct AnnotationEditorScreen: View {
             createdAt: Date(),
             comment: self.comment,
             isResolved: false,
-            comparisonMode: (self.draft.comparisonMode ?? self.workspace.mode).rawValue
+            comparisonMode: (self.draft.comparisonMode ?? self.workspace.mode).rawValue,
+            priority: self.priority,
+            acceptanceCriteria: self.trimmedAcceptanceCriteria
         )
 
         self.review.add(annotation)
         self.workspace.showsReview = true
         self.dismiss()
+
+    }
+
+    private var trimmedAcceptanceCriteria: String? {
+
+        let text = self.acceptanceCriteria.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
 
     }
 

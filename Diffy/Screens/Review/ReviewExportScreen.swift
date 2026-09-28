@@ -4,6 +4,7 @@ struct ReviewExportScreen: View {
 
     let annotations: [CodeAnnotation]
     let scope: String
+    var allowsOpenOnly = false
     @EnvironmentObject private var review: ReviewViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.diffyTheme) private var theme
@@ -11,7 +12,7 @@ struct ReviewExportScreen: View {
     @State private var feedback = ""
 
     private var exportAnnotations: [CodeAnnotation] {
-        self.annotations.filter { !self.openOnly || !$0.isResolved }
+        self.annotations.filter { !self.allowsOpenOnly || !self.openOnly || !$0.isResolved }
     }
 
     private var markdown: String {
@@ -44,7 +45,9 @@ struct ReviewExportScreen: View {
                 DiffyBadge(title: "\(self.exportAnnotations.count) ANNOTATIONS", color: self.theme.accent)
                 Text(self.scope).font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
                 Spacer()
-                Toggle("Open Notes Only", isOn: self.$openOnly).font(.system(size: 11))
+                if self.allowsOpenOnly {
+                    Toggle("Open Notes Only", isOn: self.$openOnly).font(.system(size: 11))
+                }
 
             }
 
@@ -62,7 +65,7 @@ struct ReviewExportScreen: View {
 
             HStack {
 
-                Text(self.feedback.isEmpty ? "Nothing is sent automatically." : self.feedback)
+                Text(self.feedback.isEmpty ? "Complete Markdown · \(ByteCountFormatter.string(fromByteCount: Int64(self.markdown.utf8.count), countStyle: .file)) · nothing is sent automatically." : self.feedback)
                     .font(.system(size: 11))
                     .foregroundStyle(self.theme.secondaryText)
                 Spacer()

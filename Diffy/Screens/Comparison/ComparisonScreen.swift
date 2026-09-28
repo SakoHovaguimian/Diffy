@@ -3,6 +3,7 @@ import SwiftUI
 struct ComparisonScreen: View {
 
     @ObservedObject var workspace: WorkspaceViewModel
+    @EnvironmentObject private var settings: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
     @State private var navigatorWidth: CGFloat = 245
     @State private var navigatorDragStartWidth: CGFloat?
@@ -32,7 +33,10 @@ struct ComparisonScreen: View {
             }
 
         }
-        .onAppear { self.workspace.fileNavigatorViewModel.restoreSavedSelection() }
+        .onAppear { self.workspace.fileNavigatorViewModel.restoreNavigationDefaults() }
+        .onChange(of: self.settings.fileNavigationDefaults) { _, _ in
+            self.workspace.fileNavigatorViewModel.restoreNavigationDefaults()
+        }
 
     }
 

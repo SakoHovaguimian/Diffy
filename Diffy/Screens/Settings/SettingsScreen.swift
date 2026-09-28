@@ -4,35 +4,48 @@ struct SettingsScreen: View {
 
     @EnvironmentObject private var viewModel: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
+    @State private var showsTutorial = false
 
     var body: some View {
 
-        TabView {
+        VStack(spacing: 0) {
 
-            GitHubAccountsScreen()
-                .tabItem { Label("Accounts", systemImage: "person.crop.circle") }
+            TutorialSettingsBanner { self.showsTutorial = true }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
 
-            AISettingsScreen(viewModel: self.viewModel.ai)
-                .tabItem { Label("AI Review", systemImage: "sparkles") }
+            TabView {
 
-            AppearanceSettingsScreen()
-                .tabItem { Label("Appearance", systemImage: "paintpalette") }
+                GitHubAccountsScreen()
+                    .tabItem { Label("Accounts", systemImage: "person.crop.circle") }
 
-            editorSettings()
-                .tabItem { Label("Editor", systemImage: "textformat") }
+                AISettingsScreen(viewModel: self.viewModel.ai)
+                    .tabItem { Label("AI Review", systemImage: "sparkles") }
 
-            comparisonSettings()
-                .tabItem { Label("Comparison", systemImage: "rectangle.split.2x1") }
+                AppearanceSettingsScreen()
+                    .tabItem { Label("Appearance", systemImage: "paintpalette") }
 
-            shortcutSettings()
-                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                editorSettings()
+                    .tabItem { Label("Editor", systemImage: "textformat") }
 
-            repositorySettings()
-                .tabItem { Label("Repository", systemImage: "folder") }
+                comparisonSettings()
+                    .tabItem { Label("Comparison", systemImage: "rectangle.split.2x1") }
+
+                shortcutSettings()
+                    .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+
+                repositorySettings()
+                    .tabItem { Label("Repository", systemImage: "folder") }
+
+            }
+            .padding(12)
 
         }
-        .padding(12)
         .frame(width: 780, height: 680)
+        .sheet(isPresented: self.$showsTutorial) {
+            WelcomeTutorialScreen { self.showsTutorial = false }
+                .diffyStyle()
+        }
 
     }
 
@@ -63,6 +76,8 @@ struct SettingsScreen: View {
                 Toggle("Visualize Spaces", isOn: self.$viewModel.editor.showWhitespace)
 
             }
+
+            FileNavigationSettingsSection()
 
             Section {
 

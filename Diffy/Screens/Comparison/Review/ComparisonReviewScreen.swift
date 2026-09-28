@@ -4,6 +4,7 @@ struct ComparisonReviewScreen: View {
 
     @StateObject var viewModel: ComparisonReviewViewModel
     @ObservedObject var workspace: WorkspaceViewModel
+    @EnvironmentObject private var settings: SettingsViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -19,6 +20,9 @@ struct ComparisonReviewScreen: View {
         .background(self.theme.background)
         .diffyDataModalFrame()
         .task { await self.viewModel.load() }
+        .onChange(of: self.settings.fileNavigationDefaults) { _, _ in
+            self.viewModel.navigator.restoreNavigationDefaults()
+        }
         .sheet(item: self.$viewModel.annotationDraft) { draft in
             AnnotationEditorScreen(draft: draft, workspace: self.workspace).diffyStyle()
         }

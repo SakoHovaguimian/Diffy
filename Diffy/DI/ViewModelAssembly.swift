@@ -46,7 +46,8 @@ final class ViewModelAssembly {
                 gitHub: self.services.gitHubService,
                 accounts: self.services.gitHubAccountService,
                 diffBuilder: self.services.textDiffBuilder,
-                preferencesService: self.services.preferencesService
+                preferencesService: self.services.preferencesService,
+                changeMonitor: self.services.makeRepositoryChangeMonitor()
             ),
             overviewViewModel: WorkspaceOverviewViewModel(runtime: self.services.runtime, git: self.services.gitService, gitHub: self.services.gitHubService, diffBuilder: self.services.textDiffBuilder, preferencesService: self.services.preferencesService),
             workspaceService: self.services.workspaceService,
@@ -76,6 +77,9 @@ final class ViewModelAssembly {
 
                         return latest
 
+                    },
+                    onPatchApplied: { [weak reviewViewModel = self.reviewViewModel] annotationIDs in
+                        reviewViewModel?.markNeedsReview(ids: Set(annotationIDs), reason: .proposedFixApplied)
                     }
                 )
 
