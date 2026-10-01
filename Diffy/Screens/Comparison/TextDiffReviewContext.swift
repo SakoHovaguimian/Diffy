@@ -13,5 +13,6 @@ struct TextDiffReviewContext {
     let lineDiscussion: (DiffLine) -> AnyView
     let fileDiscussion: () -> AnyView
     var embedsInReviewList = false
+    var navigationTarget: TextDiffReviewNavigationTarget?
 
 }

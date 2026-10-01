@@ -28,6 +28,27 @@ struct DiffyMarkdownBlock: Identifiable {
         self.intent?.components.contains { $0.kind == .blockQuote } ?? false
     }
 
+    var taskCompletion: Bool? {
+
+        guard self.listMarker != nil else { return nil }
+        switch String(self.text.characters.prefix(4)).lowercased() {
+
+        case "[x] ": return true
+        case "[ ] ": return false
+        default: return nil
+
+        }
+
+    }
+
+    var contentText: AttributedString {
+
+        guard self.taskCompletion != nil else { return self.text }
+        let start = self.text.characters.index(self.text.startIndex, offsetBy: 4)
+        return AttributedString(self.text[start...])
+
+    }
+
     var listMarker: String? {
 
         guard let ordinal = self.intent?.components.compactMap({ component -> Int? in

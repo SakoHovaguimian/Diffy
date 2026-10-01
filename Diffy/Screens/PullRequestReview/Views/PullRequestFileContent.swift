@@ -28,11 +28,56 @@ struct PullRequestFileContent: View {
                     navigateToLine: self.navigateToLine
                 )
             } else {
-                PullRequestFileDiscussion(viewModel: self.viewModel, drafts: [], comments: unanchoredComments())
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                unpatchedDiscussion()
             }
 
         }
+
+    }
+
+    @ViewBuilder
+    private func unpatchedDiscussion() -> some View {
+
+        if self.embedsInReviewList {
+
+            fileDiscussion()
+                .onAppear { navigateToEmbeddedComment() }
+                .onChange(of: self.fileViewModel.navigationTarget) { _, _ in navigateToEmbeddedComment() }
+
+        } else {
+
+            ScrollViewReader { proxy in
+
+                ScrollView {
+                    fileDiscussion()
+                }
+                .onAppear { scrollToComment(using: proxy) }
+                .onChange(of: self.fileViewModel.navigationTarget) { _, _ in scrollToComment(using: proxy) }
+
+            }
+
+        }
+
+    }
+
+    private func fileDiscussion() -> some View {
+
+        PullRequestFileDiscussion(viewModel: self.viewModel, fileID: self.fileViewModel.id, drafts: [], comments: unanchoredComments())
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+
+    }
+
+    private func navigateToEmbeddedComment() {
+
+        guard let target = self.fileViewModel.navigationTarget else { return }
+        self.navigateToLine?(TextDiffReviewNavigationTarget.commentAnchor(fileID: self.fileViewModel.id, commentID: target.commentID))
+
+    }
+
+    private func scrollToComment(using proxy: ScrollViewProxy) {
+
+        guard let target = self.fileViewModel.navigationTarget else { return }
+        proxy.scrollTo(TextDiffReviewNavigationTarget.commentAnchor(fileID: self.fileViewModel.id, commentID: target.commentID), anchor: .center)
 
     }
 
@@ -81,15 +126,17 @@ struct PullRequestFileContent: View {
 
                 AnyView(PullRequestFileDiscussion(
                     viewModel: self.viewModel,
+                    fileID: file.id,
                     drafts: self.viewModel.drafts(at: line, in: file),
                     comments: self.viewModel.comments(at: line, in: file)
                 ))
 
             },
             fileDiscussion: {
-                AnyView(PullRequestFileDiscussion(viewModel: self.viewModel, drafts: [], comments: unanchoredComments()))
+                AnyView(PullRequestFileDiscussion(viewModel: self.viewModel, fileID: file.id, drafts: [], comments: unanchoredComments()))
             },
-            embedsInReviewList: self.embedsInReviewList
+            embedsInReviewList: self.embedsInReviewList,
+            navigationTarget: self.fileViewModel.navigationTarget
         )
 
     }

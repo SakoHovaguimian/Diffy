@@ -98,52 +98,15 @@ struct RepositoryPullRequestsView: View {
 
                 ForEach(self.viewModel.visiblePullRequests) { request in
 
-                    HStack(alignment: .top, spacing: 16) {
+                    DiffyPullRequestRow(
+                        content: PullRequestRowContent(
+                            request: request,
+                            repositoryFullName: self.viewModel.linkedRepository?.fullName
+                        )
+                    ) {
 
-                        Image(systemName: "arrow.triangle.pull")
-                            .font(.system(size: 18))
-                            .foregroundStyle(request.lifecycle.color(in: self.theme, isDraft: request.isDraft))
-                            .padding(.top, 2)
-                        VStack(alignment: .leading, spacing: 9) {
-
-                            Text(request.title).font(.system(size: 14, weight: .semibold))
-                            HStack(spacing: 6) {
-
-                                GitHubAvatar(user: request.author, size: 18)
-                                Text("#\(request.number) · \(request.author.login) · \(request.updatedAt.formatted(date: .abbreviated, time: .omitted))")
-
-                            }
-                            .font(.system(size: 11))
-                            .foregroundStyle(self.theme.secondaryText)
-                            Label("\(request.headRef) → \(request.baseRef)", systemImage: "arrow.triangle.branch")
-                                .font(.system(size: 10, design: .monospaced)).foregroundStyle(self.theme.secondaryText)
-                            PullRequestPeopleSummary(
-                                assignees: request.assignees,
-                                requestedReviewers: request.requestedReviewers
-                            )
-                            if !request.requestedTeams.isEmpty {
-                                Text("Team Review: \(request.requestedTeams.map(\.name).joined(separator: ", "))").font(.system(size: 10))
-                            }
-
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 6) {
-                            DiffyBadge(
-                                title: request.statusTitle,
-                                color: request.lifecycle.color(in: self.theme, isDraft: request.isDraft),
-                                size: .small
-                            )
-                            if let lineCounts = request.lineCounts {
-                                DiffChangeSummary(counts: lineCounts)
-                            }
-                            Label(request.checks?.state.title ?? "Checks Not Loaded", systemImage: request.checks?.state.symbol ?? "questionmark.circle")
-                                .font(.system(size: 10))
-                                .foregroundStyle(request.checks?.state.color(in: self.theme) ?? self.theme.secondaryText)
-                        }
-                        PullRequestActions(webURL: request.webURL) {
-                            if let review = self.viewModel.reviewPullRequest(request) {
-                                self.workspace.openPullRequest(review)
-                            }
+                        if let review = self.viewModel.reviewPullRequest(request) {
+                            self.workspace.openPullRequest(review)
                         }
 
                     }
@@ -151,7 +114,6 @@ struct RepositoryPullRequestsView: View {
                         Button("Fetch & Compare Locally") { self.viewModel.inspectPullRequest(request) }
                             .disabled(!self.viewModel.canMutate || self.viewModel.linkedRepository?.remoteName == nil)
                     }
-                    .padding(20)
                     .background(self.theme.surface)
                     .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
 

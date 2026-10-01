@@ -19,13 +19,15 @@ struct DiffySegmentedControl<Selection: Hashable>: View {
                 segment(option)
             }
         }
+        .background {
+            selectionIndicator()
+        }
         .padding(self.contentSize.scaled(4))
         .background(self.theme.background, in: RoundedRectangle(cornerRadius: self.contentSize.scaled(10)))
         .overlay {
             RoundedRectangle(cornerRadius: self.contentSize.scaled(10))
                 .stroke(self.theme.border, lineWidth: 1)
         }
-        .animation(self.reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.88), value: self.selection)
         .opacity(self.isEnabled ? 1 : 0.5)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(self.title)
@@ -46,26 +48,30 @@ struct DiffySegmentedControl<Selection: Hashable>: View {
                 .padding(.horizontal, self.contentSize.scaled(10))
                 .padding(.vertical, self.contentSize.scaled(7))
                 .background {
-
-                    if self.selection == option {
-
-                        RoundedRectangle(cornerRadius: self.contentSize.scaled(7))
-                            .fill(self.theme.elevated)
-                            .overlay {
-                                RoundedRectangle(cornerRadius: self.contentSize.scaled(7))
-                                    .stroke(self.theme.accent.opacity(0.35), lineWidth: 1)
-                            }
-                            .matchedGeometryEffect(id: "selection", in: self.selectionNamespace)
-
-                    }
-
+                    Color.clear.matchedGeometryEffect(id: option, in: self.selectionNamespace, isSource: true)
                 }
+                .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.18), value: self.selection == option)
                 .contentShape(RoundedRectangle(cornerRadius: self.contentSize.scaled(7)))
 
         }
         .buttonStyle(.plain)
         .accessibilityLabel(self.label(option))
         .accessibilityAddTraits(self.selection == option ? .isSelected : [])
+
+    }
+
+    private func selectionIndicator() -> some View {
+
+        RoundedRectangle(cornerRadius: self.contentSize.scaled(7))
+            .fill(self.theme.elevated)
+            .overlay {
+                RoundedRectangle(cornerRadius: self.contentSize.scaled(7))
+                    .stroke(self.theme.accent.opacity(0.35), lineWidth: 1)
+            }
+            .matchedGeometryEffect(id: self.selection, in: self.selectionNamespace, isSource: false)
+            .animation(self.reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.82), value: self.selection)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
 
     }
 

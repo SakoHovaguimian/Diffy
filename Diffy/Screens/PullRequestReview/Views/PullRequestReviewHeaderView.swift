@@ -20,9 +20,16 @@ struct PullRequestReviewHeaderView: View {
                     .font(.system(size: 23, weight: .semibold))
                     .lineLimit(2)
                     .textSelection(.enabled)
-                if let details = self.viewModel.details {
-                    metadata(for: details)
+                Group {
+
+                    if let details = self.viewModel.details {
+                        metadata(for: details)
+                    } else {
+                        Color.clear
+                    }
+
                 }
+                .frame(height: 24, alignment: .leading)
 
             }
             Spacer(minLength: 8)

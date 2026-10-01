@@ -20,6 +20,8 @@ struct PullRequestSummary: Codable, Hashable, Identifiable, Sendable {
     let webURL: URL
     let lineCounts: DiffLineCounts?
     var checks: PullRequestChecksSummary?
+    var changedFileCount: Int?
+    var commentCount: Int?
 
     var statusTitle: String {
         self.isDraft && self.lifecycle == .open ? "Draft" : self.lifecycle.title

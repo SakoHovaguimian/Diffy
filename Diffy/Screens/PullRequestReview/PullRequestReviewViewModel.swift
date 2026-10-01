@@ -23,7 +23,10 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     @Published private(set) var details: PullRequestReviewDetails?
     @Published private(set) var reviewFiles: [PullRequestReviewFileViewModel] = []
     @Published private(set) var aiWorkspace: AIReviewWorkspaceViewModel?
-    @Published var conversation: [PullRequestConversationEntry] = []
+    @Published var conversation: [PullRequestConversationEntry] = [] {
+        didSet { self.conversationLocations = makeConversationLocations() }
+    }
+    private(set) var conversationLocations: [String: PullRequestConversationEntry] = [:]
     @Published var selectedFileID: String?
     @Published private(set) var historicalFileSelection: PullRequestHistoricalFileSelection?
     @Published var viewedPaths: Set<String> = []
@@ -225,7 +228,10 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     }
 
     func selectFile(_ file: PullRequestReviewFile?) {
+
+        if let file { self.reviewFile(for: file.id)?.clearNavigationTarget() }
         self.selectedFileID = file?.id
+
     }
 
     func openFile(path: String) {

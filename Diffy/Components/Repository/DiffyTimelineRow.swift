@@ -4,17 +4,20 @@ struct DiffyTimelineRow<Content: View>: View {
 
     let showsPreviousConnector: Bool
     let showsNextConnector: Bool
+    let color: Color?
     private let content: Content
     @Environment(\.diffyTheme) private var theme
 
     init(
         showsPreviousConnector: Bool,
         showsNextConnector: Bool,
+        color: Color? = nil,
         @ViewBuilder content: () -> Content
     ) {
 
         self.showsPreviousConnector = showsPreviousConnector
         self.showsNextConnector = showsNextConnector
+        self.color = color
         self.content = content()
 
     }
@@ -39,7 +42,7 @@ struct DiffyTimelineRow<Content: View>: View {
                         .frame(width: 1, height: 14)
                         .opacity(self.showsPreviousConnector ? 1 : 0)
                     Circle()
-                        .stroke(self.theme.accent, lineWidth: 2)
+                        .stroke(self.color ?? self.theme.accent, lineWidth: 2)
                         .frame(width: 9, height: 9)
                     self.theme.border
                         .frame(width: 1, height: max(0, geometry.size.height - 23))

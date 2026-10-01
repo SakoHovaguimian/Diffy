@@ -3,6 +3,7 @@ import SwiftUI
 struct PullRequestFileDiscussion: View {
 
     @ObservedObject var viewModel: PullRequestReviewViewModel
+    let fileID: String
     let drafts: [PullRequestReviewCommentDraft]
     let comments: [PullRequestConversationEntry]
     @Environment(\.diffyTheme) private var theme
@@ -23,10 +24,12 @@ struct PullRequestFileDiscussion: View {
                                 .font(.system(size: 11, weight: .semibold)).foregroundStyle(self.theme.accent)
                             Spacer()
                             Button("Edit") { self.viewModel.commentEditor = draft }
+                                .disabled(self.viewModel.isBusy)
                             Button("Remove", role: .destructive) { self.viewModel.drafts.removeAll { $0.id == draft.id } }
+                                .disabled(self.viewModel.isBusy)
 
                         }
-                        Text(draft.body).font(.system(size: 12)).textSelection(.enabled)
+                        DiffyMarkdownView(markdown: draft.body, opensWebLinks: true)
 
                     }
                     .padding(14)
@@ -34,18 +37,23 @@ struct PullRequestFileDiscussion: View {
 
                 }
                 ForEach(self.comments) { entry in
-                    PullRequestConversationRow(entry: entry) {
+                    PullRequestConversationRow(
+                        entry: entry,
+                        location: self.viewModel.conversationLocation(for: entry),
+                        canReply: self.viewModel.account != nil && !self.viewModel.isBusy
+                    ) {
 
                         self.viewModel.replyingTo = entry
                         self.viewModel.selectedTab = .conversation
 
                     }
+                    .id(TextDiffReviewNavigationTarget.commentAnchor(fileID: self.fileID, commentID: entry.id))
+
                 }
 
             }
             .padding(16)
             .frame(maxWidth: 900, alignment: .leading)
-            .disabled(self.viewModel.isBusy)
 
         }
 

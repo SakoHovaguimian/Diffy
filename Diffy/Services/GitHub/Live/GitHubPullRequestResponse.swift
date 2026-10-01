@@ -32,6 +32,8 @@ struct GitHubPullRequestResponse: Decodable, Sendable {
     let commits: Int?
     let additions: Int?
     let deletions: Int?
+    let comments: Int?
+    let reviewComments: Int?
 
     var summary: PullRequestSummary {
 
@@ -53,7 +55,9 @@ struct GitHubPullRequestResponse: Decodable, Sendable {
             createdAt: self.createdAt,
             updatedAt: self.updatedAt,
             webURL: self.htmlUrl,
-            lineCounts: self.lineCounts
+            lineCounts: self.lineCounts,
+            changedFileCount: self.changedFiles,
+            commentCount: self.commentCount
         )
 
     }
@@ -65,6 +69,16 @@ struct GitHubPullRequestResponse: Decodable, Sendable {
         }
 
         return DiffLineCounts(additions: additions, deletions: deletions)
+
+    }
+
+    private var commentCount: Int? {
+
+        guard let comments = self.comments, let reviewComments = self.reviewComments else {
+            return nil
+        }
+
+        return comments + reviewComments
 
     }
 

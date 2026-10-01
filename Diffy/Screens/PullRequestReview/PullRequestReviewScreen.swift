@@ -68,10 +68,6 @@ struct PullRequestReviewScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(self.theme.background)
-        .diffyStatusAnimation(value: [self.viewModel.errorMessage, self.viewModel.notice])
-        .diffyStatusAnimation(value: self.viewModel.hasPendingRemoteReview)
-        .diffyStatusAnimation(value: self.viewModel.details?.hasAllFiles)
-        .diffyStatusAnimation(value: self.viewModel.details?.hasAllCommits)
         .task { await self.viewModel.loadIfNeeded() }
         .task { await self.aiWorkspace.loadHistory() }
         .task { syncAnnotations() }

@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Native, selectable teaching text. Only explicitly supplied destinations are interactive.
+/// Native, selectable Markdown. Teaching links are restricted; GitHub discussion can opt in to web links.
 struct DiffyMarkdownView: View {
 
     let markdown: String
     var codeLinks: [String: URL] = [:]
     var allowedLinks: Set<URL> = []
+    var opensWebLinks = false
     var onOpenLink: (URL) -> Void = { _ in }
     @Environment(\.diffyTheme) private var theme
 
@@ -20,9 +21,14 @@ struct DiffyMarkdownView: View {
         .tint(self.theme.accent)
         .environment(\.openURL, OpenURLAction { url in
 
-            guard self.allowedLinks.contains(url) else { return .discarded }
-            self.onOpenLink(url)
-            return .handled
+            if self.allowedLinks.contains(url) {
+
+                self.onOpenLink(url)
+                return .handled
+
+            }
+
+            return allowsWebLink(url) ? .systemAction(url) : .discarded
 
         })
 
@@ -36,6 +42,8 @@ struct DiffyMarkdownView: View {
             ScrollView(.horizontal) {
                 Text(block.text)
                     .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(self.theme.text)
+                    .fixedSize(horizontal: true, vertical: true)
                     .textSelection(.enabled)
                     .padding(12)
             }
@@ -48,13 +56,19 @@ struct DiffyMarkdownView: View {
                 if block.isQuote {
                     self.theme.accent.opacity(0.5).frame(width: 2)
                 }
-                if let marker = block.listMarker {
+                if let isCompleted = block.taskCompletion {
+                    Image(systemName: isCompleted ? "checkmark.square.fill" : "square")
+                        .foregroundStyle(isCompleted ? self.theme.added : self.theme.secondaryText)
+                        .frame(width: 16)
+                        .padding(.top, 3)
+                        .accessibilityLabel(isCompleted ? "Completed task" : "Incomplete task")
+                } else if let marker = block.listMarker {
                     Text(marker)
                         .foregroundStyle(self.theme.secondaryText)
                         .frame(minWidth: 16, alignment: .trailing)
                 }
-                Text(styledText(block.text))
-                    .font(block.headingLevel == nil ? .system(size: 13) : .system(size: 14, weight: .semibold))
+                Text(styledText(block.contentText))
+                    .font(blockFont(headingLevel: block.headingLevel))
                     .foregroundStyle(self.theme.text)
                     .lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true)
@@ -75,7 +89,7 @@ struct DiffyMarkdownView: View {
         var result = text
         for run in Array(result.runs) {
 
-            if let link = run.link, !self.allowedLinks.contains(link) {
+            if let link = run.link, !self.allowedLinks.contains(link) && !allowsWebLink(link) {
                 result[run.range].link = nil
             }
 
@@ -90,7 +104,7 @@ struct DiffyMarkdownView: View {
 
             }
 
-            if let link = result[run.range].link, self.allowedLinks.contains(link) {
+            if let link = result[run.range].link, self.allowedLinks.contains(link) || allowsWebLink(link) {
 
                 result[run.range].foregroundColor = self.theme.accent
                 result[run.range].underlineStyle = .single
@@ -100,6 +114,26 @@ struct DiffyMarkdownView: View {
         }
 
         return result
+
+    }
+
+    private func allowsWebLink(_ url: URL) -> Bool {
+
+        guard self.opensWebLinks, let scheme = url.scheme?.lowercased(), url.host?.isEmpty == false else { return false }
+        return scheme == "https" || scheme == "http"
+
+    }
+
+    private func blockFont(headingLevel: Int?) -> Font {
+
+        switch headingLevel {
+
+        case 1: .system(size: 21, weight: .semibold)
+        case 2: .system(size: 17, weight: .semibold)
+        case .some: .system(size: 14, weight: .semibold)
+        case .none: .system(size: 13)
+
+        }
 
     }
 

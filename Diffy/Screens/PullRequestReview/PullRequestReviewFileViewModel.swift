@@ -9,6 +9,7 @@ final class PullRequestReviewFileViewModel: ViewModel, Identifiable {
     let file: PullRequestReviewFile
     let textDiff: TextDiffViewModel
     @Published var isExpanded: Bool
+    @Published private(set) var navigationTarget: TextDiffReviewNavigationTarget?
 
     lazy var lines: [DiffLine] = self.file.patch.map(GitPatchParser.lines) ?? []
     lazy var comparisonFile: DiffFile = self.file.navigationFile.replacingContent(lines: self.lines, kind: .text)
@@ -28,6 +29,22 @@ final class PullRequestReviewFileViewModel: ViewModel, Identifiable {
         self.textDiff = TextDiffViewModel(diffBuilder: diffBuilder)
         self.isExpanded = isExpanded
 
+    }
+
+    // MARK: - Conversation Navigation
+
+    func navigate(to entry: PullRequestConversationEntry, location: PullRequestConversationEntry) {
+
+        let side: SourceSide = location.side == "LEFT" ? .left : .right
+        let line = self.lines.first { line in
+            location.line != nil && location.line == (side == .left ? line.oldNumber : line.newNumber)
+        }
+        self.navigationTarget = TextDiffReviewNavigationTarget(lineID: line?.id, side: side, commentID: entry.id)
+
+    }
+
+    func clearNavigationTarget() {
+        self.navigationTarget = nil
     }
 
 }

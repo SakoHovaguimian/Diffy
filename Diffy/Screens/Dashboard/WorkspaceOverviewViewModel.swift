@@ -11,6 +11,7 @@ final class WorkspaceOverviewViewModel: ViewModel {
     private let diffBuilder: TextDiffBuilding
     private let preferencesService: PreferencesServiceProtocol
     private var refreshID = UUID()
+    private var pullRequestDetailTasks: [String: Task<PullRequestSummary?, Never>] = [:]
 
     @Published private(set) var activeProjects: [OverviewProjectChange] = []
     @Published private(set) var assignedPullRequests: [AssignedPullRequestSummary] = []
@@ -65,9 +66,7 @@ final class WorkspaceOverviewViewModel: ViewModel {
 
     func reviewPullRequest(_ request: AssignedPullRequestSummary, accounts: [GitHubAccount]) -> PullRequestReviewViewModel? {
 
-        let parts = request.repositoryFullName.split(separator: "/")
-        guard parts.count == 2, let host = request.webURL.host else { return nil }
-        let coordinate = GitHubRepositoryCoordinate(host: host, owner: String(parts[0]), name: String(parts[1]))
+        guard let coordinate = repositoryCoordinate(for: request) else { return nil }
         let reviewRequest = PullRequestReviewRequest(
             number: request.number,
             title: request.title,
@@ -79,10 +78,78 @@ final class WorkspaceOverviewViewModel: ViewModel {
 
     }
 
+    // MARK: - Pull Request Details
+
+    func loadPullRequestDetails(for request: AssignedPullRequestSummary, accounts: [GitHubAccount]) async {
+
+        guard self.runtime.isLive, request.details == nil, !Task.isCancelled,
+              let coordinate = repositoryCoordinate(for: request),
+              let account = accounts.first(where: {
+                  $0.status == .connected
+                      && $0.host.caseInsensitiveCompare(coordinate.host) == .orderedSame
+                      && (request.accountID == nil || $0.id == request.accountID)
+              }) else {
+            return
+        }
+
+        let requestID = self.refreshID
+        let task: Task<PullRequestSummary?, Never>
+
+        if let existingTask = self.pullRequestDetailTasks[request.id] {
+            task = existingTask
+        } else {
+
+            let link = GitHubRepositoryLink(coordinate: coordinate)
+            task = Task { [gitHub] in
+
+                guard var details = try? await gitHub.pullRequest(number: request.number, link: link, account: account),
+                      !Task.isCancelled else {
+                    return nil
+                }
+
+                details.checks = await gitHub.checksSummary(for: details, link: link, account: account)
+                return Task.isCancelled ? nil : details
+
+            }
+            self.pullRequestDetailTasks[request.id] = task
+
+        }
+
+        guard let details = await task.value, self.refreshID == requestID else { return }
+
+        if let index = self.assignedPullRequests.firstIndex(where: { $0.id == request.id }) {
+            self.assignedPullRequests[index].details = details
+        }
+
+        if let index = self.reviewRequestedPullRequests.firstIndex(where: { $0.id == request.id }) {
+            self.reviewRequestedPullRequests[index].details = details
+        }
+
+    }
+
+    private func repositoryCoordinate(for request: AssignedPullRequestSummary) -> GitHubRepositoryCoordinate? {
+
+        let parts = request.repositoryFullName.split(separator: "/")
+        guard parts.count == 2, let host = request.webURL.host else { return nil }
+
+        return GitHubRepositoryCoordinate(host: host, owner: String(parts[0]), name: String(parts[1]))
+
+    }
+
+    private func cancelPullRequestDetailTasks() {
+
+        for task in self.pullRequestDetailTasks.values {
+            task.cancel()
+        }
+        self.pullRequestDetailTasks = [:]
+
+    }
+
     func refresh(projects: [RepositoryProject], accounts: [GitHubAccount]) async {
 
         let requestID = UUID()
         self.refreshID = requestID
+        cancelPullRequestDetailTasks()
         self.isRefreshing = true
         self.hasLoadedProjects = false
         self.hasLoadedAssigned = false

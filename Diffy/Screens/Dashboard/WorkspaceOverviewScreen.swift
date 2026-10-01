@@ -227,7 +227,15 @@ struct WorkspaceOverviewScreen: View {
 
             } else {
 
-                OverviewPullRequestList(requests: requests, sortOrder: sortOrder, hasFooter: hasMore, collapsedGroups: collapsedGroups) { request in
+                OverviewPullRequestList(
+                    requests: requests,
+                    sortOrder: sortOrder,
+                    hasFooter: hasMore,
+                    collapsedGroups: collapsedGroups,
+                    loadDetails: { request in
+                        await self.viewModel.loadPullRequestDetails(for: request, accounts: self.accounts.accounts)
+                    }
+                ) { request in
                     if let review = self.viewModel.reviewPullRequest(request, accounts: self.accounts.accounts) {
                         self.workspace.openPullRequest(review)
                     }

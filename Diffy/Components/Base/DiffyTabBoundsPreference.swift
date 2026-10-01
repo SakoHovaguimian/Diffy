@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct WorkspaceTabBoundsPreference: PreferenceKey {
+struct DiffyTabBoundsPreference: PreferenceKey {
 
     static let defaultValue: [String: Anchor<CGRect>] = [:]
 

@@ -9,6 +9,8 @@ struct AssignedPullRequestSummary: Hashable, Identifiable, Sendable {
     let updatedAt: Date
     let webURL: URL
     var accountID: String?
+    var isDraft = false
+    var details: PullRequestSummary?
 
     var id: String {
         self.webURL.absoluteString

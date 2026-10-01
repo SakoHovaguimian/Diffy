@@ -6,6 +6,7 @@ struct OverviewPullRequestList: View {
     let sortOrder: OverviewPullRequestSortOrder
     let hasFooter: Bool
     @Binding var collapsedGroups: Set<OverviewPullRequestGroupID>
+    let loadDetails: (AssignedPullRequestSummary) async -> Void
     let review: (AssignedPullRequestSummary) -> Void
     @Environment(\.diffyTheme) private var theme
 
@@ -168,6 +169,9 @@ struct OverviewPullRequestList: View {
                     isGrouped: isGrouped
                 ) {
                     self.review(request)
+                }
+                .task(id: request.id) {
+                    await self.loadDetails(request)
                 }
 
                 if request.id != requests.last?.id {

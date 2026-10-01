@@ -28,7 +28,7 @@ struct PullRequestReviewNavigationView: View {
 
     private func tabs() -> some View {
 
-        ScrollView(.horizontal) {
+        ScrollView(.horizontal, showsIndicators: false) {
 
             HStack(spacing: 4) {
 
@@ -55,26 +55,27 @@ struct PullRequestReviewNavigationView: View {
                             }
 
                         }
-                        .font(.system(size: 12, weight: self.viewModel.selectedTab == tab ? .semibold : .medium))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(self.viewModel.selectedTab == tab ? self.theme.accent : self.theme.secondaryText)
                         .padding(.horizontal, 13)
                         .padding(.vertical, 12)
-                        .overlay(alignment: .bottom) {
-                            if self.viewModel.selectedTab == tab { self.theme.accent.frame(height: 2) }
-                        }
 
                     }
                     .buttonStyle(.plain)
+                    .anchorPreference(key: DiffyTabBoundsPreference.self, value: .bounds) { [tab.id: $0] }
                     .accessibilityAddTraits(self.viewModel.selectedTab == tab ? .isSelected : [])
 
                 }
 
             }
             .padding(.horizontal, 12)
+            .overlayPreferenceValue(DiffyTabBoundsPreference.self) { bounds in
+                DiffyTabSelectionIndicator(selectedID: self.viewModel.selectedTab.id, bounds: bounds)
+            }
 
         }
+        .background(alignment: .bottom) { self.theme.border.frame(height: 1) }
         .background(self.theme.surface)
-        .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
 
     }
 

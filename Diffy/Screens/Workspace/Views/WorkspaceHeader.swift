@@ -6,7 +6,6 @@ struct WorkspaceHeader: View {
     @ObservedObject var repository: RepositoryViewModel
     @Environment(\.diffyTheme) private var theme
     @Environment(\.diffyContentSize) private var contentSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var selectedTabID: String {
         self.viewModel.showsDashboard ? "overview" : self.viewModel.mode.rawValue
@@ -85,8 +84,8 @@ struct WorkspaceHeader: View {
                         }
 
                     }
-                    .overlayPreferenceValue(WorkspaceTabBoundsPreference.self) { bounds in
-                        selectionIndicator(bounds)
+                    .overlayPreferenceValue(DiffyTabBoundsPreference.self) { bounds in
+                        DiffyTabSelectionIndicator(selectedID: self.selectedTabID, bounds: bounds)
                     }
 
                 }
@@ -120,30 +119,8 @@ struct WorkspaceHeader: View {
 
         }
         .buttonStyle(.plain)
-        .anchorPreference(key: WorkspaceTabBoundsPreference.self, value: .bounds) { [id: $0] }
+        .anchorPreference(key: DiffyTabBoundsPreference.self, value: .bounds) { [id: $0] }
         .help(title)
-
-    }
-
-    private func selectionIndicator(_ bounds: [String: Anchor<CGRect>]) -> some View {
-
-        GeometryReader { geometry in
-
-            if let anchor = bounds[self.selectedTabID] {
-
-                let frame = geometry[anchor]
-                let height = self.contentSize.scaled(2)
-
-                self.theme.accent
-                    .frame(width: frame.width, height: height)
-                    .offset(x: frame.minX, y: frame.maxY - height)
-                    .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.3), value: frame)
-
-            }
-
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
 
     }
 

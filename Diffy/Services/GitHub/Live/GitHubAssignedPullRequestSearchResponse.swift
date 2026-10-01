@@ -13,6 +13,7 @@ struct GitHubAssignedPullRequestResponse: Decodable, Sendable {
     let repositoryUrl: URL
     let updatedAt: Date
     let htmlUrl: URL
+    let draft: Bool?
 
     var summary: AssignedPullRequestSummary {
 
@@ -24,7 +25,8 @@ struct GitHubAssignedPullRequestResponse: Decodable, Sendable {
             author: self.user,
             repositoryFullName: repositoryName,
             updatedAt: self.updatedAt,
-            webURL: self.htmlUrl
+            webURL: self.htmlUrl,
+            isDraft: self.draft ?? false
         )
 
     }

@@ -58,15 +58,25 @@ extension PullRequestReviewViewModel {
     }
 
     func comments(at line: DiffLine, in file: PullRequestReviewFile) -> [PullRequestConversationEntry] {
-        fileComments(in: file).filter { $0.line != nil && $0.line == ($0.side == "LEFT" ? line.oldNumber : line.newNumber) }
+
+        fileComments(in: file).filter { entry in
+
+            let location = conversationLocation(for: entry)
+            return location.line != nil && location.line == (location.side == "LEFT" ? line.oldNumber : line.newNumber)
+
+        }
+
     }
 
     func unanchoredComments(in file: PullRequestReviewFile, lines: [DiffLine]) -> [PullRequestConversationEntry] {
 
         fileComments(in: file).filter { comment in
-            !lines.contains { line in
-                comment.line != nil && comment.line == (comment.side == "LEFT" ? line.oldNumber : line.newNumber)
+
+            let location = conversationLocation(for: comment)
+            return !lines.contains { line in
+                location.line != nil && location.line == (location.side == "LEFT" ? line.oldNumber : line.newNumber)
             }
+
         }
 
     }
@@ -76,7 +86,14 @@ extension PullRequestReviewViewModel {
     }
 
     private func fileComments(in file: PullRequestReviewFile) -> [PullRequestConversationEntry] {
-        self.conversation.filter { $0.kind == .inline && $0.path == file.filename }
+
+        self.conversation.filter { entry in
+
+            let path = conversationLocation(for: entry).path
+            return entry.kind == .inline && (path == file.filename || (file.previousFilename != nil && path == file.previousFilename))
+
+        }
+
     }
 
 }

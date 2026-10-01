@@ -45,6 +45,14 @@ struct TextDiffScreen: View {
         self.presentation?.embedsInReviewList ?? self.reviewContext?.embedsInReviewList ?? false
     }
 
+    private var retainedReviewLineIDs: Set<Int> {
+
+        var ids = self.reviewContext?.visibleDiscussionLineIDs ?? []
+        if let lineID = self.reviewContext?.navigationTarget?.lineID { ids.insert(lineID) }
+        return ids
+
+    }
+
     private var allowsEditing: Bool {
         !self.workspace.runtime.isLive && self.presentation == nil && self.reviewContext == nil
     }
@@ -129,12 +137,52 @@ struct TextDiffScreen: View {
 
         }
         .background(self.theme.background)
-        .onAppear { self.viewModel.prepare(file: self.file, allowsEditing: self.allowsEditing) }
-        .onChange(of: self.file) { _, file in
+        .onAppear { prepareFile() }
+        .onChange(of: self.file) { _, _ in
+
             self.revealsWholeFile = false
-            self.viewModel.prepare(file: file, allowsEditing: self.allowsEditing)
+            prepareFile()
+
         }
+        .onChange(of: self.reviewContext?.navigationTarget) { _, _ in applyReviewNavigation() }
         .onChange(of: self.settings.editor.collapseUnchanged) { _, _ in self.revealsWholeFile = false }
+
+    }
+
+    // MARK: - Review Navigation
+
+    private func prepareFile() {
+
+        self.viewModel.prepare(file: self.file, allowsEditing: self.allowsEditing)
+        applyReviewNavigation()
+
+    }
+
+    private func applyReviewNavigation() {
+
+        guard let target = self.reviewContext?.navigationTarget,
+              let lineID = target.lineID,
+              let line = self.comparisonFile.lines.first(where: { $0.id == lineID }) else { return }
+
+        let visibleSide: SourceSide = self.usesSingleSourceLayout && !line.isChanged && line.right != nil ? .right : target.side
+        self.viewModel.select(line, side: visibleSide, extends: false)
+        self.viewModel.scrollTarget = lineID
+
+    }
+
+    private func scrollToReviewTarget(using proxy: ScrollViewProxy) {
+
+        guard let target = self.reviewContext?.navigationTarget else { return }
+        proxy.scrollTo(target.anchor(fileID: self.file.id, embedsInReviewList: false), anchor: .center)
+
+    }
+
+    private func scrollToEmbeddedReviewTarget() {
+
+        guard self.embedsInReviewList, let target = self.reviewContext?.navigationTarget else { return }
+        let anchor = target.lineID.map { reviewLineAnchor($0) }
+            ?? TextDiffReviewNavigationTarget.commentAnchor(fileID: self.file.id, commentID: target.commentID)
+        self.navigateToLine?(anchor)
 
     }
 
@@ -401,22 +449,32 @@ struct TextDiffScreen: View {
         let regions = self.viewModel.visibleRegions(
             self.comparisonFile,
             preferences: self.visibleEditorPreferences,
-            retaining: self.reviewContext?.visibleDiscussionLineIDs ?? [],
+            retaining: self.retainedReviewLineIDs,
             splittingAtLineGaps: self.reviewContext != nil
         )
 
         if regions.isEmpty {
 
-            VStack(spacing: 0) {
+            ScrollViewReader { proxy in
 
-                DiffyEmptyState(
-                    symbol: "checkmark.circle",
-                    title: "No Visible Differences",
-                    message: self.reviewContext == nil
-                        ? "No lines match the current display options. Choose File to show the entire source."
-                        : "No lines match the current display options. Choose Patch to show all lines GitHub provided."
-                )
-                self.reviewContext?.fileDiscussion()
+                ScrollView {
+
+                    VStack(spacing: 0) {
+
+                        DiffyEmptyState(
+                            symbol: "checkmark.circle",
+                            title: "No Visible Differences",
+                            message: self.reviewContext == nil
+                                ? "No lines match the current display options. Choose File to show the entire source."
+                                : "No lines match the current display options. Choose Patch to show all lines GitHub provided."
+                        )
+                        self.reviewContext?.fileDiscussion()
+
+                    }
+
+                }
+                .onAppear { scrollToReviewTarget(using: proxy) }
+                .onChange(of: self.reviewContext?.navigationTarget) { _, _ in scrollToReviewTarget(using: proxy) }
 
             }
 
@@ -457,7 +515,10 @@ struct TextDiffScreen: View {
 
                         }
 
+                        scrollToReviewTarget(using: proxy)
+
                     }
+                    .onChange(of: self.reviewContext?.navigationTarget) { _, _ in scrollToReviewTarget(using: proxy) }
                     .onChange(of: self.viewModel.scrollTarget) { _, target in
 
                         if let target {
@@ -494,8 +555,13 @@ struct TextDiffScreen: View {
 
     private func embeddedCodeCanvas() -> some View {
 
-        let regions = self.viewModel.visibleRegions(self.comparisonFile, preferences: self.visibleEditorPreferences, limit: self.viewModel.reviewLineLimit)
-        let totalLines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences).count
+        let regions = self.viewModel.visibleRegions(
+            self.comparisonFile,
+            preferences: self.visibleEditorPreferences,
+            limit: self.viewModel.reviewLineLimit,
+            retaining: self.retainedReviewLineIDs
+        )
+        let totalLines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences, retaining: self.retainedReviewLineIDs).count
 
         return GeometryReader { geometry in
 
@@ -563,11 +629,26 @@ struct TextDiffScreen: View {
             }
 
         }
+        .onAppear {
+
+            revealReviewLine(self.reviewContext?.navigationTarget?.lineID ?? self.viewModel.scrollTarget)
+            scrollToEmbeddedReviewTarget()
+
+        }
+        .onChange(of: self.reviewContext?.navigationTarget) { _, target in
+
+            revealReviewLine(target?.lineID)
+            scrollToEmbeddedReviewTarget()
+
+        }
         .onChange(of: self.viewModel.scrollTarget) { _, target in
             revealReviewLine(target)
         }
         .onChange(of: self.viewModel.embeddedCanvasHeight) { _, _ in
+
             scrollToReviewLine(self.viewModel.scrollTarget)
+            if self.reviewContext?.navigationTarget?.lineID == nil { scrollToEmbeddedReviewTarget() }
+
         }
 
     }
@@ -575,13 +656,13 @@ struct TextDiffScreen: View {
     private func revealReviewLine(_ target: Int?) {
 
         guard let target else { return }
-        let visible = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences)
+        let visible = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences, retaining: self.retainedReviewLineIDs)
 
         if !visible.contains(where: { $0.id == target }) {
             self.revealsWholeFile = true
         }
 
-        let lines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences)
+        let lines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences, retaining: self.retainedReviewLineIDs)
 
         if let index = lines.firstIndex(where: { $0.id == target }) {
             self.viewModel.reviewLineLimit = max(self.viewModel.reviewLineLimit, index + 100)
