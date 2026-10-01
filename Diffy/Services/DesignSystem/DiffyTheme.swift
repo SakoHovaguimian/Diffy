@@ -24,6 +24,10 @@ struct DiffyTheme {
         self.accent.opacity(self.isDark ? 0.20 : 0.17)
     }
 
+    func countColor(for count: Int, activeColor: Color) -> Color {
+        count > 0 ? activeColor : self.secondaryText
+    }
+
     static func resolve(
         _ selection: ThemeSelection,
         system: ColorScheme,

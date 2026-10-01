@@ -3,6 +3,7 @@ import SwiftUI
 struct PullRequestPatchRow: View {
 
     let line: DiffLine
+    let file: AIFileSnapshot
     let unified: Bool
     let canComment: Bool
     let comment: (Int, String) -> Void
@@ -56,32 +57,28 @@ struct PullRequestPatchRow: View {
 
         HStack(alignment: .top, spacing: 8) {
 
-            Button {
-                if self.line.status == .identical, let newNumber = self.line.newNumber {
-                    self.comment(newNumber, "RIGHT")
-                } else if let number {
-                    self.comment(number, side)
-                }
-            } label: {
-                Image(systemName: "plus.bubble").font(.system(size: 11)).frame(width: 22)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(self.theme.accent)
-            .disabled(!self.canComment || number == nil)
-            .accessibilityLabel("Comment On \(side == "LEFT" ? "Old" : "New") Line \(number ?? 0)")
-            if let note, let number {
-
-                Button {
-                    note(number, side, text)
-                } label: {
-                    Image(systemName: "square.and.pencil").font(.system(size: 11)).frame(width: 22)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(self.theme.accent)
-                .accessibilityLabel("Add Review Note On \(side == "LEFT" ? "Old" : "New") Line \(number)")
-
-            }
-            Text(number.map(String.init) ?? "").foregroundStyle(self.theme.secondaryText).frame(width: 42, alignment: .trailing)
+            DiffLineGutter(
+                number: number,
+                marker: "",
+                markerColor: self.theme.secondaryText,
+                selected: false,
+                annotated: false,
+                showsLineNumbers: true,
+                lineHeight: 24,
+                clipboardContent: number.map {
+                    DiffLineClipboardContent(
+                        filePath: side == "LEFT" ? self.file.previousFilename ?? self.file.filename : self.file.filename,
+                        lineNumber: $0,
+                        side: side == "LEFT" ? .left : .right,
+                        source: text,
+                        language: "text"
+                    )
+                },
+                select: {},
+                annotate: noteAction(number: number, side: side, text: text),
+                annotationTitle: "Add Review Note On This Line",
+                comment: commentAction(number: number, side: side)
+            )
             Text(number == nil ? " " : marker).foregroundStyle(self.theme.secondaryText).frame(width: 10)
             Text(text.isEmpty ? " " : text).fixedSize(horizontal: true, vertical: true)
             Spacer(minLength: 12)
@@ -91,6 +88,29 @@ struct PullRequestPatchRow: View {
         .padding(.leading, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(number == nil || marker == " " ? Color.clear : (side == "LEFT" ? self.theme.removed : self.theme.added).opacity(0.10))
+
+    }
+
+    private func commentAction(number: Int?, side: String) -> (() -> Void)? {
+
+        guard self.canComment, let number else { return nil }
+
+        return {
+
+            if self.line.status == .identical, let newNumber = self.line.newNumber {
+                self.comment(newNumber, "RIGHT")
+            } else {
+                self.comment(number, side)
+            }
+
+        }
+
+    }
+
+    private func noteAction(number: Int?, side: String, text: String) -> (() -> Void)? {
+
+        guard let note = self.note, let number else { return nil }
+        return { note(number, side, text) }
 
     }
 

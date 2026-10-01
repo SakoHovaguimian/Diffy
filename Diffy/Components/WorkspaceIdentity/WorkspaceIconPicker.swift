@@ -85,16 +85,16 @@ struct WorkspaceIconPicker: View {
                     }
 
                 }
-                if self.viewModel.isImporting {
-                    ProgressView().controlSize(.small)
-                        .accessibilityLabel("Importing Icon")
-                }
                 if self.customIcon != nil {
                     Button("Reset") { self.customIcon = nil }
                 }
 
             }
             .font(.system(size: 12))
+
+            if self.viewModel.isImporting {
+                DiffyLoadingState(title: "Importing Icon…")
+            }
 
             if self.customIcon?.imageLayout != nil {
 

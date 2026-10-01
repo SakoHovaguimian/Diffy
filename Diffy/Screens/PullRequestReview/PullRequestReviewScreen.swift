@@ -147,7 +147,6 @@ struct PullRequestReviewScreen: View {
 
             if self.aiWorkspace.isBusy {
                 DiffyLoadingState(title: self.aiWorkspace.requestProgress ?? "Preparing AI Request…")
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             if let error = self.viewModel.errorMessage {
                 DiffyStatusBanner(message: error, isError: true)

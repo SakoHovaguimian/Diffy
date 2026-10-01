@@ -57,7 +57,14 @@ struct PullRequestHistoricalFileView: View {
                     LazyVStack(alignment: .leading, spacing: 0) {
 
                         ForEach(self.lines) { line in
-                            PullRequestPatchRow(line: line, unified: true, canComment: false, comment: { _, _ in }, note: nil)
+                            PullRequestPatchRow(
+                                line: line,
+                                file: self.selection.file,
+                                unified: true,
+                                canComment: false,
+                                comment: { _, _ in },
+                                note: nil
+                            )
                         }
 
                     }

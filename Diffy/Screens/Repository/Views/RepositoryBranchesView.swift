@@ -113,6 +113,12 @@ struct RepositoryBranchesView: View {
                         }
                         Button("Merge Into Current Branch…") { self.viewModel.request(.startMerge(branch: branch.name)) }
                         Button("Rebase Current Branch Onto This…") { self.viewModel.request(.startRebase(onto: branch.name)) }
+                        if !branch.isRemote && !branch.isCurrent {
+
+                            Divider()
+                            Button("Delete Branch…", role: .destructive) { self.viewModel.request(.deleteBranch(name: branch.name)) }
+
+                        }
 
                     } label: {
                         Image(systemName: "ellipsis")

@@ -75,7 +75,7 @@ struct RepositoryOverviewView: View {
 
         HStack(spacing: 1) {
 
-            metric("Unstaged", count: snapshot.unstagedChanges.count, detail: "Changes On Disk", color: self.theme.accent, mode: .workingTree, lineCounts: self.viewModel.unstagedLineCounts)
+            metric("Unstaged", count: snapshot.unstagedChanges.count, detail: "Changes On Disk", color: self.theme.modified, mode: .workingTree, lineCounts: self.viewModel.unstagedLineCounts)
             metric("Staged", count: snapshot.stagedChanges.count, detail: "In Your Next Commit", color: self.theme.added, mode: .staged)
             metric("Conflicts", count: snapshot.conflicts.count, detail: "Decisions To Make", color: self.theme.modified, mode: .merge)
 
@@ -101,12 +101,14 @@ struct RepositoryOverviewView: View {
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
 
-                    Text(count, format: .number).font(.system(size: 38, weight: .light, design: .rounded)).foregroundStyle(color)
+                    Text(count, format: .number)
+                        .font(.system(size: 38, weight: .light, design: .rounded))
+                        .foregroundStyle(self.theme.countColor(for: count, activeColor: color))
                     Spacer(minLength: 4)
                     if title == "Unstaged" {
                         if let lineCounts {
-                            Text("+\(lineCounts.additions)").foregroundStyle(self.theme.added)
-                            Text("−\(lineCounts.deletions)").foregroundStyle(self.theme.removed)
+                            Text("+\(lineCounts.additions)").foregroundStyle(self.theme.countColor(for: lineCounts.additions, activeColor: self.theme.added))
+                            Text("−\(lineCounts.deletions)").foregroundStyle(self.theme.countColor(for: lineCounts.deletions, activeColor: self.theme.removed))
                         } else {
                             Text("Lines Unavailable").foregroundStyle(self.theme.secondaryText)
                         }

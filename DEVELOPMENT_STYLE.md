@@ -165,6 +165,14 @@ SwiftUI view-builder closures containing multiple views follow the expanded bloc
 - Do not run Xcode builds unless explicitly asked.
 - Use source review and permitted checks, and clearly state any validation that was not performed.
 
+### Semantic colors for changes and status
+
+- Zero change, line, conflict, annotation, and attention counts use `secondaryText`. Use `DiffyTheme.countColor(for:activeColor:)` for counts that become colored when positive.
+- Positive additions and confirmed success use `added`; deletions and failures use `removed`; pending file changes, running checks, and unresolved attention use `modified`. Replaced lines, renamed files, and moved files use `changed`.
+- Draft, inactive, unknown, and unavailable statuses use `secondaryText`. Keep a confirmed successful or resolved status green even when no work remains; success has meaning beyond a zero count.
+- Pull request lifecycle and check indicators use their shared model color mappings so headers, badges, and row icons agree. Merged requests use `changed` to distinguish them from open requests.
+- Reserve the customizable accent for navigation, selection, identity, and informational emphasis. Do not use it in place of a known status color. Keep text or symbols alongside colors so the meaning remains readable without color.
+
 ## 8. Review checklist
 
 Before considering an implementation change complete, confirm:

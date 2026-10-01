@@ -42,7 +42,10 @@ struct ReviewExportScreen: View {
 
             HStack {
 
-                DiffyBadge(title: "\(self.exportAnnotations.count) ANNOTATIONS", color: self.theme.accent)
+                DiffyBadge(
+                    title: "\(self.exportAnnotations.count) ANNOTATIONS",
+                    color: self.theme.countColor(for: self.exportAnnotations.count, activeColor: self.theme.accent)
+                )
                 Text(self.scope).font(.system(size: 11)).foregroundStyle(self.theme.secondaryText)
                 Spacer()
                 if self.allowsOpenOnly {

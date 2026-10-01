@@ -9,8 +9,8 @@ struct DiffChangeSummary: View {
 
         HStack(spacing: 7) {
 
-            Text("+\(self.counts.additions.formatted())").foregroundStyle(self.theme.added)
-            Text("−\(self.counts.deletions.formatted())").foregroundStyle(self.theme.removed)
+            Text("+\(self.counts.additions.formatted())").foregroundStyle(self.theme.countColor(for: self.counts.additions, activeColor: self.theme.added))
+            Text("−\(self.counts.deletions.formatted())").foregroundStyle(self.theme.countColor(for: self.counts.deletions, activeColor: self.theme.removed))
 
             HStack(spacing: 2) {
 
@@ -35,8 +35,18 @@ struct DiffChangeSummary: View {
 
         let total = self.counts.additions + self.counts.deletions
         guard total > 0 else { return self.theme.border }
-        let addedBlocks = Int((Double(self.counts.additions) / Double(total) * 5).rounded())
+        let addedBlocks = addedBlockCount(total: total)
         return index < addedBlocks ? self.theme.added : self.theme.removed
+
+    }
+
+    private func addedBlockCount(total: Int) -> Int {
+
+        guard self.counts.additions > 0 else { return 0 }
+        guard self.counts.deletions > 0 else { return 5 }
+
+        let proportionalCount = Int((Double(self.counts.additions) / Double(total) * 5).rounded())
+        return min(4, max(1, proportionalCount))
 
     }
 

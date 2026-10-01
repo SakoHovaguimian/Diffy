@@ -35,7 +35,7 @@ enum FileChangeStatus: String, CaseIterable, Codable, Identifiable, Sendable {
         case .added: theme.added
         case .removed: theme.removed
         case .modified, .conflicted: theme.modified
-        case .renamed, .moved: theme.accent
+        case .renamed, .moved: theme.changed
         case .identical: theme.secondaryText
 
         }

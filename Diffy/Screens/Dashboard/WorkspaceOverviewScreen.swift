@@ -14,32 +14,36 @@ struct WorkspaceOverviewScreen: View {
 
     var body: some View {
 
-        ScrollView {
+        GeometryReader { geometry in
 
-            VStack(alignment: .leading, spacing: 28) {
+            ScrollView {
 
-                heading()
+                VStack(alignment: .leading, spacing: 28) {
 
-                if self.workspace.projects.isEmpty {
-                    welcome()
+                    heading()
 
-                    if !self.accounts.accounts.isEmpty {
+                    if self.workspace.projects.isEmpty {
+                        welcome()
 
-                        if self.viewModel.isLoadingPullRequests {
-                            DiffyLoadingState(title: "Refreshing Pull Requests…")
+                        if !self.accounts.accounts.isEmpty {
+
+                            if self.viewModel.isLoadingPullRequests {
+                                DiffyLoadingState(title: "Refreshing Pull Requests…")
+                            }
+
+                            pullRequestsSection()
+                            pullRequestsSection(reviewRequested: true)
                         }
-
-                        pullRequestsSection()
-                        pullRequestsSection(reviewRequested: true)
+                    } else {
+                        sections(availableWidth: min(1160, max(0, geometry.size.width - 64)))
                     }
-                } else {
-                    sections()
+
                 }
+                .padding(32)
+                .frame(maxWidth: 1160, alignment: .leading)
+                .frame(maxWidth: .infinity)
 
             }
-            .padding(32)
-            .frame(maxWidth: 1160, alignment: .leading)
-            .frame(maxWidth: .infinity)
 
         }
         .background(self.theme.background)
@@ -78,7 +82,7 @@ struct WorkspaceOverviewScreen: View {
 
     }
 
-    private func sections() -> some View {
+    private func sections(availableWidth: CGFloat) -> some View {
 
         VStack(alignment: .leading, spacing: 18) {
 
@@ -86,7 +90,7 @@ struct WorkspaceOverviewScreen: View {
                 DiffyLoadingState(title: "Refreshing \(self.viewModel.isLoadingProjects ? "Projects" : "Pull Requests")…")
             }
 
-            ViewThatFits(in: .horizontal) {
+            if availableWidth >= 712 {
 
                 HStack(alignment: .top, spacing: 32) {
 
@@ -98,6 +102,8 @@ struct WorkspaceOverviewScreen: View {
                     .frame(minWidth: 340, maxWidth: .infinity)
 
                 }
+
+            } else {
 
                 VStack(spacing: 24) {
 
@@ -266,52 +272,59 @@ struct WorkspaceOverviewScreen: View {
         sortSelection: Binding<OverviewPullRequestSortOrder>? = nil
     ) -> some View {
 
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
+        VStack(spacing: 0) {
 
-            Image(systemName: symbol)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(self.theme.accent)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
 
-            Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                Image(systemName: symbol)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(self.theme.accent)
 
-            Spacer(minLength: 8)
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
 
-            if let sortSelection {
+                Spacer(minLength: 8)
 
-                Menu {
+                if let sortSelection {
 
-                    Picker("Sort By", selection: sortSelection) {
-                        ForEach(OverviewPullRequestSortOrder.allCases) { order in
-                            Text(order.rawValue).tag(order)
+                    Menu {
+
+                        Picker("Sort By", selection: sortSelection) {
+                            ForEach(OverviewPullRequestSortOrder.allCases) { order in
+                                Text(order.rawValue).tag(order)
+                            }
                         }
-                    }
 
-                    if hasMore {
-                        Divider()
-                        Text("Sorting applies to the requests shown here.")
-                    }
+                        if hasMore {
+                            Divider()
+                            Text("Sorting applies to the requests shown here.")
+                        }
 
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down")
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                    .controlSize(.small)
+                    .accessibilityLabel("Sort \(title)")
+                    .help("Sort By \(sortSelection.wrappedValue.rawValue)")
+
                 }
-                .controlSize(.small)
-                .accessibilityLabel("Sort \(title)")
-                .help("Sort By \(sortSelection.wrappedValue.rawValue)")
+
+                Text(hasMore || isLoading ? "\(count.formatted())+" : count.formatted())
+                    .font(.system(size: 26, weight: .light, design: .rounded))
+                    .foregroundStyle(self.theme.secondaryText)
 
             }
+            .padding(18)
+            .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
 
-            if isLoading {
-                ProgressView().controlSize(.small)
+            if isLoading && count > 0 {
+
+                DiffyLoadingState(title: "Refreshing \(title)…")
+                    .padding(18)
+
             }
-
-            Text(hasMore || isLoading ? "\(count.formatted())+" : count.formatted())
-                .font(.system(size: 26, weight: .light, design: .rounded))
-                .foregroundStyle(self.theme.secondaryText)
 
         }
-        .padding(18)
-        .overlay(alignment: .bottom) { self.theme.border.frame(height: 1) }
 
     }
 

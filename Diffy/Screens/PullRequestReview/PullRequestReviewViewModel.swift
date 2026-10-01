@@ -12,20 +12,24 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     var patchReview: AIReviewPatchViewModel?
     let accounts: [GitHubAccount]
     let gitHub: GitHubServiceProtocol
-    let textDiff: TextDiffViewModel
     let fileNavigator: FileNavigatorViewModel
+    private let diffBuilder: TextDiffBuilding
     private var navigationObservation: AnyCancellable?
+    private var filterObservation: AnyCancellable?
     private var navigatorDragStartWidth: CGFloat?
 
     @Published private(set) var navigatorWidth: CGFloat = 260
     @Published var selectedAccountID: String
     @Published private(set) var details: PullRequestReviewDetails?
+    @Published private(set) var reviewFiles: [PullRequestReviewFileViewModel] = []
     @Published private(set) var aiWorkspace: AIReviewWorkspaceViewModel?
     @Published var conversation: [PullRequestConversationEntry] = []
     @Published var selectedFileID: String?
     @Published private(set) var historicalFileSelection: PullRequestHistoricalFileSelection?
-    @Published private(set) var splitLines: [DiffLine] = []
     @Published var viewedPaths: Set<String> = []
+    @Published var experience: ComparisonReviewExperience = .editor
+    @Published var onlyUnviewed = false { didSet { self.visibleLimit = 50 } }
+    @Published var visibleLimit = 50
     @Published var selectedTab: PullRequestReviewTab = .filesChanged
     @Published var showsNotes = false
     @Published var showsReviewComposer = false
@@ -64,11 +68,15 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.projectID = projectID
         self.accounts = accounts.filter { $0.host == request.link.host && $0.status == .connected }
         self.gitHub = gitHub
-        self.textDiff = TextDiffViewModel(diffBuilder: diffBuilder)
+        self.diffBuilder = diffBuilder
         self.selectedAccountID = self.accounts.first { $0.id == request.preferredAccountID }?.id ?? self.accounts.first?.id ?? ""
         self.navigationObservation = self.fileNavigator.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
+        self.filterObservation = self.fileNavigator.$query
+            .combineLatest(self.fileNavigator.$filter, self.fileNavigator.$sort, self.fileNavigator.$ascending)
+            .dropFirst()
+            .sink { [weak self] _ in self?.visibleLimit = 50 }
 
     }
 
@@ -87,17 +95,13 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.navigatorDragStartWidth = nil
     }
 
-    var lines: [DiffLine] { self.splitLines }
     var account: GitHubAccount? { self.accounts.first { $0.id == self.selectedAccountID } }
     var isBusy: Bool { self.isLoading || self.isSubmitting }
     var selectedFile: PullRequestReviewFile? { self.details?.files.first { $0.id == self.selectedFileID } }
-    var selectedComparisonFile: DiffFile? {
-        self.selectedFile?.navigationFile.replacingContent(lines: self.splitLines, kind: .text)
-    }
     var hasDrafts: Bool { !self.drafts.isEmpty || !self.reviewBody.isEmpty || !self.conversationBody.isEmpty || self.commentEditor != nil }
 
     var navigationFiles: [DiffFile] {
-        self.details?.files.map(\.navigationFile) ?? []
+        self.reviewFiles.filter { !self.onlyUnviewed || !self.viewedPaths.contains($0.id) }.map { $0.file.navigationFile }
     }
 
     var visibleFiles: [PullRequestReviewFile] {
@@ -113,10 +117,6 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         guard let index = files.firstIndex(where: { $0.id == self.selectedFileID }) else { return false }
         return files.indices.contains(index + offset)
 
-    }
-
-    var selectedFileComments: [PullRequestConversationEntry] {
-        self.conversation.filter { $0.kind == .inline && $0.path == self.selectedFileID }
     }
 
     var canReview: Bool {
@@ -139,28 +139,6 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         guard self.canReview, self.reviewEvent == .comment || self.canDecide else { return false }
         return self.reviewEvent == .approve || !self.reviewBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
-    }
-
-    func drafts(at line: DiffLine) -> [PullRequestReviewCommentDraft] {
-        self.drafts.filter { $0.path == self.selectedFileID && $0.line == ($0.side == "LEFT" ? line.oldNumber : line.newNumber) }
-    }
-
-    func comments(at line: DiffLine) -> [PullRequestConversationEntry] {
-        self.selectedFileComments.filter { $0.line != nil && $0.line == ($0.side == "LEFT" ? line.oldNumber : line.newNumber) }
-    }
-
-    var unanchoredFileComments: [PullRequestConversationEntry] {
-
-        self.selectedFileComments.filter { comment in
-            !self.lines.contains { line in
-                comment.line != nil && comment.line == (comment.side == "LEFT" ? line.oldNumber : line.newNumber)
-            }
-        }
-
-    }
-
-    var discussionLineIDs: Set<Int> {
-        Set(self.lines.filter { !self.drafts(at: $0).isEmpty || !self.comments(at: $0).isEmpty }.map(\.id))
     }
 
     // MARK: - Loading
@@ -186,6 +164,7 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
             let revisionChanged = self.details?.summary.headSHA != details.summary.headSHA || self.details?.summary.baseSHA != details.summary.baseSHA
             if revisionChanged { self.viewedPaths.removeAll() }
             self.details = details
+            updateReviewFiles(details.files, revisionChanged: revisionChanged)
             self.aiWorkspace?.update(details: details)
             self.conversation = details.conversation
             self.isStale = false
@@ -201,6 +180,19 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
 
     func loadIfNeeded() async {
         if self.details == nil { await load() }
+    }
+
+    private func updateReviewFiles(_ files: [PullRequestReviewFile], revisionChanged: Bool) {
+
+        let previousFiles = Dictionary(uniqueKeysWithValues: self.reviewFiles.map { ($0.id, $0) })
+        self.reviewFiles = files.map { file in
+
+            let isExpanded = revisionChanged ? false : previousFiles[file.id]?.isExpanded ?? false
+            return PullRequestReviewFileViewModel(file: file, diffBuilder: self.diffBuilder, isExpanded: isExpanded)
+
+        }
+        self.visibleLimit = 50
+
     }
 
     func attachAIWorkspace(_ aiWorkspace: AIReviewWorkspaceViewModel) {
@@ -226,17 +218,14 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
         self.aiWorkspace?.clearCurrentDetails()
         self.conversation = []
         self.viewedPaths = []
-        self.splitLines = []
+        self.reviewFiles = []
         self.notice = nil
         await load()
 
     }
 
     func selectFile(_ file: PullRequestReviewFile?) {
-
         self.selectedFileID = file?.id
-        self.splitLines = file?.patch.map(GitPatchParser.lines) ?? []
-
     }
 
     func openFile(path: String) {
@@ -246,9 +235,14 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
             return
         }
 
-        self.fileNavigator.query = ""
+        self.fileNavigator.clearFilters()
         self.fileNavigator.collapsedGroups = []
+        self.onlyUnviewed = false
         self.historicalFileSelection = nil
+        self.reviewFile(for: file.id)?.isExpanded = true
+        if let index = self.visibleFiles.firstIndex(where: { $0.id == file.id }) {
+            self.visibleLimit = max(self.visibleLimit, index + 1)
+        }
         selectFile(file)
         self.selectedTab = .filesChanged
 
@@ -332,9 +326,9 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
 
     }
 
-    func beginComment(line: Int, side: String) {
+    func beginComment(in file: PullRequestReviewFile, line: Int, side: String) {
 
-        guard self.canReview, let file = self.selectedFile else { return }
+        guard self.canReview else { return }
         self.commentEditor = PullRequestReviewCommentDraft(path: file.filename, line: line, side: side, body: "")
 
     }

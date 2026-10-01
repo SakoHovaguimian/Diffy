@@ -34,6 +34,7 @@ struct DiffyLoadingState: View {
             RoundedRectangle(cornerRadius: self.contentSize.scaled(12))
                 .stroke(self.theme.border.opacity(self.theme.isDark ? 0.82 : 0.72))
         }
+        .frame(maxWidth: .infinity, alignment: .center)
         .accessibilityElement(children: .combine)
 
     }

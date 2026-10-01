@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 enum PullRequestChecksState: String, Codable, Hashable, Sendable {
     case success
@@ -30,6 +30,19 @@ enum PullRequestChecksState: String, Codable, Hashable, Sendable {
         case .pending: "clock.fill"
         case .neutral: "minus.circle"
         case .unavailable: "questionmark.circle"
+
+        }
+
+    }
+
+    func color(in theme: DiffyTheme) -> Color {
+
+        switch self {
+
+        case .success: theme.added
+        case .failure: theme.removed
+        case .pending: theme.modified
+        case .neutral, .unavailable: theme.secondaryText
 
         }
 

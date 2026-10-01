@@ -18,7 +18,7 @@ struct DiffRegionDecoration: View {
         case .modified: self.theme.changed
         case .added: self.theme.added
         case .removed: self.theme.removed
-        default: self.theme.modified
+        default: self.region.status.color(in: self.theme)
 
         }
 

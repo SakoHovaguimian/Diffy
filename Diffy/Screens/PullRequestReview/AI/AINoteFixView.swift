@@ -143,7 +143,7 @@ struct AINoteFixView: View {
                     .foregroundStyle(self.theme.secondaryText)
             }
             if self.isApplying {
-                ProgressView("Applying Proposed Patch…").controlSize(.small)
+                DiffyLoadingState(title: "Applying Proposed Patch…")
             }
             if let applyError {
                 DiffyStatusBanner(message: applyError, isError: true)

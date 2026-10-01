@@ -7,32 +7,36 @@ struct RepositoryActionBar: View {
 
     var body: some View {
 
-        HStack(spacing: 12) {
+        VStack(spacing: 12) {
 
-            Label(self.viewModel.snapshot?.head.displayName ?? "Repository", systemImage: "arrow.triangle.branch")
-                .font(.system(size: 12, weight: .semibold))
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer(minLength: 12)
+            HStack(spacing: 12) {
+
+                Label(self.viewModel.snapshot?.head.displayName ?? "Repository", systemImage: "arrow.triangle.branch")
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: 12)
+
+                if self.viewModel.isOperating {
+                    Button("Stop") { self.viewModel.cancelOperation() }
+                } else {
+                    operationButtons()
+                }
+
+                Button {
+                    Task { await self.viewModel.refresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .help("Refresh Repository")
+                .accessibilityLabel("Refresh Repository")
+                .disabled(self.viewModel.isRefreshing || self.viewModel.isOperating)
+
+            }
 
             if self.viewModel.isOperating {
-
-                ProgressView().controlSize(.small)
-                Text(self.viewModel.operationTitle).font(.system(size: 11))
-                Button("Stop") { self.viewModel.cancelOperation() }
-
-            } else {
-                operationButtons()
+                DiffyLoadingState(title: self.viewModel.operationTitle)
             }
-
-            Button {
-                Task { await self.viewModel.refresh() }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .help("Refresh Repository")
-            .accessibilityLabel("Refresh Repository")
-            .disabled(self.viewModel.isRefreshing || self.viewModel.isOperating)
 
         }
         .controlSize(.small)

@@ -4,10 +4,38 @@ struct PullRequestFilesView: View {
 
     @ObservedObject var viewModel: PullRequestReviewViewModel
     @ObservedObject var workspace: WorkspaceViewModel
-    @EnvironmentObject private var review: ReviewViewModel
     @Environment(\.diffyTheme) private var theme
 
     var body: some View {
+
+        VStack(spacing: 0) {
+
+            PullRequestFilesControls(viewModel: self.viewModel, navigator: self.viewModel.fileNavigator)
+            if self.viewModel.reviewFiles.isEmpty {
+                DiffyEmptyState(symbol: "doc", title: "No Changed Files", message: "Files returned by GitHub will appear here.")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if self.viewModel.experience == .editor {
+                fileNavigatorContent()
+            } else if self.viewModel.visibleFiles.isEmpty {
+
+                VStack(spacing: 16) {
+
+                    DiffyEmptyState(symbol: "line.3.horizontal.decrease.circle", title: "No Matching Files", message: "Clear the file filter or show viewed files to continue reviewing.")
+                    Button("Clear Filters") { self.viewModel.clearFileFilters() }
+                        .padding(.bottom, 30)
+
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            } else {
+                PullRequestReviewFileList(viewModel: self.viewModel, workspace: self.workspace)
+            }
+
+        }
+
+    }
+
+    private func fileNavigatorContent() -> some View {
 
         GeometryReader { geometry in
 
@@ -48,9 +76,11 @@ struct PullRequestFilesView: View {
 
         VStack(spacing: 0) {
 
-            if let file = self.viewModel.selectedFile {
-                fileHeader(file)
-                fileContent(file)
+            if let fileViewModel = self.viewModel.selectedReviewFile {
+                fileHeader(fileViewModel.file)
+                PullRequestFileContent(fileViewModel: fileViewModel, viewModel: self.viewModel, workspace: self.workspace)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .id(fileViewModel.id)
             } else {
                 DiffyEmptyState(symbol: "doc", title: "No Changed Files", message: "Files returned by GitHub will appear here.")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -72,7 +102,7 @@ struct PullRequestFilesView: View {
                 Spacer()
                 Toggle("Viewed", isOn: Binding(
                     get: { self.viewModel.viewedPaths.contains(file.id) },
-                    set: { if $0 { self.viewModel.viewedPaths.insert(file.id) } else { self.viewModel.viewedPaths.remove(file.id) } }
+                    set: { self.viewModel.markViewed($0, file: file) }
                 ))
                 .toggleStyle(.checkbox)
 
@@ -111,8 +141,8 @@ struct PullRequestFilesView: View {
 
         HStack(spacing: 8) {
 
-            Text("+\(file.additions)").foregroundStyle(self.theme.added)
-            Text("−\(file.deletions)").foregroundStyle(self.theme.removed)
+            Text("+\(file.additions)").foregroundStyle(self.theme.countColor(for: file.additions, activeColor: self.theme.added))
+            Text("−\(file.deletions)").foregroundStyle(self.theme.countColor(for: file.deletions, activeColor: self.theme.removed))
             if let url = file.blobUrl {
                 Link("Open File On GitHub", destination: url)
             }
@@ -138,91 +168,6 @@ struct PullRequestFilesView: View {
         }
         .fixedSize(horizontal: true, vertical: false)
         .layoutPriority(1)
-
-    }
-
-    private func fileContent(_ file: PullRequestReviewFile) -> some View {
-
-        VStack(spacing: 0) {
-
-            if file.patch == nil || !file.hasCompletePatch {
-                DiffyStatusBanner(message: file.patch == nil
-                    ? "GitHub did not provide a text patch for this file (binary, empty, or too large). Open GitHub to inspect it."
-                    : "GitHub provided a partial patch. Open GitHub to inspect the complete file.")
-                    .padding(16)
-            }
-            if let comparisonFile = self.viewModel.selectedComparisonFile, file.patch != nil {
-                TextDiffScreen(
-                    file: comparisonFile,
-                    workspace: self.workspace,
-                    viewModel: self.viewModel.textDiff,
-                    reviewContext: reviewContext(for: file)
-                )
-            } else {
-                PullRequestFileDiscussion(viewModel: self.viewModel, drafts: [], comments: self.viewModel.unanchoredFileComments)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            }
-
-        }
-        .id(file.id)
-
-    }
-
-    private func reviewContext(for file: PullRequestReviewFile) -> TextDiffReviewContext {
-
-        let summary = self.viewModel.details?.summary
-        let annotations = self.viewModel.matchingAnnotations(in: self.review.annotations)
-
-        return TextDiffReviewContext(
-            leftLabel: summary.map { String($0.baseSHA.prefix(7)) } ?? "Base",
-            rightLabel: summary.map { String($0.headSHA.prefix(7)) } ?? "Head",
-            layout: self.$viewModel.isUnified,
-            visibleDiscussionLineIDs: self.viewModel.discussionLineIDs,
-            canComment: self.viewModel.canReview,
-            comment: { line, side in
-
-                if line.status == .identical, let number = line.newNumber {
-                    self.viewModel.beginComment(line: number, side: "RIGHT")
-                    return
-                }
-
-                guard let number = side == .left ? line.oldNumber : line.newNumber else { return }
-                self.viewModel.beginComment(line: number, side: side.rawValue.uppercased())
-
-            },
-            note: { line, side in
-
-                guard let number = side == .left ? line.oldNumber : line.newNumber else { return }
-                let snippet = side == .left ? line.left ?? "" : line.right ?? ""
-                self.viewModel.beginNote(line: number, side: side.rawValue.uppercased(), snippet: snippet)
-
-            },
-            hasAnnotation: { line, side in
-
-                guard let number = side == .left ? line.oldNumber : line.newNumber else { return false }
-                let path = side == .left ? file.previousFilename ?? file.filename : file.filename
-                return annotations.contains { $0.filePath == path && $0.side == side && ($0.startLine...$0.endLine).contains(number) }
-
-            },
-            lineDiscussion: { line in
-
-                AnyView(PullRequestFileDiscussion(
-                    viewModel: self.viewModel,
-                    drafts: self.viewModel.drafts(at: line),
-                    comments: self.viewModel.comments(at: line)
-                ))
-
-            },
-            fileDiscussion: {
-
-                AnyView(PullRequestFileDiscussion(
-                    viewModel: self.viewModel,
-                    drafts: [],
-                    comments: self.viewModel.unanchoredFileComments
-                ))
-
-            }
-        )
 
     }
 

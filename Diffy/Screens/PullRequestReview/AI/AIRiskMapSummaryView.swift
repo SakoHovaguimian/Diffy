@@ -50,11 +50,14 @@ struct AIRiskMapSummaryView: View {
 
             if let assessments = self.response.fileAssessments {
 
+                let highAttentionCount = assessments.filter { $0.attention == .high }.count
+                let mediumAttentionCount = assessments.filter { $0.attention == .medium }.count
+
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 8)], spacing: 8) {
 
-                    metric("High Attention", value: "\(assessments.filter { $0.attention == .high }.count)", detail: "Files to review first", color: self.theme.removed)
-                    metric("Medium Attention", value: "\(assessments.filter { $0.attention == .medium }.count)", detail: "Files needing review", color: self.theme.modified)
-                    metric("Files Assessed", value: "\(assessments.count)/\(self.totalFiles)", detail: "Changed files in the diff", color: self.theme.accent)
+                    metric("High Attention", value: "\(highAttentionCount)", detail: "Files to review first", color: self.theme.countColor(for: highAttentionCount, activeColor: self.theme.removed))
+                    metric("Medium Attention", value: "\(mediumAttentionCount)", detail: "Files needing review", color: self.theme.countColor(for: mediumAttentionCount, activeColor: self.theme.modified))
+                    metric("Files Assessed", value: "\(assessments.count)/\(self.totalFiles)", detail: "Changed files in the diff", color: self.theme.countColor(for: assessments.count, activeColor: self.theme.accent))
                     metric("Blast Radius", value: self.response.blastRadiusLevel?.title ?? "Unrated", detail: "Cross-file impact", color: self.response.blastRadiusLevel?.color(in: self.theme) ?? self.theme.secondaryText)
 
                 }

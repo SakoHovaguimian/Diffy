@@ -79,8 +79,8 @@ struct OverviewProjectRow: View {
 
                             if self.change.changedFileCount > 0, let counts = self.change.lineCounts {
 
-                                Text("+\(counts.additions)").foregroundStyle(self.theme.added)
-                                Text("−\(counts.deletions)").foregroundStyle(self.theme.removed)
+                                Text("+\(counts.additions)").foregroundStyle(self.theme.countColor(for: counts.additions, activeColor: self.theme.added))
+                                Text("−\(counts.deletions)").foregroundStyle(self.theme.countColor(for: counts.deletions, activeColor: self.theme.removed))
 
                             } else if self.change.changedFileCount > 0 {
                                 Text("Line Counts Unavailable").foregroundStyle(self.theme.secondaryText)

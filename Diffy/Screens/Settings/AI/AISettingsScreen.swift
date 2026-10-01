@@ -143,12 +143,12 @@ struct AISettingsScreen: View {
                 Text("\(self.viewModel.selectedProvider.title) · \(self.viewModel.selectedRoute.title) Models")
                     .font(.caption)
                 Spacer()
-                if self.viewModel.isDiscoveringModels {
-                    ProgressView().controlSize(.small)
-                }
                 Button("Refresh Models") { self.viewModel.refreshModels() }
                     .disabled(self.viewModel.isBusy || self.viewModel.isDiscoveringModels)
 
+            }
+            if self.viewModel.isDiscoveringModels {
+                DiffyLoadingState(title: "Refreshing Models…")
             }
             if let source = self.viewModel.modelSource {
                 Text("Source: \(source)")

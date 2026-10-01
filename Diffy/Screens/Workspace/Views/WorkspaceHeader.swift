@@ -12,6 +12,10 @@ struct WorkspaceHeader: View {
         self.viewModel.showsDashboard ? "overview" : self.viewModel.mode.rawValue
     }
 
+    private var changeCount: Int {
+        self.repository.snapshot?.changes.count ?? self.viewModel.project.changeCount
+    }
+
     var body: some View {
 
         let accent = self.viewModel.bucket(for: self.viewModel.project).map { Color(hex: $0.accentHex) } ?? self.viewModel.project.accentHex.map { Color(hex: $0) } ?? self.theme.accent
@@ -40,7 +44,10 @@ struct WorkspaceHeader: View {
                 }
 
                 Spacer()
-                DiffyBadge(title: "\(self.repository.snapshot?.changes.count ?? self.viewModel.project.changeCount) Changes", color: self.theme.modified)
+                DiffyBadge(
+                    title: "\(self.changeCount) Changes",
+                    color: self.theme.countColor(for: self.changeCount, activeColor: self.theme.modified)
+                )
 
                 DiffyIconButton(symbol: "pencil", label: "Edit Project") {
                     self.viewModel.editProject(self.viewModel.project)

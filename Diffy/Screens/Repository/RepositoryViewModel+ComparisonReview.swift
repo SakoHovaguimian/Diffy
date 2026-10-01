@@ -52,7 +52,7 @@ extension RepositoryViewModel {
         title: String,
         detail: String? = nil,
         mode: ComparisonMode,
-        startsExpanded: Bool = true
+        startsExpanded: Bool = false
     ) {
 
         guard let reference else { return }

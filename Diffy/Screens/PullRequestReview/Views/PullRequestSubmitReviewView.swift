@@ -38,11 +38,14 @@ struct PullRequestSubmitReviewView: View {
             if let error = self.viewModel.errorMessage {
                 DiffyStatusBanner(message: error, isError: true)
             }
+            if self.viewModel.isSubmitting {
+                DiffyLoadingState(title: "Submitting Review…")
+            }
+
             HStack {
 
                 Button("Keep Reviewing") { self.dismiss() }
                 Spacer()
-                if self.viewModel.isSubmitting { ProgressView().controlSize(.small) }
                 Button("Submit Review") { Task { await self.viewModel.submitReview() } }
                     .buttonStyle(.borderedProminent)
                     .disabled(!self.viewModel.canSubmit)

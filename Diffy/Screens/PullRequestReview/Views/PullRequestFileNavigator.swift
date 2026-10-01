@@ -103,8 +103,8 @@ struct PullRequestFileNavigator: View {
                     HStack(spacing: 6) {
 
                         Text(file.status.rawValue).foregroundStyle(self.theme.secondaryText)
-                        Text("+\(file.additions)").foregroundStyle(self.theme.added)
-                        Text("−\(file.deletions)").foregroundStyle(self.theme.removed)
+                        Text("+\(file.additions)").foregroundStyle(self.theme.countColor(for: file.additions, activeColor: self.theme.added))
+                        Text("−\(file.deletions)").foregroundStyle(self.theme.countColor(for: file.deletions, activeColor: self.theme.removed))
 
                     }
                     .font(.system(size: 10, design: .monospaced))

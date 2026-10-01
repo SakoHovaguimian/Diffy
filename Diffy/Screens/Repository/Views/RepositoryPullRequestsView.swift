@@ -102,7 +102,7 @@ struct RepositoryPullRequestsView: View {
 
                         Image(systemName: "arrow.triangle.pull")
                             .font(.system(size: 18))
-                            .foregroundStyle(request.isDraft ? self.theme.secondaryText : self.theme.added)
+                            .foregroundStyle(request.lifecycle.color(in: self.theme, isDraft: request.isDraft))
                             .padding(.top, 2)
                         VStack(alignment: .leading, spacing: 9) {
 
@@ -130,7 +130,7 @@ struct RepositoryPullRequestsView: View {
                         VStack(alignment: .trailing, spacing: 6) {
                             DiffyBadge(
                                 title: request.statusTitle,
-                                color: request.isDraft || request.lifecycle == .closedUnmerged ? self.theme.secondaryText : self.theme.added,
+                                color: request.lifecycle.color(in: self.theme, isDraft: request.isDraft),
                                 size: .small
                             )
                             if let lineCounts = request.lineCounts {
@@ -138,7 +138,7 @@ struct RepositoryPullRequestsView: View {
                             }
                             Label(request.checks?.state.title ?? "Checks Not Loaded", systemImage: request.checks?.state.symbol ?? "questionmark.circle")
                                 .font(.system(size: 10))
-                                .foregroundStyle(request.checks?.state == .failure ? self.theme.removed : self.theme.secondaryText)
+                                .foregroundStyle(request.checks?.state.color(in: self.theme) ?? self.theme.secondaryText)
                         }
                         PullRequestActions(webURL: request.webURL) {
                             if let review = self.viewModel.reviewPullRequest(request) {

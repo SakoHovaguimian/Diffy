@@ -4,6 +4,7 @@ import Foundation
 enum GitOperationRequest: Hashable, Sendable {
     case commit(message: String)
     case createBranch(name: String)
+    case deleteBranch(name: String)
     case fetch(remote: String?)
     case addRemote(name: String, url: String)
     case push(GitPushOptions)
@@ -27,6 +28,7 @@ enum GitOperationRequest: Hashable, Sendable {
 
         case .commit: "Commit"
         case .createBranch: "Create Branch"
+        case .deleteBranch: "Delete Branch"
         case .fetch: "Fetch"
         case .addRemote: "Add Remote"
         case let .push(options): options.forceWithLease ? "Force Push With Lease" : (options.setsUpstream ? "Set Upstream & Push" : "Push")

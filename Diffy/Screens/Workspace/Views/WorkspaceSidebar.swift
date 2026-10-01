@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct WorkspaceSidebar: View {
@@ -106,7 +107,7 @@ struct WorkspaceSidebar: View {
 
         HStack(spacing: 10) {
 
-            Image(self.viewModel.runtime.isLive ? "DiffyLive" : "DiffyMock")
+            brandImage()
                 .resizable()
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fill)
@@ -131,6 +132,19 @@ struct WorkspaceSidebar: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 28)
+
+    }
+
+    private func brandImage() -> Image {
+
+        let resourceName = self.viewModel.runtime.isLive ? "DiffyLive" : "DiffyMock"
+
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: "icns"),
+              let image = NSImage(contentsOf: url) else {
+            return Image(systemName: "app.fill")
+        }
+
+        return Image(nsImage: image)
 
     }
 
@@ -218,12 +232,6 @@ struct WorkspaceSidebar: View {
                 .buttonStyle(.plain)
                 .help(bucket.isExpanded ? "Collapse \(bucket.title)" : "Expand \(bucket.title)")
                 .accessibilityLabel("\(bucket.isExpanded ? "Collapse" : "Expand") \(bucket.title)")
-
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(self.theme.secondaryText)
-                    .frame(width: 20, height: 28)
-                    .accessibilityHidden(true)
 
                 Menu {
 
@@ -367,7 +375,7 @@ struct WorkspaceSidebar: View {
 
         } label: {
 
-            Label("Add New Project", systemImage: "plus")
+            Label("Add New Project", systemImage: "folder.badge.plus")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(color)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -485,57 +493,67 @@ struct WorkspaceSidebar: View {
         let isSelected = self.viewModel.selectedProjectID == project.id
         let color = self.viewModel.bucket(for: project).map { Color(hex: $0.accentHex) } ?? project.accentHex.map { Color(hex: $0) } ?? self.theme.secondaryText
 
-        return Button {
-            self.viewModel.selectProject(project)
-        } label: {
+        return HStack(spacing: 4) {
 
-            HStack(spacing: 9) {
+            Button {
+                self.viewModel.selectProject(project)
+            } label: {
 
-                WorkspaceIdentityIcon(symbol: project.symbol, customIcon: project.customIcon, size: 17)
-                    .font(.system(size: 12))
-                    .foregroundStyle(color)
-                    .frame(width: 17)
+                HStack(spacing: 9) {
 
-                Text(project.displayName)
-                    .font(.system(size: 12, weight: isSelected ? .medium : .regular))
-                    .lineLimit(1)
+                    WorkspaceIdentityIcon(symbol: project.symbol, customIcon: project.customIcon, size: 17)
+                        .font(.system(size: 12))
+                        .foregroundStyle(color)
+                        .frame(width: 17)
 
-                Spacer(minLength: 4)
+                    Text(project.displayName)
+                        .font(.system(size: 12, weight: isSelected ? .medium : .regular))
+                        .lineLimit(1)
 
-                if project.directoryPath == nil {
+                    Spacer(minLength: 4)
 
-                    Text("\(project.changeCount)")
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(self.theme.secondaryText)
+                    if project.directoryPath == nil {
 
-                }
+                        Text("\(project.changeCount)")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(self.theme.secondaryText)
 
-            }
-            .padding(.horizontal, 10)
-            .frame(height: self.projectRowHeight)
-            .background {
-
-                let opacity = isSelected ? (self.theme.isDark ? 0.10 : 0.18) : 0.09
-                let hasCustomBackground = self.viewModel.bucket(for: project) == nil && project.accentHex != nil
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(isSelected || hasCustomBackground ? color.opacity(opacity) : .clear)
-
-            }
-            .overlay(alignment: .leading) {
-
-                if isSelected && !self.theme.isDark {
-
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(color)
-                        .frame(width: 3, height: 22)
+                    }
 
                 }
+                .frame(height: self.projectRowHeight)
+                .contentShape(Rectangle())
 
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            DiffyIconButton(symbol: "pencil", label: "Edit \(project.displayName)") {
+                self.viewModel.editProject(project)
+            }
 
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .frame(height: self.projectRowHeight)
+        .background {
+
+            let opacity = isSelected ? (self.theme.isDark ? 0.10 : 0.18) : 0.09
+            let hasCustomBackground = self.viewModel.bucket(for: project) == nil && project.accentHex != nil
+            RoundedRectangle(cornerRadius: 7)
+                .fill(isSelected || hasCustomBackground ? color.opacity(opacity) : .clear)
+
+        }
+        .overlay(alignment: .leading) {
+
+            if isSelected && !self.theme.isDark {
+
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(color)
+                    .frame(width: 3, height: 22)
+
+            }
+
+        }
+        .contentShape(Rectangle())
         .draggable(project.id)
         .contextMenu {
 
@@ -612,7 +630,7 @@ struct WorkspaceSidebar: View {
                 self.viewModel.addBucket()
             } label: {
 
-                Label("Bucket", systemImage: "plus")
+                Label("Bucket", systemImage: "folder.badge.plus")
                     .frame(maxWidth: .infinity)
 
             }

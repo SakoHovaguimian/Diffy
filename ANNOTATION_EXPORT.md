@@ -18,6 +18,10 @@ This is a local feature. It does not require an account, an LLM API, automatic m
 
 Select a line or range, then invoke Add Annotation through a gutter action, context menu, or keyboard shortcut. Open a compact editor beside the selection with a clearly labeled source and line range.
 
+Hovering the line-number gutter reveals annotation and clipboard actions; hovering source text does not reveal them. Pull request gutters also offer comments when that comparison permits them. These controls reserve their space so hovering does not shift code.
+
+Copy Line With File & Line Number writes Markdown containing the file path, one-based line number, source side, and exact line contents in a fenced code block. Original-side copies use the previous path for renamed files. Blank placeholder rows have no line actions, and historical comparisons offer copying without creating notes on an outdated revision.
+
 The user writes a comment, saves it, and continues reviewing. An understated gutter marker indicates the note. Opening the note must preserve the selected code and surrounding reading position.
 
 Support:

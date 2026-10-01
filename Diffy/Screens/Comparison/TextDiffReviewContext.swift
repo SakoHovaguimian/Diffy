@@ -12,5 +12,6 @@ struct TextDiffReviewContext {
     let hasAnnotation: (DiffLine, SourceSide) -> Bool
     let lineDiscussion: (DiffLine) -> AnyView
     let fileDiscussion: () -> AnyView
+    var embedsInReviewList = false
 
 }

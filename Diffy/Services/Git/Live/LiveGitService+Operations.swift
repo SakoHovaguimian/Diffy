@@ -102,6 +102,17 @@ extension LiveGitService {
             try await validateBranch(name, at: root)
             return ["switch", "-c", name]
 
+        case let .deleteBranch(name):
+            guard let branch = snapshot.localBranches.first(where: { $0.name == name }) else {
+                throw GitError.invalidRevision(name)
+            }
+
+            guard !branch.isCurrent, snapshot.head.branchName != name else {
+                throw GitError.unsupported("Check out another branch before deleting the current branch.")
+            }
+
+            return ["branch", "--delete", "--", name]
+
         case let .fetch(remote):
             if let remote {
 

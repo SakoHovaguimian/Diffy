@@ -41,6 +41,10 @@ struct TextDiffScreen: View {
         self.reviewContext?.layout.wrappedValue ?? self.settings.editor.unified
     }
 
+    private var embedsInReviewList: Bool {
+        self.presentation?.embedsInReviewList ?? self.reviewContext?.embedsInReviewList ?? false
+    }
+
     private var allowsEditing: Bool {
         !self.workspace.runtime.isLive && self.presentation == nil && self.reviewContext == nil
     }
@@ -114,7 +118,7 @@ struct TextDiffScreen: View {
 
             if self.viewModel.isEditing {
                 inlineEditableCanvas()
-            } else if self.presentation?.embedsInReviewList == true {
+            } else if self.embedsInReviewList {
                 embeddedCodeCanvas()
             } else {
                 codeCanvas()
@@ -147,9 +151,9 @@ struct TextDiffScreen: View {
                 .truncationMode(.middle)
 
             Spacer(minLength: self.contentSize.scaled(8))
-            Text("~\(self.comparisonFile.changedLines)").foregroundStyle(self.theme.changed)
-            Text("+\(self.comparisonFile.additions)").foregroundStyle(self.theme.added)
-            Text("−\(self.comparisonFile.deletions)").foregroundStyle(self.theme.removed)
+            Text("~\(self.comparisonFile.changedLines)").foregroundStyle(self.theme.countColor(for: self.comparisonFile.changedLines, activeColor: self.theme.changed))
+            Text("+\(self.comparisonFile.additions)").foregroundStyle(self.theme.countColor(for: self.comparisonFile.additions, activeColor: self.theme.added))
+            Text("−\(self.comparisonFile.deletions)").foregroundStyle(self.theme.countColor(for: self.comparisonFile.deletions, activeColor: self.theme.removed))
 
         }
         .font(self.contentSize.font(size: 11, weight: .medium))
@@ -503,7 +507,15 @@ struct TextDiffScreen: View {
                 VStack(spacing: 0) {
 
                     ForEach(regions) { region in
+
+                        if showsPatchGap(before: region) {
+                            Text("⋯ Unchanged Lines Omitted ⋯")
+                                .font(self.contentSize.font(size: 11, design: .monospaced))
+                                .foregroundStyle(self.theme.secondaryText)
+                                .padding(self.contentSize.scaled(10))
+                        }
                         diffRegion(region, width: width)
+
                     }
 
                     if totalLines > self.viewModel.reviewLineLimit {
@@ -521,6 +533,8 @@ struct TextDiffScreen: View {
                             .padding(self.contentSize.scaled(24))
 
                     }
+
+                    self.reviewContext?.fileDiscussion()
 
                 }
                 .frame(width: width)
@@ -579,16 +593,20 @@ struct TextDiffScreen: View {
 
     private func scrollToReviewLine(_ target: Int?) {
 
-        guard let target, let presentation else { return }
-        self.navigateToLine?(presentation.lineAnchor(fileID: self.file.id, lineID: target))
+        guard let target, self.embedsInReviewList else { return }
+        self.navigateToLine?(reviewLineAnchor(target))
 
+    }
+
+    private func reviewLineAnchor(_ lineID: Int) -> String {
+        self.presentation?.lineAnchor(fileID: self.file.id, lineID: lineID) ?? "review/\(self.file.id)/line/\(lineID)"
     }
 
     private func diffRegion(_ region: DiffRegion, width: CGFloat) -> some View {
 
         Group {
 
-            if self.presentation?.embedsInReviewList == true {
+            if self.embedsInReviewList {
 
                 VStack(spacing: 0) {
                     diffRegionRows(region, width: width)
@@ -639,8 +657,8 @@ struct TextDiffScreen: View {
 
     private func lineAnchor(_ line: DiffLine) -> AnyHashable {
 
-        if let presentation, presentation.embedsInReviewList {
-            return AnyHashable(presentation.lineAnchor(fileID: self.file.id, lineID: line.id))
+        if self.embedsInReviewList {
+            return AnyHashable(reviewLineAnchor(line.id))
         }
 
         return AnyHashable(line.id)
@@ -729,6 +747,8 @@ struct TextDiffScreen: View {
     private func codeLine(_ line: DiffLine, side: SourceSide, paneWidth: CGFloat) -> some View {
 
         CodeLineView(
+            filePath: side == .left ? self.comparisonFile.originalPath ?? self.comparisonFile.path : self.comparisonFile.path,
+            language: self.comparisonFile.language,
             source: side == .left ? line.left : line.right,
             oppositeSource: side == .left ? line.right : line.left,
             number: side == .left ? line.oldNumber : line.newNumber,
@@ -791,8 +811,11 @@ struct TextDiffScreen: View {
         }
 
         let maximum = self.comparisonFile.lines.map { max($0.left?.count ?? 0, $0.right?.count ?? 0) }.max() ?? 60
-        let reviewGutter: CGFloat = self.reviewContext == nil ? 0 : 44
-        let sourceWidth = CGFloat(maximum) * self.contentSize.scaled(self.settings.editor.fontSize) * 0.61 + self.contentSize.scaled(86 + reviewGutter)
+        let lineGutterWidth = DiffLineGutter.width(
+            showsLineNumbers: self.settings.editor.showLineNumbers,
+            hasComment: self.reviewContext?.canComment == true
+        )
+        let sourceWidth = CGFloat(maximum) * self.contentSize.scaled(self.settings.editor.fontSize) * 0.61 + self.contentSize.scaled(lineGutterWidth + 32)
 
         return max(available, sourceWidth * (self.usesSingleSourceLayout ? 1 : 2) + (self.usesSingleSourceLayout ? 0 : self.gutterWidth))
 

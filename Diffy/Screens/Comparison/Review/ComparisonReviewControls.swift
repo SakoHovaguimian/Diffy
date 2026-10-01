@@ -61,11 +61,12 @@ struct ComparisonReviewControls: View {
 
         HStack(spacing: 16) {
 
-            Picker("Comparison Experience", selection: self.$viewModel.experience) {
-                ForEach(ComparisonReviewExperience.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            DiffySegmentedControl(
+                title: "Comparison Experience",
+                options: ComparisonReviewExperience.allCases,
+                selection: self.$viewModel.experience,
+                label: { $0.rawValue }
+            )
             .frame(width: 290, alignment: .leading)
             .help("Browse One File With The Navigator Or Review Collapsible File Cards")
 

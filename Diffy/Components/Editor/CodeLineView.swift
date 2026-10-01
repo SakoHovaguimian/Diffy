@@ -7,6 +7,8 @@ struct CodeLineView: View {
     @Environment(\.diffyContentSize) private var contentSize
     @EnvironmentObject private var settings: SettingsViewModel
 
+    let filePath: String
+    let language: String
     let source: String?
     let oppositeSource: String?
     let number: Int?
@@ -22,8 +24,22 @@ struct CodeLineView: View {
     var comment: (() -> Void)? = nil
     var reviewNote: (() -> Void)? = nil
 
-    private var reviewActionWidth: CGFloat {
-        self.comment != nil || self.reviewNote != nil ? self.contentSize.scaled(44) : 0
+    private var lineGutterWidth: CGFloat {
+        DiffLineGutter.width(showsLineNumbers: self.settings.editor.showLineNumbers, hasComment: self.comment != nil)
+    }
+
+    private var clipboardContent: DiffLineClipboardContent? {
+
+        guard let source = self.source, let number = self.number else { return nil }
+
+        return DiffLineClipboardContent(
+            filePath: self.filePath,
+            lineNumber: number,
+            side: self.side,
+            source: source,
+            language: self.language
+        )
+
     }
 
     private var changeColor: Color {
@@ -33,7 +49,7 @@ struct CodeLineView: View {
         case .modified: self.theme.changed
         case .added: self.theme.added
         case .removed: self.theme.removed
-        default: self.theme.modified
+        default: self.status.color(in: self.theme)
 
         }
 
@@ -99,20 +115,7 @@ struct CodeLineView: View {
         .frame(maxWidth: .infinity, minHeight: self.contentSize.scaled(self.settings.editor.lineHeight), alignment: .leading)
         .background(self.backgroundColor)
         .contentShape(Rectangle())
-        .contextMenu {
-
-            if self.number != nil {
-
-                if let comment {
-                    Button("Comment On This Line", action: comment)
-                }
-                Button(self.reviewNote == nil ? "Annotate This Line" : "Add Review Note On This Line", action: self.annotate)
-                Button("Copy Line") { ExportController.copy(self.source ?? "") }
-
-            }
-
-        }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(self.side.rawValue), Line \(self.number.map(String.init) ?? "Empty"), \(self.source ?? "")")
         .accessibilityAction(named: "Annotate", self.annotate)
         .accessibilityAction(named: "Edit Working Copy") { self.edit?() }
@@ -121,61 +124,21 @@ struct CodeLineView: View {
 
     private func gutter() -> some View {
 
-        HStack(spacing: self.contentSize.scaled(4)) {
-
-            if self.annotated {
-
-                Image(systemName: "text.bubble.fill")
-                    .foregroundStyle(self.theme.accent)
-                    .font(self.contentSize.font(size: 8))
-
-            } else {
-
-                Text(self.changeMarker)
-                    .foregroundStyle(self.changeColor)
-                    .font(self.contentSize.font(size: 10, design: .monospaced))
-
-            }
-
-            if self.settings.editor.showLineNumbers {
-
-                Text(self.number.map(String.init) ?? "")
-                    .font(self.contentSize.font(size: 10, design: .monospaced))
-                    .foregroundStyle(self.selected ? self.theme.accent : self.theme.secondaryText.opacity(self.theme.isDark ? 0.65 : 0.85))
-                    .frame(width: self.contentSize.scaled(25), alignment: .trailing)
-
-            }
-
-            if self.number != nil {
-
-                if let comment {
-                    Button(action: comment) {
-                        Image(systemName: "plus.bubble")
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Comment On \(self.side.rawValue) Line \(self.number ?? 0)")
-                    .help("Comment On This Line")
-                }
-                if let reviewNote {
-                    Button(action: reviewNote) {
-                        Image(systemName: "square.and.pencil")
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Add Review Note On \(self.side.rawValue) Line \(self.number ?? 0)")
-                    .help("Add Review Note On This Line")
-                }
-
-            }
-
-        }
-        .frame(
-            width: self.contentSize.scaled(self.settings.editor.showLineNumbers ? 54 : 20) + self.reviewActionWidth,
-            height: self.contentSize.scaled(self.settings.editor.lineHeight)
+        DiffLineGutter(
+            number: self.number,
+            marker: self.changeMarker,
+            markerColor: self.changeColor,
+            selected: self.selected,
+            annotated: self.annotated,
+            showsLineNumbers: self.settings.editor.showLineNumbers,
+            lineHeight: self.settings.editor.lineHeight,
+            clipboardContent: self.clipboardContent,
+            select: self.action,
+            annotate: self.annotate,
+            annotationTitle: self.reviewNote == nil ? "Annotate This Line" : "Add Review Note On This Line",
+            comment: self.comment
         )
-        .padding(.trailing, self.contentSize.scaled(8))
         .background(self.status == .identical || self.source == nil ? .clear : self.changeColor.opacity(0.12))
-        .contentShape(Rectangle())
-        .onTapGesture(perform: self.action)
 
     }
 
@@ -219,7 +182,7 @@ struct CodeLineView: View {
         let styledSource = NSMutableAttributedString(attributedString: NSAttributedString(highlighted))
         let font = wrappingFont()
         let spaceWidth = (" " as NSString).size(withAttributes: [.font: font]).width
-        let availableWidth = self.paneWidth - self.contentSize.scaled(self.settings.editor.showLineNumbers ? 74 : 40) - self.reviewActionWidth
+        let availableWidth = self.paneWidth - self.contentSize.scaled(self.lineGutterWidth + 20)
         let lineColumns = max(8, Int((availableWidth / spaceWidth).rounded(.down)) - 2)
         let continuationColumns = continuationIndent(for: source, lineColumns: lineColumns)
         let breaks = wrapBreaks(
@@ -330,6 +293,8 @@ struct CodeLineView: View {
 #Preview {
 
     CodeLineView(
+        filePath: "Sources/NavigationService.swift",
+        language: "swift",
         source: MockPreviewFixtures.selectedLine.right,
         oppositeSource: MockPreviewFixtures.selectedLine.left,
         number: MockPreviewFixtures.selectedLine.newNumber,

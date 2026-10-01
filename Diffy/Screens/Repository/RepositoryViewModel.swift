@@ -520,6 +520,7 @@ final class RepositoryViewModel: ViewModel {
 
         switch action {
 
+        case let .deleteBranch(name): consequence = "Delete the local branch \(name). Its remote branch will be preserved. Git will refuse if the branch is unmerged or checked out in a worktree."
         case let .startRebase(onto): consequence = "Replay this branch's commits onto \(onto). Commit IDs will change. Keep local changes committed before continuing."
         case let .startMerge(branch): consequence = "Merge \(branch) into the current branch. Git may create a merge commit or pause for conflicts."
         case let .restore(paths): consequence = "Discard unstaged edits in \(paths.count) selected file(s). The index is preserved. Discarded edits cannot be recovered by Diffy."

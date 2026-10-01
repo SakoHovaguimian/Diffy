@@ -71,11 +71,14 @@ struct PullRequestReviewHeaderView: View {
             Text("\(details.commitCount) Commits")
             Text("·")
             if let counts = details.summary.lineCounts {
-                Text("+\(counts.additions)").foregroundStyle(self.theme.added)
-                Text("−\(counts.deletions)").foregroundStyle(self.theme.removed)
+                Text("+\(counts.additions)").foregroundStyle(self.theme.countColor(for: counts.additions, activeColor: self.theme.added))
+                Text("−\(counts.deletions)").foregroundStyle(self.theme.countColor(for: counts.deletions, activeColor: self.theme.removed))
                 Text("·")
             }
-            DiffyBadge(title: details.summary.statusTitle, color: self.theme.accent)
+            DiffyBadge(
+                title: details.summary.statusTitle,
+                color: details.summary.lifecycle.color(in: self.theme, isDraft: details.summary.isDraft)
+            )
             Text("·")
             Text("\(details.summary.headRef) → \(details.summary.baseRef)")
                 .lineLimit(1)

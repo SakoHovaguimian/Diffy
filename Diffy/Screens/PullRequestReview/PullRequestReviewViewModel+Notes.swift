@@ -45,10 +45,9 @@ extension PullRequestReviewViewModel {
 
     // MARK: - Creating Notes
 
-    func beginNote(line: Int, side: String, snippet: String) {
+    func beginNote(in file: PullRequestReviewFile, line: Int, side: String, snippet: String) {
 
-        guard let file = self.selectedFile,
-              let source = self.noteSource,
+        guard let source = self.noteSource,
               let summary = self.details?.summary else { return }
 
         self.noteDraft = PullRequestNoteDraft(

@@ -24,12 +24,13 @@ struct GitHubSignInView: View {
                     .disabled(!self.viewModel.runtime.isLive || self.viewModel.isSigningIn)
 
                     if self.viewModel.isSigningIn {
-
-                        ProgressView().controlSize(.small)
                         Button("Cancel") { self.viewModel.cancelSignIn() }
-
                     }
 
+                }
+
+                if self.viewModel.isSigningIn {
+                    DiffyLoadingState(title: "Signing In With GitHub…")
                 }
 
                 if !self.viewModel.runtime.isLive {
@@ -76,10 +77,9 @@ struct GitHubSignInView: View {
                     .buttonStyle(.borderedProminent)
                 Button("Cancel") { self.viewModel.cancelSignIn() }
                 Spacer()
-                ProgressView().controlSize(.small)
-                Text("Waiting For Approval…")
 
             }
+            DiffyLoadingState(title: "Waiting For Approval…")
             Text("Code expires at \(authorization.expiresAt.formatted(date: .omitted, time: .shortened)).")
 
         }
