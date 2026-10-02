@@ -4,7 +4,6 @@ struct RepositoryPullRequestsView: View {
 
     @ObservedObject var viewModel: RepositoryViewModel
     @ObservedObject var workspace: WorkspaceViewModel
-    @EnvironmentObject private var accounts: GitHubAccountsViewModel
     @Environment(\.diffyTheme) private var theme
 
     var body: some View {
@@ -35,12 +34,18 @@ struct RepositoryPullRequestsView: View {
             .padding(32)
 
         }
-        .onChange(of: self.accounts.accounts) { _, _ in
+        .onChange(of: self.viewModel.accountSnapshot) { _, _ in
 
-            self.viewModel.selectedAccountID = self.viewModel.availableAccounts.first?.id ?? ""
-            Task { await self.viewModel.loadPullRequests() }
+            let selectedID = self.viewModel.availableAccounts.first { $0.id == self.viewModel.selectedAccountID }?.id
+                ?? self.viewModel.availableAccounts.first?.id ?? ""
+            if self.viewModel.selectedAccountID != selectedID {
+                self.viewModel.selectedAccountID = selectedID
+            } else {
+                Task { await self.viewModel.loadPullRequests() }
+            }
 
         }
+        .onChange(of: self.viewModel.selectedAccountID) { _, _ in Task { await self.viewModel.loadPullRequests() } }
         .diffyStatusAnimation(value: self.viewModel.pullRequestError)
 
     }
@@ -72,7 +77,6 @@ struct RepositoryPullRequestsView: View {
                     .disabled(self.viewModel.isLoadingPullRequests || self.viewModel.isLoadingMorePullRequests)
 
             }
-            .onChange(of: self.viewModel.selectedAccountID) { _, _ in Task { await self.viewModel.loadPullRequests() } }
 
             if let error = self.viewModel.pullRequestError {
                 DiffyStatusBanner(message: error, isError: true)

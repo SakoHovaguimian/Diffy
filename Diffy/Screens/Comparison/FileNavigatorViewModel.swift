@@ -10,6 +10,11 @@ final class FileNavigatorViewModel: ViewModel {
     private var initialLayout: FileListLayout = .tree
     private var unavailableSortOrders: Set<FileSortOrder> = []
     private var isRestoring = false
+    private var cachedInput: FileNavigatorInput?
+    private var cachedVisibleFiles: [DiffFile] = []
+    private var cachedEntries: [FileTreeEntry] = []
+    private var cachedLayout: FileListLayout?
+    private var cachedCollapsedGroups: Set<String> = []
 
     @Published var query = ""
     @Published var sort: FileSortOrder = .path
@@ -96,8 +101,22 @@ final class FileNavigatorViewModel: ViewModel {
 
     func visibleFiles(_ files: [DiffFile], mode: ComparisonMode) -> [DiffFile] {
 
-        let matchingFiles = filterFiles(files, mode: mode)
-        return sortFiles(matchingFiles)
+        let input = FileNavigatorInput(
+            files: files,
+            mode: mode,
+            query: self.query,
+            sort: self.sort,
+            ascending: self.ascending,
+            filter: self.filter,
+            dateMinute: self.sort == .updated ? Int(Date().timeIntervalSince1970 / 60) : nil
+        )
+        guard self.cachedInput != input else { return self.cachedVisibleFiles }
+
+        self.cachedVisibleFiles = sortFiles(filterFiles(files, mode: mode))
+        self.cachedInput = input
+        self.cachedLayout = nil
+        self.cachedEntries = []
+        return self.cachedVisibleFiles
 
     }
 
@@ -162,6 +181,19 @@ final class FileNavigatorViewModel: ViewModel {
 
         let visible = visibleFiles(files, mode: mode)
 
+        guard self.cachedLayout != self.layout || self.cachedCollapsedGroups != self.collapsedGroups else {
+            return self.cachedEntries
+        }
+
+        self.cachedEntries = makeEntries(visible)
+        self.cachedLayout = self.layout
+        self.cachedCollapsedGroups = self.collapsedGroups
+        return self.cachedEntries
+
+    }
+
+    private func makeEntries(_ visible: [DiffFile]) -> [FileTreeEntry] {
+
         if self.layout == .flat {
             return visible.map { FileTreeEntry(id: $0.id, title: $0.name, depth: 0, file: $0, count: 0) }
         }
@@ -176,20 +208,17 @@ final class FileNavigatorViewModel: ViewModel {
 
     private func treeEntries(_ files: [DiffFile], prefix: String, depth: Int) -> [FileTreeEntry] {
 
-        let directories = Set(files.compactMap { file -> String? in
+        let descendantsByDirectory = Dictionary(grouping: files.filter { $0.path.dropFirst(prefix.count).contains("/") }) { file in
+            String(file.path.dropFirst(prefix.count).split(separator: "/")[0])
+        }
+        let earliestUpdates = self.sort == .updated ? descendantsByDirectory.mapValues { $0.map(\.updatedMinutesAgo).min() ?? .max } : [:]
 
-            let relative = String(file.path.dropFirst(prefix.count))
-            let parts = relative.split(separator: "/")
-            return parts.count > 1 ? String(parts[0]) : nil
-
-        })
-
-        let sortedDirectories = directories.sorted { left, right in
+        let sortedDirectories = descendantsByDirectory.keys.sorted { left, right in
 
             if self.sort == .updated {
 
-                let leftDate = files.filter { $0.path.hasPrefix(prefix + left + "/") }.map(\.updatedMinutesAgo).min() ?? .max
-                let rightDate = files.filter { $0.path.hasPrefix(prefix + right + "/") }.map(\.updatedMinutesAgo).min() ?? .max
+                let leftDate = earliestUpdates[left] ?? .max
+                let rightDate = earliestUpdates[right] ?? .max
 
                 if leftDate != rightDate {
                     return self.ascending ? leftDate < rightDate : leftDate > rightDate
@@ -206,7 +235,7 @@ final class FileNavigatorViewModel: ViewModel {
         for directory in sortedDirectories {
 
             let path = prefix + directory + "/"
-            let descendants = files.filter { $0.path.hasPrefix(path) }
+            let descendants = descendantsByDirectory[directory] ?? []
             entries.append(FileTreeEntry(id: path, title: directory, depth: depth, file: nil, count: descendants.count))
 
             if !self.collapsedGroups.contains(path) {

@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 extension PullRequestReviewViewModel {
 
-    var conversationThreads: [PullRequestConversationThread] {
+    func makeConversationThreads() -> [PullRequestConversationThread] {
 
         let entries = self.conversation.sorted { first, second in
 

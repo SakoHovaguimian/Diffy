@@ -13,7 +13,7 @@ struct PullRequestFileContent: View {
 
         VStack(spacing: 0) {
 
-            if self.fileViewModel.file.patch == nil || !self.fileViewModel.file.hasCompletePatch {
+            if self.fileViewModel.file.patch == nil || !self.fileViewModel.hasCompletePatch {
                 DiffyStatusBanner(message: self.fileViewModel.file.patch == nil
                     ? "GitHub did not provide a text patch for this file (binary, empty, or too large). Open GitHub to inspect it."
                     : "GitHub provided a partial patch. Open GitHub to inspect the complete file.")

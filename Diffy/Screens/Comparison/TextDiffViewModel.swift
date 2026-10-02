@@ -10,6 +10,11 @@ final class TextDiffViewModel: ViewModel {
     private var appliedDrafts: [String: TextDiffDraftSnapshot] = [:]
     private var appliedText = ""
     private var appliedLines: [DiffLine] = []
+    private var cachedVisibilityInput: TextDiffVisibilityInput?
+    private var cachedVisibleLines: [DiffLine] = []
+    private var cachedRegions: [DiffRegion]?
+    private var cachedRegionLimit: Int?
+    private var cachedSplittingAtLineGaps = false
     @Published var selectionStart: Int?
     @Published var selectionEnd: Int?
     @Published var selectedSide: SourceSide = .right
@@ -20,6 +25,7 @@ final class TextDiffViewModel: ViewModel {
     @Published var paneRatio = 0.5
     @Published private(set) var draftText = ""
     @Published private(set) var draftLines: [DiffLine] = []
+    var needsEmbeddedNavigationAfterLayout = false
     @Published var embeddedCanvasHeight: CGFloat = 120
     @Published var reviewLineLimit = 400
     @Published var isEditing = false
@@ -280,11 +286,22 @@ final class TextDiffViewModel: ViewModel {
 
     func visibleLines(_ file: DiffFile, preferences: EditorPreferences, retaining retainedIDs: Set<Int> = []) -> [DiffLine] {
 
+        let input = TextDiffVisibilityInput(
+            lines: file.lines,
+            collapseUnchanged: preferences.collapseUnchanged,
+            ignoreComments: preferences.ignoreComments,
+            contextLines: max(0, preferences.contextLines),
+            retainedIDs: retainedIDs
+        )
+        guard self.cachedVisibilityInput != input else { return self.cachedVisibleLines }
+        self.cachedVisibilityInput = input
+        self.cachedRegions = nil
+
         let changedIDs = file.lines.filter(\.isChanged).map(\.id)
-        let context = max(0, preferences.contextLines)
+        let context = input.contextLines
         var nextChange = 0
 
-        return file.lines.filter { line in
+        self.cachedVisibleLines = file.lines.filter { line in
 
             if retainedIDs.contains(line.id) { return true }
             if preferences.ignoreComments && (line.left ?? line.right ?? "").trimmingCharacters(in: .whitespaces).hasPrefix("//") {
@@ -301,6 +318,8 @@ final class TextDiffViewModel: ViewModel {
 
         }
 
+        return self.cachedVisibleLines
+
     }
 
     func visibleRegions(
@@ -312,6 +331,9 @@ final class TextDiffViewModel: ViewModel {
     ) -> [DiffRegion] {
 
         let visible = visibleLines(file, preferences: preferences, retaining: retainedIDs)
+        if let cachedRegions, self.cachedRegionLimit == limit, self.cachedSplittingAtLineGaps == splittingAtLineGaps {
+            return cachedRegions
+        }
         let lines = Array(visible.prefix(limit ?? visible.count))
         var regions: [DiffRegion] = []
         var currentLines: [DiffLine] = []
@@ -334,6 +356,9 @@ final class TextDiffViewModel: ViewModel {
             regions.append(DiffRegion(id: first.id, lines: currentLines, isChanged: first.isChanged))
         }
 
+        self.cachedRegions = regions
+        self.cachedRegionLimit = limit
+        self.cachedSplittingAtLineGaps = splittingAtLineGaps
         return regions
 
     }

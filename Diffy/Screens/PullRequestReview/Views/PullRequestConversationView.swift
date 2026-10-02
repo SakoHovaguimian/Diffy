@@ -10,7 +10,7 @@ struct PullRequestConversationView: View {
 
             ScrollView {
 
-                LazyVStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 28) {
 
                     if let details = self.viewModel.details {
                         PullRequestDescriptionView(details: details)

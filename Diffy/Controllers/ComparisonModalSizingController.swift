@@ -56,10 +56,13 @@ final class ComparisonModalSizingController {
 
         guard let sheet, let parent = sheet.sheetParent ?? sheet.parent else { return }
         let available = parent.contentLayoutRect.size
+        guard available.width.isFinite, available.height.isFinite,
+              available.width > 0, available.height > 0 else { return }
         let screen = parent.screen?.visibleFrame.size ?? available
-        let size = self.fillsWorkspace
+        let proposed = self.fillsWorkspace
             ? available
             : NSSize(width: min(available.width - 24, screen.width - 40), height: min(available.height - 24, screen.height - 80))
+        let size = NSSize(width: max(720, proposed.width), height: max(480, proposed.height))
         let current = sheet.contentView?.bounds.size ?? .zero
 
         guard abs(current.width - size.width) > 1 || abs(current.height - size.height) > 1 else { return }

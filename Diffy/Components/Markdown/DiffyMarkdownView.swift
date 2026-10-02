@@ -13,7 +13,7 @@ struct DiffyMarkdownView: View {
     var body: some View {
 
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(DiffyMarkdownBlock.parse(self.markdown)) { block in
+            ForEach(DiffyMarkdownParser.shared.blocks(for: self.markdown)) { block in
                 blockView(block)
             }
         }

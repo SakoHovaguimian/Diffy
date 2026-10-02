@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct DiffyTheme {
+struct DiffyTheme: Hashable {
 
     let isDark: Bool
     let background: Color

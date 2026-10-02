@@ -74,7 +74,20 @@ struct LiveDiffEditor: NSViewRepresentable {
         }
 
         configureLayout(textView, scrollView: scrollView)
-        applyStyles(to: textView)
+        let styleSnapshot = LiveDiffEditorStyleSnapshot(
+            text: self.text,
+            lineStatuses: self.lineStatuses,
+            lineComparisons: self.lineComparisons,
+            preferences: self.settings.editor,
+            theme: self.theme,
+            contentSize: self.contentSize
+        )
+        if context.coordinator.styleSnapshot != styleSnapshot {
+
+            applyStyles(to: textView)
+            context.coordinator.styleSnapshot = styleSnapshot
+
+        }
         context.coordinator.isApplyingStyles = false
         focusRequestedLine(in: textView, coordinator: context.coordinator)
 
@@ -91,7 +104,7 @@ struct LiveDiffEditor: NSViewRepresentable {
         textView.isHorizontallyResizable = !wrapsLines
         textView.textContainer?.widthTracksTextView = wrapsLines
         textView.textContainer?.containerSize = NSSize(
-            width: wrapsLines ? scrollView.contentSize.width : CGFloat.greatestFiniteMagnitude,
+            width: wrapsLines ? max(1, scrollView.contentSize.width) : CGFloat.greatestFiniteMagnitude,
             height: CGFloat.greatestFiniteMagnitude
         )
         textView.textContainerInset = NSSize(
@@ -326,6 +339,7 @@ struct LiveDiffEditor: NSViewRepresentable {
 
         var text: Binding<String>
         var isApplyingStyles = false
+        var styleSnapshot: LiveDiffEditorStyleSnapshot?
         var focusedLine: Int?
         var pendingFocusLine: Int?
 
@@ -340,6 +354,7 @@ struct LiveDiffEditor: NSViewRepresentable {
                 return
             }
 
+            self.styleSnapshot = nil
             self.text.wrappedValue = textView.string
 
         }

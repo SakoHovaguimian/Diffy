@@ -24,8 +24,14 @@ final class PullRequestReviewViewModel: ViewModel, Identifiable {
     @Published private(set) var reviewFiles: [PullRequestReviewFileViewModel] = []
     @Published private(set) var aiWorkspace: AIReviewWorkspaceViewModel?
     @Published var conversation: [PullRequestConversationEntry] = [] {
-        didSet { self.conversationLocations = makeConversationLocations() }
+        didSet {
+
+            self.conversationLocations = makeConversationLocations()
+            self.conversationThreads = makeConversationThreads()
+
+        }
     }
+    private(set) var conversationThreads: [PullRequestConversationThread] = []
     private(set) var conversationLocations: [String: PullRequestConversationEntry] = [:]
     @Published var selectedFileID: String?
     @Published private(set) var historicalFileSelection: PullRequestHistoricalFileSelection?

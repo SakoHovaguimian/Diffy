@@ -2,6 +2,12 @@ import SwiftUI
 
 struct SyntaxHighlightService {
 
+    private static let keywordExpression = try? NSRegularExpression(pattern: "\\b(import|final|class|struct|let|var|private|func|return|self|init|try|await|async|throw|if|else|guard|nil)\\b")
+    private static let typeExpression = try? NSRegularExpression(pattern: "\\b[A-Z][A-Za-z0-9_]*\\b")
+    private static let stringExpression = try? NSRegularExpression(pattern: "\"[^\"]*\"")
+    private static let commentExpression = try? NSRegularExpression(pattern: "//.*$")
+    private static let tokenExpression = try? NSRegularExpression(pattern: "\\w+|\\s+|[^\\w\\s]")
+
     func highlight(
         _ source: String,
         theme: DiffyTheme,
@@ -15,10 +21,10 @@ struct SyntaxHighlightService {
         var value = AttributedString(source)
         value.foregroundColor = theme.text
 
-        apply("\\b(import|final|class|struct|let|var|private|func|return|self|init|try|await|async|throw|if|else|guard|nil)\\b", color: theme.keyword, source: source, value: &value)
-        apply("\\b[A-Z][A-Za-z0-9_]*\\b", color: theme.type, source: source, value: &value)
-        apply("\"[^\"]*\"", color: theme.string, source: source, value: &value)
-        apply("//.*$", color: theme.comment, source: source, value: &value)
+        apply(Self.keywordExpression, color: theme.keyword, source: source, value: &value)
+        apply(Self.typeExpression, color: theme.type, source: source, value: &value)
+        apply(Self.stringExpression, color: theme.string, source: source, value: &value)
+        apply(Self.commentExpression, color: theme.comment, source: source, value: &value)
 
         if highlightLevel != "Line", let comparison {
 
@@ -85,7 +91,7 @@ struct SyntaxHighlightService {
 
         }
 
-        guard let expression = try? NSRegularExpression(pattern: "\\w+|\\s+|[^\\w\\s]") else {
+        guard let expression = Self.tokenExpression else {
             return []
         }
 
@@ -150,9 +156,9 @@ struct SyntaxHighlightService {
 
     }
 
-    private func apply(_ pattern: String, color: Color, source: String, value: inout AttributedString) {
+    private func apply(_ expression: NSRegularExpression?, color: Color, source: String, value: inout AttributedString) {
 
-        guard let expression = try? NSRegularExpression(pattern: pattern) else {
+        guard let expression else {
             return
         }
 

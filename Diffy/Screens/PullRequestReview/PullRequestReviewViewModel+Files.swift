@@ -70,19 +70,54 @@ extension PullRequestReviewViewModel {
 
     func unanchoredComments(in file: PullRequestReviewFile, lines: [DiffLine]) -> [PullRequestConversationEntry] {
 
-        fileComments(in: file).filter { comment in
+        let oldNumbers = Set(lines.compactMap(\.oldNumber))
+        let newNumbers = Set(lines.compactMap(\.newNumber))
+
+        return fileComments(in: file).filter { comment in
 
             let location = conversationLocation(for: comment)
-            return !lines.contains { line in
-                location.line != nil && location.line == (location.side == "LEFT" ? line.oldNumber : line.newNumber)
-            }
+            guard let number = location.line else { return true }
+            return !(location.side == "LEFT" ? oldNumbers : newNumbers).contains(number)
 
         }
 
     }
 
     func discussionLineIDs(in file: PullRequestReviewFile, lines: [DiffLine]) -> Set<Int> {
-        Set(lines.filter { !self.drafts(at: $0, in: file).isEmpty || !self.comments(at: $0, in: file).isEmpty }.map(\.id))
+
+        var oldNumbers: Set<Int> = []
+        var newNumbers: Set<Int> = []
+
+        for draft in self.drafts where draft.path == file.filename {
+
+            if draft.side == "LEFT" {
+                oldNumbers.insert(draft.line)
+            } else {
+                newNumbers.insert(draft.line)
+            }
+
+        }
+
+        for comment in fileComments(in: file) {
+
+            let location = conversationLocation(for: comment)
+            guard let number = location.line else { continue }
+            if location.side == "LEFT" {
+                oldNumbers.insert(number)
+            } else {
+                newNumbers.insert(number)
+            }
+
+        }
+
+        return Set(lines.compactMap { line in
+
+            let hasOldDiscussion = line.oldNumber.map { oldNumbers.contains($0) } ?? false
+            let hasNewDiscussion = line.newNumber.map { newNumbers.contains($0) } ?? false
+            return hasOldDiscussion || hasNewDiscussion ? line.id : nil
+
+        })
+
     }
 
     private func fileComments(in file: PullRequestReviewFile) -> [PullRequestConversationEntry] {

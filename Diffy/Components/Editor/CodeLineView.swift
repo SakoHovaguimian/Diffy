@@ -164,127 +164,17 @@ struct CodeLineView: View {
 
     private func highlightedSource() -> AttributedString {
 
-        let source = self.source ?? " "
-        let highlighted = SyntaxHighlightService().highlight(
-            source,
-            theme: self.theme,
-            whitespace: self.settings.editor.showWhitespace,
+        CodeLineTextRenderer.shared.render(
+            source: self.source,
             comparison: self.status == .modified ? self.oppositeSource : nil,
-            highlightLevel: self.settings.editor.highlightLevel,
+            theme: self.theme,
+            preferences: self.settings.editor,
+            contentSize: self.contentSize,
+            paneWidth: self.paneWidth,
+            gutterWidth: self.lineGutterWidth,
             inlineColor: self.side == .left ? self.theme.removed : self.theme.added,
             emphasis: self.settings.editor.highlightLevel == "Line" ? nil : self.emphasis
         )
-
-        guard self.settings.editor.wrapLines, self.source != nil else {
-            return highlighted
-        }
-
-        let styledSource = NSMutableAttributedString(attributedString: NSAttributedString(highlighted))
-        let font = wrappingFont()
-        let spaceWidth = (" " as NSString).size(withAttributes: [.font: font]).width
-        let availableWidth = self.paneWidth - self.contentSize.scaled(self.lineGutterWidth + 20)
-        let lineColumns = max(8, Int((availableWidth / spaceWidth).rounded(.down)) - 2)
-        let continuationColumns = continuationIndent(for: source, lineColumns: lineColumns)
-        let breaks = wrapBreaks(
-            in: source,
-            lineColumns: lineColumns,
-            continuationColumns: continuationColumns,
-            font: font,
-            spaceWidth: spaceWidth
-        )
-
-        for offset in breaks.reversed() {
-
-            var attributes = styledSource.attributes(at: offset - 1, effectiveRange: nil)
-            attributes.removeValue(forKey: .backgroundColor)
-            attributes.removeValue(forKey: NSAttributedString.Key("SwiftUI.BackgroundColor"))
-            let continuation = NSAttributedString(
-                string: "\n" + String(repeating: " ", count: continuationColumns),
-                attributes: attributes
-            )
-            styledSource.insert(continuation, at: offset)
-
-        }
-
-        return AttributedString(styledSource)
-
-    }
-
-    private func continuationIndent(for source: String, lineColumns: Int) -> Int {
-
-        let leadingWhitespace = source.prefix { $0 == " " || $0 == "\t" }
-        var columns = 0
-
-        for character in leadingWhitespace {
-
-            if character == "\t" {
-                let tabWidth = max(1, self.settings.editor.tabWidth)
-                columns += tabWidth - columns % tabWidth
-            } else {
-                columns += 1
-            }
-
-        }
-
-        return min(max(columns, 2), min(20, max(2, lineColumns / 3)))
-
-    }
-
-    private func wrapBreaks(
-        in source: String,
-        lineColumns: Int,
-        continuationColumns: Int,
-        font: NSFont,
-        spaceWidth: CGFloat
-    ) -> [Int] {
-
-        var breaks: [Int] = []
-        var column = 0
-
-        for index in source.indices {
-
-            let character = source[index]
-            let width = characterWidth(character, at: column, font: font, spaceWidth: spaceWidth)
-
-            if column > 0 && column + width > lineColumns {
-
-                breaks.append(source.utf16.distance(from: source.startIndex, to: index))
-                column = continuationColumns
-
-            }
-
-            column += characterWidth(character, at: column, font: font, spaceWidth: spaceWidth)
-
-        }
-
-        return breaks
-
-    }
-
-    private func characterWidth(_ character: Character, at column: Int, font: NSFont, spaceWidth: CGFloat) -> Int {
-
-        if character == "\t" {
-
-            let tabWidth = max(1, self.settings.editor.tabWidth)
-            return tabWidth - column % tabWidth
-
-        }
-
-        if character.asciiValue != nil {
-            return 1
-        }
-
-        let measuredWidth = (String(character) as NSString).size(withAttributes: [.font: font]).width
-        return max(1, Int((measuredWidth / spaceWidth).rounded()))
-
-    }
-
-    private func wrappingFont() -> NSFont {
-
-        let fontSize = self.contentSize.scaled(self.settings.editor.fontSize)
-
-        return NSFont(name: self.settings.editor.fontName, size: fontSize)
-            ?? NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
 
     }
 

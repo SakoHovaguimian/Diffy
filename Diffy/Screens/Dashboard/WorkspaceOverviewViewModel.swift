@@ -14,13 +14,29 @@ final class WorkspaceOverviewViewModel: ViewModel {
     private var pullRequestDetailTasks: [String: Task<PullRequestSummary?, Never>] = [:]
 
     @Published private(set) var activeProjects: [OverviewProjectChange] = []
-    @Published private(set) var assignedPullRequests: [AssignedPullRequestSummary] = []
-    @Published private(set) var reviewRequestedPullRequests: [AssignedPullRequestSummary] = []
+    private var cachedAssignedPullRequests: [AssignedPullRequestSummary] = []
+    private var cachedReviewRequestedPullRequests: [AssignedPullRequestSummary] = []
+    @Published private(set) var assignedPullRequests: [AssignedPullRequestSummary] = [] {
+        didSet { self.cachedAssignedPullRequests = self.assignedSortOrder.sorted(self.assignedPullRequests) }
+    }
+    @Published private(set) var reviewRequestedPullRequests: [AssignedPullRequestSummary] = [] {
+        didSet { self.cachedReviewRequestedPullRequests = self.reviewRequestedSortOrder.sorted(self.reviewRequestedPullRequests) }
+    }
     @Published var assignedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated {
-        didSet { self.preferencesService.save(self.assignedSortOrder, key: "overview.assigned.sort") }
+        didSet {
+
+            self.preferencesService.save(self.assignedSortOrder, key: "overview.assigned.sort")
+            self.cachedAssignedPullRequests = self.assignedSortOrder.sorted(self.assignedPullRequests)
+
+        }
     }
     @Published var reviewRequestedSortOrder: OverviewPullRequestSortOrder = .recentlyUpdated {
-        didSet { self.preferencesService.save(self.reviewRequestedSortOrder, key: "overview.reviewRequested.sort") }
+        didSet {
+
+            self.preferencesService.save(self.reviewRequestedSortOrder, key: "overview.reviewRequested.sort")
+            self.cachedReviewRequestedPullRequests = self.reviewRequestedSortOrder.sorted(self.reviewRequestedPullRequests)
+
+        }
     }
     @Published var collapsedAssignedGroups: Set<OverviewPullRequestGroupID> = []
     @Published var collapsedReviewRequestedGroups: Set<OverviewPullRequestGroupID> = []
@@ -39,11 +55,11 @@ final class WorkspaceOverviewViewModel: ViewModel {
     @Published private(set) var reviewRequestedError: String?
 
     var sortedAssignedPullRequests: [AssignedPullRequestSummary] {
-        self.assignedSortOrder.sorted(self.assignedPullRequests)
+        self.cachedAssignedPullRequests
     }
 
     var sortedReviewRequestedPullRequests: [AssignedPullRequestSummary] {
-        self.reviewRequestedSortOrder.sorted(self.reviewRequestedPullRequests)
+        self.cachedReviewRequestedPullRequests
     }
 
     init(

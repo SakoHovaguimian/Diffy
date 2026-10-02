@@ -11,7 +11,6 @@ struct WorkspaceScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var reviewWidth: CGFloat = 310
     @State private var reviewDragStartWidth: CGFloat?
-    @State private var dataModalSize = CGSize.zero
 
     init(viewModel: WorkspaceViewModel) {
 
@@ -64,12 +63,6 @@ struct WorkspaceScreen: View {
 
         }
         .frame(minWidth: 1050, minHeight: 650)
-        .onGeometryChange(for: CGSize.self) { geometry in
-            geometry.size
-        } action: { size in
-            self.dataModalSize = size
-        }
-        .environment(\.diffyDataModalSize, self.dataModalSize)
         .onAppear {
             if self.viewModel.runtime != .preview && !self.settings.hasSeenTutorial {
                 self.viewModel.showsTutorial = true
@@ -104,6 +97,7 @@ struct WorkspaceScreen: View {
             }
 
         }
+        .onReceive(self.accounts.$accounts) { self.repository.updateAccounts($0) }
         .onReceive(self.accounts.$libraryRevision.dropFirst()) { _ in self.viewModel.reloadProjects() }
         .sheet(item: self.$viewModel.selectedBucket) { bucket in
 

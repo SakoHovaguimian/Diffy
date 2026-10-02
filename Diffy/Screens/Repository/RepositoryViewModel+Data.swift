@@ -182,6 +182,7 @@ extension RepositoryViewModel {
 
             if case GitHubError.reauthorizationRequired = error {
                 try? self.accounts.markRequiresReauthorization(account)
+                self.updateAccounts(self.accounts.loadAccounts())
             }
 
         }

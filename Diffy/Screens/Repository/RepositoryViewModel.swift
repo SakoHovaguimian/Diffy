@@ -27,6 +27,7 @@ final class RepositoryViewModel: ViewModel {
     private var drafts: [String: String] = [:]
     var historyNavigatorDragStartWidth: CGFloat?
 
+    @Published private(set) var accountSnapshot: [GitHubAccount]
     @Published private(set) var project: RepositoryProject?
     @Published private(set) var snapshot: GitRepositorySnapshot?
     @Published private(set) var upstreamRemoteState: GitUpstreamRemoteState = .checking
@@ -113,6 +114,7 @@ final class RepositoryViewModel: ViewModel {
         self.git = git
         self.gitHub = gitHub
         self.accounts = accounts
+        self.accountSnapshot = accounts.loadAccounts()
         self.reviewDiffBuilder = diffBuilder
         self.aiCommitMessageService = aiCommitMessageService
         self.preferencesService = preferencesService
@@ -142,7 +144,7 @@ final class RepositoryViewModel: ViewModel {
     }
 
     var availableAccounts: [GitHubAccount] {
-        self.accounts.loadAccounts().filter { $0.host == self.linkedRepository?.host }
+        self.accountSnapshot.filter { $0.host == self.linkedRepository?.host }
     }
 
     var visiblePullRequests: [PullRequestSummary] {
@@ -165,6 +167,13 @@ final class RepositoryViewModel: ViewModel {
 
     var visiblePaths: [String] {
         self.trackedPaths.filter { self.search.isEmpty || $0.localizedStandardContains(self.search) }
+    }
+
+    func updateAccounts(_ accounts: [GitHubAccount]) {
+
+        guard self.accountSnapshot != accounts else { return }
+        self.accountSnapshot = accounts
+
     }
 
     func updateProjectPresentation(_ project: RepositoryProject) {

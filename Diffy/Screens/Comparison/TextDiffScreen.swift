@@ -221,7 +221,7 @@ struct TextDiffScreen: View {
 
         GeometryReader { geometry in
 
-            let contentWidth = geometry.size.width - (self.usesSingleSourceLayout ? 0 : self.gutterWidth)
+            let contentWidth = max(0, geometry.size.width - (self.usesSingleSourceLayout ? 0 : self.gutterWidth))
 
             HStack(spacing: 0) {
 
@@ -334,7 +334,7 @@ struct TextDiffScreen: View {
 
         GeometryReader { geometry in
 
-            let contentWidth = geometry.size.width - (self.usesSingleSourceLayout ? 0 : self.gutterWidth)
+            let contentWidth = max(0, geometry.size.width - (self.usesSingleSourceLayout ? 0 : self.gutterWidth))
 
             ZStack(alignment: .bottom) {
 
@@ -493,7 +493,7 @@ struct TextDiffScreen: View {
 
                     ScrollView([.vertical, .horizontal]) {
 
-                        LazyVStack(spacing: 0) {
+                        VStack(spacing: 0) {
 
                             ForEach(regions) { region in
                                 if showsPatchGap(before: region) {
@@ -625,6 +625,8 @@ struct TextDiffScreen: View {
         .frame(height: self.viewModel.embeddedCanvasHeight)
         .onPreferenceChange(DiffCanvasHeightPreference.self) { [viewModel = self.viewModel] height in
 
+            guard height.isFinite, height > 0 else { return }
+
             Task { @MainActor in
 
                 if abs(viewModel.embeddedCanvasHeight - height) > 1 {
@@ -636,6 +638,7 @@ struct TextDiffScreen: View {
         }
         .onAppear {
 
+            self.viewModel.needsEmbeddedNavigationAfterLayout = true
             revealReviewLine(self.reviewContext?.navigationTarget?.lineID ?? self.viewModel.scrollTarget)
             scrollToEmbeddedReviewTarget()
 
@@ -651,6 +654,8 @@ struct TextDiffScreen: View {
         }
         .onChange(of: self.viewModel.embeddedCanvasHeight) { _, _ in
 
+            guard self.viewModel.needsEmbeddedNavigationAfterLayout else { return }
+            self.viewModel.needsEmbeddedNavigationAfterLayout = false
             scrollToReviewLine(self.viewModel.scrollTarget)
             if self.reviewContext?.navigationTarget?.lineID == nil { scrollToEmbeddedReviewTarget() }
 
@@ -664,13 +669,19 @@ struct TextDiffScreen: View {
         let visible = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences, retaining: self.retainedReviewLineIDs)
 
         if !visible.contains(where: { $0.id == target }) {
+
+            self.viewModel.needsEmbeddedNavigationAfterLayout = true
             self.revealsWholeFile = true
+
         }
 
         let lines = self.viewModel.visibleLines(self.comparisonFile, preferences: self.visibleEditorPreferences, retaining: self.retainedReviewLineIDs)
 
-        if let index = lines.firstIndex(where: { $0.id == target }) {
-            self.viewModel.reviewLineLimit = max(self.viewModel.reviewLineLimit, index + 100)
+        if let index = lines.firstIndex(where: { $0.id == target }), index + 100 > self.viewModel.reviewLineLimit {
+
+            self.viewModel.needsEmbeddedNavigationAfterLayout = true
+            self.viewModel.reviewLineLimit = index + 100
+
         }
 
         scrollToReviewLine(target)
@@ -768,7 +779,7 @@ struct TextDiffScreen: View {
     @ViewBuilder
     private func codeRow(_ line: DiffLine, width: CGFloat) -> some View {
 
-        let contentWidth = width - self.gutterWidth
+        let contentWidth = max(0, width - self.gutterWidth)
 
         if self.usesSingleSourceLayout {
 
@@ -816,6 +827,7 @@ struct TextDiffScreen: View {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
 
+                guard contentWidth.isFinite, contentWidth > 0 else { return }
                 if self.paneDragStartRatio == nil {
                     self.paneDragStartRatio = self.viewModel.paneRatio
                 }
@@ -891,6 +903,8 @@ struct TextDiffScreen: View {
     }
 
     private func canvasWidth(available: CGFloat) -> CGFloat {
+
+        let available = available.isFinite ? max(0, available) : 0
 
         if self.settings.editor.wrapLines {
             return available

@@ -11,6 +11,7 @@ final class PullRequestReviewFileViewModel: ViewModel, Identifiable {
     @Published var isExpanded: Bool
     @Published private(set) var navigationTarget: TextDiffReviewNavigationTarget?
 
+    lazy var hasCompletePatch: Bool = self.file.hasCompletePatch
     lazy var lines: [DiffLine] = self.file.patch.map(GitPatchParser.lines) ?? []
     lazy var comparisonFile: DiffFile = self.file.navigationFile.replacingContent(lines: self.lines, kind: .text)
 
