@@ -21,6 +21,30 @@ struct TextDiffScreen: View {
         self.settings.editor.collapseUnchanged && !self.revealsWholeFile
     }
 
+    private var visibleContentSelection: Binding<Bool> {
+
+        Binding(
+            get: { self.showsOnlyChanges },
+            set: { value in
+
+                guard value != self.showsOnlyChanges else { return }
+
+                // macOS pickers can write their selection while SwiftUI updates the view.
+                DispatchQueue.main.async {
+
+                    self.revealsWholeFile = false
+
+                    if self.settings.editor.collapseUnchanged != value {
+                        self.settings.editor.collapseUnchanged = value
+                    }
+
+                }
+
+            }
+        )
+
+    }
+
     private var visibleEditorPreferences: EditorPreferences {
 
         var preferences = self.settings.editor
@@ -96,13 +120,12 @@ struct TextDiffScreen: View {
                 fileHeader()
             }
 
-            DiffToolbar(viewModel: self.viewModel, file: self.file, reviewLayout: self.reviewContext?.layout, contentOverride: Binding(
-                get: { self.showsOnlyChanges },
-                set: { value in
-                    self.revealsWholeFile = false
-                    self.settings.editor.collapseUnchanged = value
-                }
-            )) {
+            DiffToolbar(
+                viewModel: self.viewModel,
+                file: self.file,
+                reviewLayout: self.reviewContext?.layout,
+                contentOverride: self.visibleContentSelection
+            ) {
                 createAnnotation()
             }
 

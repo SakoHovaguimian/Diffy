@@ -24,7 +24,7 @@ These findings do not establish one cause for every reported freeze. Resizing th
 | Markdown | Parsing the same discussion text on view updates. | Cache parsed blocks by text; link permissions and theme styling still apply in each view. |
 | Diff visibility | Repeated filtering and region construction for the same source and preferences. | Cache the current visible lines and region presentation. Retained discussion lines, limits, and gap-splitting changes invalidate the appropriate results. |
 | File navigation | Filtering, sorting, recursive tree construction, and descendant scans inside directory-sort comparisons. | Cache the current presentation; group descendants once per tree level and calculate update ordering once. |
-| Overview lists | Sorting on each render and repeatedly sorting/filtering repository and author groups. | Sort when request data or ordering changes; prepare groups once per presentation pass. |
+| Overview lists | Sorting on each render and repeatedly sorting/filtering repository and author groups. | Sort when request data or ordering changes; flatten group headings and requests into one LazyVStack with stable identities and one child per entry. |
 | PR discussions | Every source line scanned all comments/drafts; every unanchored comment scanned all lines. | Build line-number sets and match each collection once. Discussion-line preparation changes from O(lines × (comments + drafts)) to O(lines + comments + drafts). |
 | Conversation and patch metadata | Conversation threads were sorted/regrouped and patch completeness reparsed during rendering. | Prepare threads when conversation data changes; cache completeness for each immutable review file. |
 | Embedded PR diffs | Every height change retriggered navigation to the selected line/comment, including wrapping changes during resizing. | Repeat navigation after layout only when initial presentation or newly revealed lines need it. |
@@ -32,13 +32,17 @@ These findings do not establish one cause for every reported freeze. Resizing th
 | Geometry | Diff panes could subtract a gutter from a smaller transient width; sheet sizes subtracted margins without bounds; tab-indicator frame changes continuously restarted animations. | Clamp pane widths, reject invalid measured heights, guard zero-width drags, bound sheet sizes, and animate tab selection changes instead of every rectangle change. |
 | Account changes | Selecting a new account could launch a PR load from both account and picker observers. | Use one selection observer and refresh directly only when the selection remains the same. |
 
-The earlier hang mitigation is preserved: section/group containers use eager stacks while long row collections remain lazy. Each Overview request has one top-level lazy child, including its separator.
+### Lazy-stack follow-up
+
+Large lists retain LazyVStack: Overview requests, repository PRs, file navigation, standalone diff lines, PR review files, and conversation activity. Grouped Overview now uses one flat LazyVStack containing individual repository headers, author headers, and requests. It no longer nests lazy collections or wraps each complete repository/author group in an eager container. Stable group/request identities preserve collapse state, and detail-loading tasks remain attached to individual lazy request rows.
+
+Small row wrappers use VStack so a conditional separator does not change the lazy collection's child count. Embedded PR diff canvases retain their existing intrinsic-height presentation and incremental line limit. Their full height is needed by the outer lazy file list; changing them to intrinsic lazy stacks would recreate the measurement risk identified in the hang investigation.
 
 ## Consequences and limits
 
 - Code and Markdown caches consume additional memory. `NSCache` eviction hints are 4,096 entries/16 MiB estimated cost for code and 256 entries/8 MiB estimated cost for Markdown. These are estimates, not hard process-memory limits. Cached review/source content stays in memory.
 - File-navigation and diff-visibility caches retain the current presentation; Overview caches retain the two current sorted collections. Their input changes refresh the result.
-- The earlier eager-section change may create more section containers and discussion views up front. Large row collections still retain lazy rendering.
+- Small section containers and intrinsic-height file discussions can create their contents up front. Grouped Overview instead prepares data entries and lets the single lazy stack create row views as needed.
 - Sheets now depend on the existing native sizing controller instead of duplicate SwiftUI size propagation. Parent resizing and sheet minimum sizes need visual verification.
 - Tab transitions still animate when selection changes. Window resizing updates the indicator immediately.
 - Source fixtures, persisted annotations, Git mutations, authentication checks, and service contracts are unchanged.
@@ -61,9 +65,9 @@ No Xcode build was run and no tests were written. Changed/new sources have been 
 
 Passed:
 
-- Swift 6 type checking of all 30 changed/new Swift files as primary sources in both Live and Mock contexts, including preview macro expansion.
-- Swift syntax parsing and strict SwiftLint checks for those 30 sources.
+- Swift 6 type checking of all 32 changed/new Swift files as primary sources in both Live and Mock contexts, including preview macro expansion.
+- Swift syntax parsing and strict SwiftLint checks for those 32 sources.
 - `git diff --check` and project plist validation.
-- Source membership review: all six new shared Swift files belong to Live and Mock; no missing or duplicate source entries; Mock excludes `Live/` implementations; the deleted size environment has no remaining project reference.
+- Source membership review: all eight new shared Swift files belong to Live and Mock; no missing or duplicate source entries; Mock excludes `Live/` implementations; the deleted size environment has no remaining project reference.
 
 No performance improvement percentage, visual correctness, or resolution of all geometry warnings is claimed.
