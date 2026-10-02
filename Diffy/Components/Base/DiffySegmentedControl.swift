@@ -62,6 +62,7 @@ struct DiffySegmentedControl<Selection: Hashable>: View {
 
     private func selectionIndicator() -> some View {
 
+        // Keep the indicator mounted as it follows the selected segment's stable geometry.
         RoundedRectangle(cornerRadius: self.contentSize.scaled(7))
             .fill(self.theme.elevated)
             .overlay {

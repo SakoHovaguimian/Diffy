@@ -34,7 +34,15 @@ struct PullRequestConversationEntry: Identifiable, Sendable {
         case "DISMISSED": "Review Dismissed"
         case "PENDING": "Pending Review On GitHub"
         case "COMMENTED": "Reviewed"
-        default: self.kind == .inline ? (self.replyToID == nil ? "Code Comment" : "Reply") : "Commented"
+        default:
+
+            switch self.kind {
+
+            case .inline: self.replyToID == nil ? "Code Comment" : "Reply"
+            case .comment: "Commented"
+            case .review: "Reviewed"
+
+            }
 
         }
 

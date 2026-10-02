@@ -163,7 +163,7 @@ final class TextDiffViewModel: ViewModel {
         source.isEmpty ? [] : source.components(separatedBy: "\n")
     }
 
-    private func clearSelection() {
+    func clearSelection() {
 
         self.selectionStart = nil
         self.selectionEnd = nil

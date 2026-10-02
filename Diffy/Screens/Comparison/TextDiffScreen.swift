@@ -160,9 +160,14 @@ struct TextDiffScreen: View {
 
     private func applyReviewNavigation() {
 
-        guard let target = self.reviewContext?.navigationTarget,
-              let lineID = target.lineID,
-              let line = self.comparisonFile.lines.first(where: { $0.id == lineID }) else { return }
+        guard let target = self.reviewContext?.navigationTarget else { return }
+        guard let lineID = target.lineID,
+              let line = self.comparisonFile.lines.first(where: { $0.id == lineID }) else {
+
+            self.viewModel.clearSelection()
+            return
+
+        }
 
         let visibleSide: SourceSide = self.usesSingleSourceLayout && !line.isChanged && line.right != nil ? .right : target.side
         self.viewModel.select(line, side: visibleSide, extends: false)
